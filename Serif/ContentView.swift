@@ -65,7 +65,10 @@ struct ContentView: View {
             .onChange(of: selectedEmail, perform: handleSelectedEmailChange)
             .onReceive(Timer.publish(every: 120, on: .main, in: .common).autoconnect()) { _ in
                 guard !mailboxViewModel.isLoading, !mailboxViewModel.accountID.isEmpty else { return }
-                Task { await loadCurrentFolder() }
+                Task {
+                    await loadCurrentFolder()
+                    await mailboxViewModel.loadCategoryUnreadCounts()
+                }
             }
     }
 
@@ -76,6 +79,7 @@ struct ContentView: View {
             Task {
                 await loadCurrentFolder()
                 await mailboxViewModel.loadLabels()
+                await mailboxViewModel.loadCategoryUnreadCounts()
                 await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
             }
         } else {
@@ -101,6 +105,7 @@ struct ContentView: View {
             await mailboxViewModel.switchAccount(id)
             await loadCurrentFolder()
             await mailboxViewModel.loadLabels()
+            await mailboxViewModel.loadCategoryUnreadCounts()
             await GmailProfileService.shared.loadContactPhotos(accountID: id)
         }
     }
@@ -118,7 +123,10 @@ struct ContentView: View {
               let msgID = email.gmailMessageID,
               let message = mailboxViewModel.messages.first(where: { $0.id == msgID }),
               message.isUnread else { return }
-        Task { await mailboxViewModel.markAsRead(message) }
+        Task {
+            await mailboxViewModel.markAsRead(message)
+            await mailboxViewModel.loadCategoryUnreadCounts()
+        }
     }
 
     private var mainLayout: some View {
@@ -132,7 +140,8 @@ struct ContentView: View {
                     isExpanded: $sidebarExpanded,
                     showHelp: $showHelp,
                     showDebug: $showDebug,
-                    authViewModel: authViewModel
+                    authViewModel: authViewModel,
+                    categoryUnreadCounts: mailboxViewModel.categoryUnreadCounts
                 )
                 listPane
                 Divider().background(themeManager.currentTheme.divider)

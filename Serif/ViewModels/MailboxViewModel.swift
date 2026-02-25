@@ -7,8 +7,9 @@ final class MailboxViewModel: ObservableObject {
     @Published var isLoading      = false
     @Published var error:         String?
     @Published var nextPageToken: String?
-    @Published var labels:        [GmailLabel] = []
-    @Published var readIDs:       Set<String> = []
+    @Published var labels:                [GmailLabel] = []
+    @Published var readIDs:               Set<String> = []
+    @Published var categoryUnreadCounts:  [InboxCategory: Int] = [:]
 
     var accountID: String
     private var currentLabelIDs: [String] = ["INBOX"]
@@ -47,6 +48,26 @@ final class MailboxViewModel: ObservableObject {
     func loadLabels() async {
         do { labels = try await GmailLabelService.shared.listLabels(accountID: accountID) }
         catch { self.error = error.localizedDescription }
+    }
+
+    func loadCategoryUnreadCounts() async {
+        guard !accountID.isEmpty else { return }
+        let aid = accountID
+        var counts: [InboxCategory: Int] = [:]
+        await withTaskGroup(of: (InboxCategory, Int)?.self) { group in
+            for category in InboxCategory.allCases {
+                let labelID = (category == .all) ? "INBOX" : category.rawValue
+                group.addTask {
+                    guard let label = try? await GmailLabelService.shared.getLabel(id: labelID, accountID: aid),
+                          let unread = label.messagesUnread, unread > 0 else { return nil }
+                    return (category, unread)
+                }
+            }
+            for await result in group {
+                if let (category, count) = result { counts[category] = count }
+            }
+        }
+        categoryUnreadCounts = counts
     }
 
     func switchAccount(_ id: String) async {

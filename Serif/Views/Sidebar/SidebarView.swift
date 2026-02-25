@@ -9,6 +9,7 @@ struct SidebarView: View {
     @Binding var showHelp: Bool
     @Binding var showDebug: Bool
     @ObservedObject var authViewModel: AuthViewModel
+    var categoryUnreadCounts: [InboxCategory: Int] = [:]
     @Environment(\.theme) private var theme
 
     @State private var inboxExpanded = true
@@ -205,6 +206,7 @@ struct SidebarView: View {
                     InboxCategoryRow(
                         category: category,
                         isSelected: selectedFolder == .inbox && selectedInboxCategory == category,
+                        unreadCount: categoryUnreadCounts[category] ?? 0,
                         theme: theme
                     ) {
                         selectedFolder = .inbox
@@ -312,6 +314,7 @@ private struct InboxParentRow: View {
 private struct InboxCategoryRow: View {
     let category: InboxCategory
     let isSelected: Bool
+    let unreadCount: Int
     let theme: Theme
     let action: () -> Void
     @State private var isHovered = false
@@ -334,6 +337,15 @@ private struct InboxCategoryRow: View {
                     .foregroundColor(isSelected ? theme.textPrimary : (isHovered ? theme.textSecondary : theme.textTertiary))
 
                 Spacer()
+
+                if unreadCount > 0 {
+                    Text(unreadCount < 100 ? "\(unreadCount)" : "99+")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(isSelected ? theme.accentPrimary : theme.textTertiary)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(isSelected ? theme.accentPrimary.opacity(0.15) : theme.cardBackground))
+                }
             }
             .padding(.horizontal, 10)
             .frame(height: 28)

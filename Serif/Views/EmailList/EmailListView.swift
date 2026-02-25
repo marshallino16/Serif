@@ -16,8 +16,17 @@ struct EmailListView: View {
     @State private var searchText = ""
     @State private var searchFocusTrigger = false
     @State private var searchDebounceTask: Task<Void, Never>?
+    @State private var sortOrder: EmailSortOrder = .dateNewest
     @ObservedObject private var swipeCoordinator = SwipeCoordinator.shared
     @Environment(\.theme) private var theme
+
+    private var sortedEmails: [Email] {
+        switch sortOrder {
+        case .dateNewest, .unreadFirst: return emails  // unread: filtered at API level
+        case .dateOldest:               return emails.reversed()
+        case .sender:                   return emails.sorted { $0.sender.name.lowercased() < $1.sender.name.lowercased() }
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,13 +40,13 @@ struct EmailListView: View {
                     Spacer()
 
                     Menu {
-                        Button("Date (Newest)") {}
-                        Button("Date (Oldest)") {}
-                        Button("Sender") {}
-                        Button("Unread first") {}
+                        Button { sortOrder = .dateNewest }  label: { Label("Date (Newest)",  systemImage: sortOrder == .dateNewest  ? "checkmark" : "") }
+                        Button { sortOrder = .dateOldest }  label: { Label("Date (Oldest)",  systemImage: sortOrder == .dateOldest  ? "checkmark" : "") }
+                        Button { sortOrder = .sender }       label: { Label("Sender",         systemImage: sortOrder == .sender      ? "checkmark" : "") }
+                        Button { sortOrder = .unreadFirst } label: { Label("Unread first",   systemImage: sortOrder == .unreadFirst ? "checkmark" : "") }
                     } label: {
                         HStack(spacing: 4) {
-                            Text("Recent")
+                            Text(sortOrder.label)
                                 .font(.system(size: 12))
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 9))
@@ -73,7 +82,7 @@ struct EmailListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 2) {
-                        ForEach(emails) { email in
+                        ForEach(sortedEmails) { email in
                             SwipeableEmailRow(
                                 email: email,
                                 isSelected: selectedEmail?.id == email.id,
@@ -123,6 +132,13 @@ struct EmailListView: View {
         .background(theme.listBackground)
         .onChange(of: searchResetTrigger) { _ in
             searchText = ""
+            sortOrder = .dateNewest
+        }
+        .onChange(of: sortOrder) { newSort in
+            switch newSort {
+            case .unreadFirst: onSearch("is:unread")
+            default:           onSearch(searchText)   // restores folder or current search
+            }
         }
         .onChange(of: searchText) { query in
             searchDebounceTask?.cancel()
@@ -176,6 +192,21 @@ struct EmailListView: View {
               let index = emails.firstIndex(where: { $0.id == current.id }),
               index < emails.count - 1 else { return }
         selectedEmail = emails[index + 1]
+    }
+}
+
+// MARK: - Sort Order
+
+enum EmailSortOrder {
+    case dateNewest, dateOldest, sender, unreadFirst
+
+    var label: String {
+        switch self {
+        case .dateNewest:  return "Recent"
+        case .dateOldest:  return "Oldest"
+        case .sender:      return "Sender"
+        case .unreadFirst: return "Unread"
+        }
     }
 }
 

@@ -11,4 +11,11 @@ final class GmailLabelService {
         )
         return response.labels
     }
+
+    func getLabel(id: String, accountID: String) async throws -> GmailLabel {
+        return try await GmailAPIClient.shared.request(
+            path: "/users/me/labels/\(id)",
+            accountID: accountID
+        )
+    }
 }
