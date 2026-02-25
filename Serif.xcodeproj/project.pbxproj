@@ -1,0 +1,702 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10001010000000000000001 /* SerifApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000001 /* SerifApp.swift */; };
+		A10001010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000002 /* ContentView.swift */; };
+		A10001010000000000000003 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000003 /* Theme.swift */; };
+		A10001010000000000000004 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000004 /* ThemeManager.swift */; };
+		A10001010000000000000005 /* DefaultThemes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000005 /* DefaultThemes.swift */; };
+		A10001010000000000000006 /* Email.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000006 /* Email.swift */; };
+		A10001010000000000000030 /* MailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000030 /* MailStore.swift */; };
+		A10001010000000000000008 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000008 /* SidebarView.swift */; };
+		A10001010000000000000009 /* EmailListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000009 /* EmailListView.swift */; };
+		A1000101000000000000000A /* EmailRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000000A /* EmailRowView.swift */; };
+		A1000101000000000000000B /* EmailDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000000B /* EmailDetailView.swift */; };
+		A10001010000000000000084 /* HTMLEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000084 /* HTMLEmailView.swift */; };
+		A1000101000000000000000C /* AttachmentChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000000C /* AttachmentChipView.swift */; };
+		A1000101000000000000000D /* ReplyBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000000D /* ReplyBarView.swift */; };
+		A1000101000000000000000E /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000000E /* AvatarView.swift */; };
+		A1000101000000000000000F /* SearchBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000000F /* SearchBarView.swift */; };
+		A10001010000000000000010 /* ThemePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000010 /* ThemePickerView.swift */; };
+		A10001010000000000000011 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000011 /* ComposeView.swift */; };
+		A10001010000000000000040 /* AttachmentsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000040 /* AttachmentsListView.swift */; };
+		A10001010000000000000050 /* RichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000050 /* RichTextEditor.swift */; };
+		A10001010000000000000051 /* FormattingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000051 /* FormattingToolbar.swift */; };
+		A10001010000000000000052 /* ShortcutsHelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000052 /* ShortcutsHelpView.swift */; };
+		A10001010000000000000054 /* SlidePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000054 /* SlidePanel.swift */; };
+		A10001010000000000000053 /* DebugMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000053 /* DebugMenuView.swift */; };
+		A10001010000000000000060 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000060 /* OnboardingView.swift */; };
+		A10001010000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000012 /* Assets.xcassets */; };
+		A10001010000000000000020 /* PPEditorialNew-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000020 /* PPEditorialNew-Regular.otf */; };
+		A10001010000000000000021 /* PPEditorialNew-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000021 /* PPEditorialNew-Italic.otf */; };
+		A10001010000000000000022 /* PPLocomotiveNew-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000022 /* PPLocomotiveNew-Light.ttf */; };
+		A10001010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf */; };
+		A10001010000000000000070 /* GoogleCredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000070 /* GoogleCredentials.swift */; };
+		A10001010000000000000071 /* GmailAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000071 /* GmailAccount.swift */; };
+		A10001010000000000000072 /* AuthToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000072 /* AuthToken.swift */; };
+		A10001010000000000000073 /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000073 /* TokenStore.swift */; };
+		A10001010000000000000074 /* OAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000074 /* OAuthService.swift */; };
+		A10001010000000000000075 /* GmailAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000075 /* GmailAPIClient.swift */; };
+		A10001010000000000000076 /* GmailModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000076 /* GmailModels.swift */; };
+		A10001010000000000000077 /* GmailMessageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000077 /* GmailMessageService.swift */; };
+		A10001010000000000000078 /* GmailLabelService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000078 /* GmailLabelService.swift */; };
+		A10001010000000000000079 /* GmailProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000079 /* GmailProfileService.swift */; };
+		A1000101000000000000007A /* GmailSendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000007A /* GmailSendService.swift */; };
+		A1000101000000000000007B /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000007B /* AuthViewModel.swift */; };
+		A1000101000000000000007C /* MailboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000007C /* MailboxViewModel.swift */; };
+		A1000101000000000000007D /* EmailDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000007D /* EmailDetailViewModel.swift */; };
+		A1000101000000000000007E /* ComposeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000007E /* ComposeViewModel.swift */; };
+		A10001010000000000000080 /* AccountsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000080 /* AccountsSettingsView.swift */; };
+		A10001010000000000000081 /* APICache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000081 /* APICache.swift */; };
+		A10001010000000000000082 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000001 /* AppAuth */; };
+		A10001010000000000000083 /* LabelChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000083 /* LabelChipView.swift */; };
+		A10001010000000000000085 /* AttachmentPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000085 /* AttachmentPreviewView.swift */; };
+		A10001010000000000000086 /* GmailDataTransformer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000086 /* GmailDataTransformer.swift */; };
+		A10001010000000000000087 /* DateFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000087 /* DateFormatting.swift */; };
+		A10001010000000000000088 /* FileUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000088 /* FileUtils.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A10002010000000000000001 /* SerifApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerifApp.swift; sourceTree = "<group>"; };
+		A10002010000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A10002010000000000000003 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A10002010000000000000004 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		A10002010000000000000005 /* DefaultThemes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultThemes.swift; sourceTree = "<group>"; };
+		A10002010000000000000006 /* Email.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Email.swift; sourceTree = "<group>"; };
+		A10002010000000000000030 /* MailStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailStore.swift; sourceTree = "<group>"; };
+		A10002010000000000000040 /* AttachmentsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentsListView.swift; sourceTree = "<group>"; };
+		A10002010000000000000008 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		A10002010000000000000009 /* EmailListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailListView.swift; sourceTree = "<group>"; };
+		A1000201000000000000000A /* EmailRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailRowView.swift; sourceTree = "<group>"; };
+		A1000201000000000000000B /* EmailDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailDetailView.swift; sourceTree = "<group>"; };
+		A10002010000000000000084 /* HTMLEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLEmailView.swift; sourceTree = "<group>"; };
+		A1000201000000000000000C /* AttachmentChipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentChipView.swift; sourceTree = "<group>"; };
+		A1000201000000000000000D /* ReplyBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplyBarView.swift; sourceTree = "<group>"; };
+		A1000201000000000000000E /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
+		A1000201000000000000000F /* SearchBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBarView.swift; sourceTree = "<group>"; };
+		A10002010000000000000010 /* ThemePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemePickerView.swift; sourceTree = "<group>"; };
+		A10002010000000000000011 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
+		A10002010000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10002010000000000000013 /* Serif.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Serif.entitlements; sourceTree = "<group>"; };
+		A10002010000000000000099 /* Serif.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Serif.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10002010000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10002010000000000000020 /* PPEditorialNew-Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPEditorialNew-Regular.otf"; sourceTree = "<group>"; };
+		A10002010000000000000021 /* PPEditorialNew-Italic.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPEditorialNew-Italic.otf"; sourceTree = "<group>"; };
+		A10002010000000000000022 /* PPLocomotiveNew-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPLocomotiveNew-Light.ttf"; sourceTree = "<group>"; };
+		A10002010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPLocomotiveNew-Light-Italic.ttf"; sourceTree = "<group>"; };
+		A10002010000000000000050 /* RichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextEditor.swift; sourceTree = "<group>"; };
+		A10002010000000000000051 /* FormattingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingToolbar.swift; sourceTree = "<group>"; };
+		A10002010000000000000052 /* ShortcutsHelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsHelpView.swift; sourceTree = "<group>"; };
+		A10002010000000000000054 /* SlidePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlidePanel.swift; sourceTree = "<group>"; };
+		A10002010000000000000053 /* DebugMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugMenuView.swift; sourceTree = "<group>"; };
+		A10002010000000000000060 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		A10002010000000000000070 /* GoogleCredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCredentials.swift; sourceTree = "<group>"; };
+		A10002010000000000000071 /* GmailAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailAccount.swift; sourceTree = "<group>"; };
+		A10002010000000000000072 /* AuthToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthToken.swift; sourceTree = "<group>"; };
+		A10002010000000000000073 /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStore.swift; sourceTree = "<group>"; };
+		A10002010000000000000074 /* OAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthService.swift; sourceTree = "<group>"; };
+		A10002010000000000000075 /* GmailAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailAPIClient.swift; sourceTree = "<group>"; };
+		A10002010000000000000076 /* GmailModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailModels.swift; sourceTree = "<group>"; };
+		A10002010000000000000077 /* GmailMessageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailMessageService.swift; sourceTree = "<group>"; };
+		A10002010000000000000078 /* GmailLabelService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailLabelService.swift; sourceTree = "<group>"; };
+		A10002010000000000000079 /* GmailProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailProfileService.swift; sourceTree = "<group>"; };
+		A1000201000000000000007A /* GmailSendService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailSendService.swift; sourceTree = "<group>"; };
+		A1000201000000000000007B /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		A1000201000000000000007C /* MailboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailboxViewModel.swift; sourceTree = "<group>"; };
+		A1000201000000000000007D /* EmailDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailDetailViewModel.swift; sourceTree = "<group>"; };
+		A1000201000000000000007E /* ComposeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeViewModel.swift; sourceTree = "<group>"; };
+		A10002010000000000000080 /* AccountsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsSettingsView.swift; sourceTree = "<group>"; };
+		A10002010000000000000081 /* APICache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICache.swift; sourceTree = "<group>"; };
+		A10002010000000000000083 /* LabelChipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelChipView.swift; sourceTree = "<group>"; };
+		A10002010000000000000085 /* AttachmentPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentPreviewView.swift; sourceTree = "<group>"; };
+		A10002010000000000000086 /* GmailDataTransformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailDataTransformer.swift; sourceTree = "<group>"; };
+		A10002010000000000000087 /* DateFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
+		A10002010000000000000088 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10003010000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001010000000000000082 /* AppAuth in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10004010000000000000001 /* Root */ = {
+			isa = PBXGroup;
+			children = (
+				A10004010000000000000002 /* Serif */,
+				A10004010000000000000099 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A10004010000000000000099 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000099 /* Serif.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000002 /* Serif */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000001 /* SerifApp.swift */,
+				A10002010000000000000002 /* ContentView.swift */,
+				A10004010000000000000003 /* Theme */,
+				A10004010000000000000004 /* Models */,
+				A10004010000000000000005 /* Views */,
+				A10004010000000000000010 /* Resources */,
+				A10002010000000000000013 /* Serif.entitlements */,
+				A10002010000000000000014 /* Info.plist */,
+				A10004010000000000000020 /* Configuration */,
+				A10004010000000000000021 /* Services */,
+				A10004010000000000000024 /* ViewModels */,
+				A10004010000000000000025 /* Utilities */,
+			);
+			path = Serif;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000003 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000003 /* Theme.swift */,
+				A10002010000000000000004 /* ThemeManager.swift */,
+				A10002010000000000000005 /* DefaultThemes.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000006 /* Email.swift */,
+				A10002010000000000000071 /* GmailAccount.swift */,
+				A10002010000000000000030 /* MailStore.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000005 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A10004010000000000000006 /* Sidebar */,
+				A10004010000000000000007 /* EmailList */,
+				A10004010000000000000008 /* EmailDetail */,
+				A10004010000000000000009 /* Common */,
+				A1000401000000000000000A /* Compose */,
+				A1000401000000000000000B /* Attachments */,
+			A1000401000000000000000C /* Onboarding */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000006 /* Sidebar */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000008 /* SidebarView.swift */,
+			);
+			path = Sidebar;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000007 /* EmailList */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000009 /* EmailListView.swift */,
+				A1000201000000000000000A /* EmailRowView.swift */,
+			);
+			path = EmailList;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000008 /* EmailDetail */ = {
+			isa = PBXGroup;
+			children = (
+				A1000201000000000000000B /* EmailDetailView.swift */,
+				A10002010000000000000084 /* HTMLEmailView.swift */,
+				A1000201000000000000000C /* AttachmentChipView.swift */,
+				A10002010000000000000085 /* AttachmentPreviewView.swift */,
+				A1000201000000000000000D /* ReplyBarView.swift */,
+			);
+			path = EmailDetail;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000009 /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				A1000201000000000000000E /* AvatarView.swift */,
+				A1000201000000000000000F /* SearchBarView.swift */,
+				A10002010000000000000010 /* ThemePickerView.swift */,
+				A10002010000000000000050 /* RichTextEditor.swift */,
+				A10002010000000000000051 /* FormattingToolbar.swift */,
+				A10002010000000000000052 /* ShortcutsHelpView.swift */,
+				A10002010000000000000053 /* DebugMenuView.swift */,
+					A10002010000000000000054 /* SlidePanel.swift */,
+				A10002010000000000000080 /* AccountsSettingsView.swift */,
+				A10002010000000000000083 /* LabelChipView.swift */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
+		A1000401000000000000000A /* Compose */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000011 /* ComposeView.swift */,
+			);
+			path = Compose;
+			sourceTree = "<group>";
+		};
+		A1000401000000000000000B /* Attachments */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000040 /* AttachmentsListView.swift */,
+			);
+			path = Attachments;
+			sourceTree = "<group>";
+		};
+		A1000401000000000000000C /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000060 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000010 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000012 /* Assets.xcassets */,
+				A10004010000000000000011 /* Fonts */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000011 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000020 /* PPEditorialNew-Regular.otf */,
+				A10002010000000000000021 /* PPEditorialNew-Italic.otf */,
+					A10002010000000000000022 /* PPLocomotiveNew-Light.ttf */,
+					A10002010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000020 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000070 /* GoogleCredentials.swift */,
+			);
+			path = Configuration;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000021 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A10004010000000000000022 /* Auth */,
+				A10004010000000000000023 /* Gmail */,
+				A10002010000000000000081 /* APICache.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000022 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000072 /* AuthToken.swift */,
+				A10002010000000000000073 /* TokenStore.swift */,
+				A10002010000000000000074 /* OAuthService.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000023 /* Gmail */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000075 /* GmailAPIClient.swift */,
+				A10002010000000000000076 /* GmailModels.swift */,
+				A10002010000000000000077 /* GmailMessageService.swift */,
+				A10002010000000000000078 /* GmailLabelService.swift */,
+				A10002010000000000000079 /* GmailProfileService.swift */,
+				A1000201000000000000007A /* GmailSendService.swift */,
+			);
+			path = Gmail;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000024 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A1000201000000000000007B /* AuthViewModel.swift */,
+				A1000201000000000000007C /* MailboxViewModel.swift */,
+				A1000201000000000000007D /* EmailDetailViewModel.swift */,
+				A1000201000000000000007E /* ComposeViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A10004010000000000000025 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				A10002010000000000000086 /* GmailDataTransformer.swift */,
+				A10002010000000000000087 /* DateFormatting.swift */,
+				A10002010000000000000088 /* FileUtils.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10005010000000000000001 /* Serif */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10007010000000000000001 /* Build configuration list for PBXNativeTarget "Serif" */;
+			buildPhases = (
+				A10006010000000000000001 /* Sources */,
+				A10003010000000000000001 /* Frameworks */,
+				A10006010000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Serif;
+			packageProductDependencies = (
+				A10090010000000000000001 /* AppAuth */,
+			);
+			productName = Serif;
+			productReference = A10002010000000000000099 /* Serif.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10008010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					A10005010000000000000001 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = A10007010000000000000002 /* Build configuration list for PBXProject "Serif" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A10004010000000000000001 /* Root */;
+			productRefGroup = A10004010000000000000099 /* Products */;
+			packageReferences = (
+				A10091010000000000000001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
+			);
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A10005010000000000000001 /* Serif */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A10006010000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001010000000000000012 /* Assets.xcassets in Resources */,
+				A10001010000000000000020 /* PPEditorialNew-Regular.otf in Resources */,
+				A10001010000000000000021 /* PPEditorialNew-Italic.otf in Resources */,
+					A10001010000000000000022 /* PPLocomotiveNew-Light.ttf in Resources */,
+					A10001010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10006010000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001010000000000000001 /* SerifApp.swift in Sources */,
+				A10001010000000000000002 /* ContentView.swift in Sources */,
+				A10001010000000000000003 /* Theme.swift in Sources */,
+				A10001010000000000000004 /* ThemeManager.swift in Sources */,
+				A10001010000000000000005 /* DefaultThemes.swift in Sources */,
+				A10001010000000000000006 /* Email.swift in Sources */,
+				A10001010000000000000008 /* SidebarView.swift in Sources */,
+				A10001010000000000000009 /* EmailListView.swift in Sources */,
+				A1000101000000000000000A /* EmailRowView.swift in Sources */,
+				A1000101000000000000000B /* EmailDetailView.swift in Sources */,
+				A10001010000000000000084 /* HTMLEmailView.swift in Sources */,
+				A1000101000000000000000C /* AttachmentChipView.swift in Sources */,
+				A1000101000000000000000D /* ReplyBarView.swift in Sources */,
+				A1000101000000000000000E /* AvatarView.swift in Sources */,
+				A1000101000000000000000F /* SearchBarView.swift in Sources */,
+				A10001010000000000000010 /* ThemePickerView.swift in Sources */,
+				A10001010000000000000011 /* ComposeView.swift in Sources */,
+				A10001010000000000000030 /* MailStore.swift in Sources */,
+				A10001010000000000000040 /* AttachmentsListView.swift in Sources */,
+				A10001010000000000000050 /* RichTextEditor.swift in Sources */,
+				A10001010000000000000051 /* FormattingToolbar.swift in Sources */,
+				A10001010000000000000052 /* ShortcutsHelpView.swift in Sources */,
+				A10001010000000000000053 /* DebugMenuView.swift in Sources */,
+					A10001010000000000000054 /* SlidePanel.swift in Sources */,
+				A10001010000000000000060 /* OnboardingView.swift in Sources */,
+				A10001010000000000000070 /* GoogleCredentials.swift in Sources */,
+				A10001010000000000000071 /* GmailAccount.swift in Sources */,
+				A10001010000000000000072 /* AuthToken.swift in Sources */,
+				A10001010000000000000073 /* TokenStore.swift in Sources */,
+				A10001010000000000000074 /* OAuthService.swift in Sources */,
+				A10001010000000000000075 /* GmailAPIClient.swift in Sources */,
+				A10001010000000000000076 /* GmailModels.swift in Sources */,
+				A10001010000000000000077 /* GmailMessageService.swift in Sources */,
+				A10001010000000000000078 /* GmailLabelService.swift in Sources */,
+				A10001010000000000000079 /* GmailProfileService.swift in Sources */,
+				A1000101000000000000007A /* GmailSendService.swift in Sources */,
+				A1000101000000000000007B /* AuthViewModel.swift in Sources */,
+				A1000101000000000000007C /* MailboxViewModel.swift in Sources */,
+				A1000101000000000000007D /* EmailDetailViewModel.swift in Sources */,
+				A1000101000000000000007E /* ComposeViewModel.swift in Sources */,
+				A10001010000000000000080 /* AccountsSettingsView.swift in Sources */,
+				A10001010000000000000083 /* LabelChipView.swift in Sources */,
+				A10001010000000000000081 /* APICache.swift in Sources */,
+				A10001010000000000000085 /* AttachmentPreviewView.swift in Sources */,
+				A10001010000000000000086 /* GmailDataTransformer.swift in Sources */,
+				A10001010000000000000087 /* DateFormatting.swift in Sources */,
+				A10001010000000000000088 /* FileUtils.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A10009010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A10009010000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		A10009010000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Serif/Serif.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Serif/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.serif.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A10009010000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Serif/Serif.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Serif/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.serif.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10007010000000000000002 /* Build configuration list for PBXProject "Serif" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10009010000000000000001 /* Debug */,
+				A10009010000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10007010000000000000001 /* Build configuration list for PBXNativeTarget "Serif" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10009010000000000000003 /* Debug */,
+				A10009010000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A10091010000000000000001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/openid/AppAuth-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = "1.7.5";
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A10090010000000000000001 /* AppAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10091010000000000000001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;
+			productName = AppAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+	};
+	rootObject = A10008010000000000000001 /* Project object */;
+}

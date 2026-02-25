@@ -1,0 +1,254 @@
+import SwiftUI
+
+/// Drives the email list for a given account and folder.
+@MainActor
+final class MailboxViewModel: ObservableObject {
+    @Published var messages:      [GmailMessage] = []
+    @Published var isLoading      = false
+    @Published var error:         String?
+    @Published var nextPageToken: String?
+    @Published var labels:        [GmailLabel] = []
+    @Published var readIDs:       Set<String> = []
+
+    var accountID: String
+    private var currentLabelIDs: [String] = ["INBOX"]
+    private var currentQuery:    String?
+    /// In-memory cache of fetched messages (metadata format) keyed by message ID.
+    private var messageCache: [String: GmailMessage] = [:]
+
+    init(accountID: String) {
+        self.accountID = accountID
+    }
+
+    // MARK: - GmailMessage → Email (computed)
+
+    var emails: [Email] {
+        messages.map { makeEmail(from: $0) }
+    }
+
+    // MARK: - Load
+
+    func loadFolder(labelIDs: [String], query: String? = nil) async {
+        currentLabelIDs = labelIDs
+        currentQuery    = query
+        await fetchMessages(reset: true)
+    }
+
+    func search(query: String) async {
+        currentQuery = query.isEmpty ? nil : query
+        await fetchMessages(reset: true)
+    }
+
+    func loadMore() async {
+        guard nextPageToken != nil else { return }
+        await fetchMessages(reset: false)
+    }
+
+    func loadLabels() async {
+        do { labels = try await GmailLabelService.shared.listLabels(accountID: accountID) }
+        catch { self.error = error.localizedDescription }
+    }
+
+    func switchAccount(_ id: String) async {
+        accountID     = id
+        messages      = []
+        nextPageToken = nil
+        readIDs       = []
+        error         = nil
+        messageCache  = [:]
+    }
+
+    // MARK: - Mutations
+
+    func markAsRead(_ message: GmailMessage) async {
+        guard message.isUnread && !readIDs.contains(message.id) else { return }
+        readIDs.insert(message.id)
+        if let idx = messages.firstIndex(where: { $0.id == message.id }) {
+            messages[idx].labelIds?.removeAll { $0 == "UNREAD" }
+            messageCache[message.id] = messages[idx]
+        }
+        try? await GmailMessageService.shared.markAsRead(id: message.id, accountID: accountID)
+    }
+
+    func markAsUnread(_ messageID: String) async {
+        if let idx = messages.firstIndex(where: { $0.id == messageID }) {
+            if messages[idx].labelIds?.contains("UNREAD") == false {
+                messages[idx].labelIds?.append("UNREAD")
+            }
+            messageCache[messageID] = messages[idx]
+        }
+        readIDs.remove(messageID)
+        do {
+            try await GmailMessageService.shared.markAsUnread(id: messageID, accountID: accountID)
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func toggleStar(_ messageID: String, isStarred: Bool) async {
+        if let idx = messages.firstIndex(where: { $0.id == messageID }) {
+            if isStarred {
+                messages[idx].labelIds?.removeAll { $0 == "STARRED" }
+            } else {
+                messages[idx].labelIds?.append("STARRED")
+            }
+            messageCache[messageID] = messages[idx]
+        }
+        do {
+            try await GmailMessageService.shared.setStarred(!isStarred, id: messageID, accountID: accountID)
+        } catch {
+            // Revert on failure
+            if let idx = messages.firstIndex(where: { $0.id == messageID }) {
+                if isStarred {
+                    messages[idx].labelIds?.append("STARRED")
+                } else {
+                    messages[idx].labelIds?.removeAll { $0 == "STARRED" }
+                }
+                messageCache[messageID] = messages[idx]
+            }
+            self.error = error.localizedDescription
+        }
+    }
+
+    func trash(_ messageID: String) async {
+        do {
+            try await GmailMessageService.shared.trashMessage(id: messageID, accountID: accountID)
+            messages.removeAll { $0.id == messageID }
+            messageCache[messageID] = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func archive(_ messageID: String) async {
+        do {
+            try await GmailMessageService.shared.archiveMessage(id: messageID, accountID: accountID)
+            messages.removeAll { $0.id == messageID }
+            messageCache[messageID] = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func spam(_ messageID: String) async {
+        do {
+            try await GmailMessageService.shared.spamMessage(id: messageID, accountID: accountID)
+            messages.removeAll { $0.id == messageID }
+            messageCache[messageID] = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func addLabel(_ labelID: String, to messageID: String) async {
+        do {
+            let updated = try await GmailMessageService.shared.modifyLabels(
+                id: messageID, add: [labelID], remove: [], accountID: accountID
+            )
+            if let idx = messages.firstIndex(where: { $0.id == messageID }) {
+                messages[idx].labelIds = updated.labelIds
+                messageCache[messageID] = messages[idx]
+            }
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func removeLabel(_ labelID: String, from messageID: String) async {
+        do {
+            let updated = try await GmailMessageService.shared.modifyLabels(
+                id: messageID, add: [], remove: [labelID], accountID: accountID
+            )
+            if let idx = messages.firstIndex(where: { $0.id == messageID }) {
+                messages[idx].labelIds = updated.labelIds
+                messageCache[messageID] = messages[idx]
+            }
+        } catch { self.error = error.localizedDescription }
+    }
+
+    // MARK: - Attachments helper
+
+    func allAttachmentItems() -> [AttachmentItem] {
+        emails.flatMap { email in
+            email.attachments.map { attachment in
+                AttachmentItem(
+                    attachment:   attachment,
+                    emailId:      email.id,
+                    emailSubject: email.subject,
+                    senderName:   email.sender.name,
+                    senderColor:  email.sender.avatarColor,
+                    date:         email.date,
+                    direction:    email.folder == .sent ? .sent : .received
+                )
+            }
+        }
+        .sorted { $0.date > $1.date }
+    }
+
+    // MARK: - Private fetch
+
+    private func fetchMessages(reset: Bool) async {
+        guard !accountID.isEmpty else { return }
+        if reset { messages = [] }   // clear immediately so skeleton shows
+        isLoading = true
+        error     = nil
+        defer { isLoading = false }
+        do {
+            let list = try await GmailMessageService.shared.listMessages(
+                accountID: accountID,
+                labelIDs:  currentLabelIDs,
+                query:     currentQuery,
+                pageToken: reset ? nil : nextPageToken
+            )
+            let refs         = list.messages ?? []
+            nextPageToken    = list.nextPageToken
+
+            // Only fetch IDs not already in cache
+            let idsToFetch = refs.map(\.id).filter { messageCache[$0] == nil }
+            if !idsToFetch.isEmpty {
+                let fetched = try await GmailMessageService.shared.getMessages(
+                    ids: idsToFetch,
+                    accountID: accountID,
+                    format: "metadata"
+                )
+                for msg in fetched { messageCache[msg.id] = msg }
+            }
+
+            // Build ordered page from refs using cache
+            let page = refs.compactMap { messageCache[$0.id] }
+            if reset {
+                messages = page
+            } else {
+                let existingIDs = Set(messages.map(\.id))
+                messages = messages + page.filter { !existingIDs.contains($0.id) }
+            }
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    // MARK: - GmailMessage → Email conversion
+
+    func makeEmail(from message: GmailMessage) -> Email {
+        let msgLabelIDs = message.labelIds ?? []
+        let userLabels = labels.filter { !$0.isSystemLabel && msgLabelIDs.contains($0.id) }
+        let emailLabels = userLabels.map { label in
+            EmailLabel(
+                id:    GmailDataTransformer.deterministicUUID(from: label.id),
+                name:  label.displayName,
+                color: label.resolvedBgColor,
+                textColor: label.resolvedTextColor
+            )
+        }
+        return Email(
+            id:             GmailDataTransformer.deterministicUUID(from: message.id),
+            sender:         GmailDataTransformer.parseContact(message.from),
+            recipients:     GmailDataTransformer.parseContacts(message.to),
+            cc:             GmailDataTransformer.parseContacts(message.cc),
+            subject:        message.subject,
+            body:           message.body,
+            preview:        message.snippet ?? "",
+            date:           message.date ?? Date(),
+            isRead:         !message.isUnread,
+            isStarred:      message.isStarred,
+            hasAttachments: !message.attachmentParts.isEmpty,
+            attachments:    message.attachmentParts.map(GmailDataTransformer.makeAttachment),
+            folder:         GmailDataTransformer.folderFor(labelIDs: msgLabelIDs),
+            labels:         emailLabels,
+            isDraft:        message.isDraft,
+            gmailMessageID: message.id,
+            gmailThreadID:  message.threadId,
+            gmailLabelIDs:  msgLabelIDs
+        )
+    }
+}

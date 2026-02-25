@@ -1,0 +1,548 @@
+import SwiftUI
+
+struct EmailDetailView: View {
+    let email: Email
+    let accountID: String
+    var onArchive:     (() -> Void)?
+    var onDelete:      (() -> Void)?
+    var onToggleStar:  (() -> Void)?
+    var onMarkUnread:  (() -> Void)?
+    var allLabels:     [GmailLabel]
+    var onAddLabel:    ((String) -> Void)?
+    var onRemoveLabel: ((String) -> Void)?
+    var onReply:       ((ComposeMode) -> Void)?
+    var onReplyAll:    ((ComposeMode) -> Void)?
+    var onForward:     ((ComposeMode) -> Void)?
+
+    var onPreviewAttachment: ((Data, String, Attachment.FileType) -> Void)?
+
+    @StateObject private var detailVM: EmailDetailViewModel
+    @State private var showLabelPicker = false
+    @State private var emailBodyHeight: CGFloat = 100
+    @Environment(\.theme) private var theme
+
+    init(
+        email: Email,
+        accountID: String,
+        onArchive:     (() -> Void)? = nil,
+        onDelete:      (() -> Void)? = nil,
+        onToggleStar:  (() -> Void)? = nil,
+        onMarkUnread:  (() -> Void)? = nil,
+        allLabels:             [GmailLabel] = [],
+        onAddLabel:            ((String) -> Void)? = nil,
+        onRemoveLabel:         ((String) -> Void)? = nil,
+        onReply:               ((ComposeMode) -> Void)? = nil,
+        onReplyAll:            ((ComposeMode) -> Void)? = nil,
+        onForward:             ((ComposeMode) -> Void)? = nil,
+        onPreviewAttachment:   ((Data, String, Attachment.FileType) -> Void)? = nil
+    ) {
+        self.email        = email
+        self.accountID    = accountID
+        self.onArchive    = onArchive
+        self.onDelete     = onDelete
+        self.onToggleStar = onToggleStar
+        self.onMarkUnread = onMarkUnread
+        self.allLabels    = allLabels
+        self.onAddLabel   = onAddLabel
+        self.onRemoveLabel = onRemoveLabel
+        self.onReply               = onReply
+        self.onReplyAll            = onReplyAll
+        self.onForward             = onForward
+        self.onPreviewAttachment   = onPreviewAttachment
+        self._detailVM             = StateObject(wrappedValue: EmailDetailViewModel(accountID: accountID))
+    }
+
+    // MARK: - Derived content
+
+    private var displayAttachments: [Attachment] {
+        if let latest = detailVM.latestMessage {
+            return latest.attachmentParts.map(GmailDataTransformer.makeAttachment)
+        }
+        return email.attachments
+    }
+
+    private var threadMessages: [GmailMessage] {
+        let all = detailVM.messages
+        guard all.count > 1 else { return [] }
+        return Array(all.dropLast())
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            detailToolbar
+
+            Divider()
+                .background(theme.divider)
+
+            if detailVM.isLoading && detailVM.thread == nil {
+                EmailDetailSkeletonView()
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        senderHeader
+                            .padding(.horizontal, 24)
+                            .padding(.top, 24)
+                            .padding(.bottom, 16)
+
+                        Text(detailVM.latestMessage?.subject ?? email.subject)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(theme.textPrimary)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, availableUserLabels.isEmpty ? 20 : 10)
+
+                        if !availableUserLabels.isEmpty {
+                            labelsSection
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 20)
+                        }
+
+                        let rawHTML = detailVM.latestMessage?.htmlBody ?? ""
+                        let htmlToRender = rawHTML.isEmpty
+                            ? "<p>\(detailVM.latestMessage?.plainBody ?? email.body)</p>"
+                            : rawHTML
+                        HTMLEmailView(html: htmlToRender, contentHeight: $emailBodyHeight)
+                            .frame(height: emailBodyHeight)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 20)
+
+                        if !displayAttachments.isEmpty {
+                            attachmentsSection
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 20)
+                        }
+
+                        if !threadMessages.isEmpty {
+                            threadSection
+                                .padding(.horizontal, 24)
+                        }
+                    }
+                }
+            }
+
+            Divider()
+                .background(theme.divider)
+
+            ReplyBarView()
+        }
+        .background(theme.detailBackground)
+        .onAppear { loadThread() }
+    }
+
+    // MARK: - Label helpers
+
+    private var currentLabelIDs: [String] {
+        detailVM.latestMessage?.labelIds ?? email.gmailLabelIDs
+    }
+
+    private var currentUserLabels: [GmailLabel] {
+        let ids = Set(currentLabelIDs)
+        return allLabels.filter { !$0.isSystemLabel && ids.contains($0.id) }
+    }
+
+    private var availableUserLabels: [GmailLabel] {
+        allLabels.filter { !$0.isSystemLabel }
+    }
+
+    private func emailLabel(from gmailLabel: GmailLabel) -> EmailLabel {
+        EmailLabel(
+            id: GmailDataTransformer.deterministicUUID(from: gmailLabel.id),
+            name: gmailLabel.displayName,
+            color: gmailLabel.resolvedBgColor,
+            textColor: gmailLabel.resolvedTextColor
+        )
+    }
+
+    private var labelsSection: some View {
+        HStack(spacing: 6) {
+            ForEach(currentUserLabels) { label in
+                LabelChipView(label: emailLabel(from: label), isRemovable: true) {
+                    let newIDs = currentLabelIDs.filter { $0 != label.id }
+                    detailVM.updateLabelIDs(newIDs)
+                    onRemoveLabel?(label.id)
+                }
+            }
+
+            Button {
+                showLabelPicker.toggle()
+            } label: {
+                Image(systemName: "tag")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.textTertiary)
+                    .frame(width: 22, height: 22)
+                    .background(Circle().strokeBorder(theme.divider, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .help("Add label")
+            .popover(isPresented: $showLabelPicker, arrowEdge: .bottom) {
+                labelPickerPopover
+                    .environment(\.theme, theme)
+            }
+
+            Spacer()
+        }
+    }
+
+    private var labelPickerPopover: some View {
+        VStack(spacing: 0) {
+            if availableUserLabels.isEmpty {
+                Text("No labels")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.textTertiary)
+                    .padding(16)
+            } else {
+                ForEach(availableUserLabels) { label in
+                    let isSelected = currentLabelIDs.contains(label.id)
+                    LabelPickerRow(label: emailLabel(from: label), isSelected: isSelected) {
+                        var newIDs = currentLabelIDs
+                        if isSelected {
+                            newIDs.removeAll { $0 == label.id }
+                            detailVM.updateLabelIDs(newIDs)
+                            onRemoveLabel?(label.id)
+                        } else {
+                            newIDs.append(label.id)
+                            detailVM.updateLabelIDs(newIDs)
+                            onAddLabel?(label.id)
+                        }
+                    }
+                    if label.id != availableUserLabels.last?.id {
+                        Divider()
+                    }
+                }
+            }
+        }
+        .frame(minWidth: 200)
+        .background(theme.cardBackground)
+    }
+
+    // MARK: - Compose helpers
+
+    private var quotedHTML: String {
+        let original = detailVM.latestMessage?.htmlBody ?? email.body
+        return "<br><br><blockquote style='border-left:2px solid #ccc;margin-left:4px;padding-left:8px;color:#555;'><p><b>\(email.sender.name)</b> wrote:</p>\(original)</blockquote>"
+    }
+
+    private func replyMode() -> ComposeMode {
+        let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
+        return .reply(to: email.sender.email, subject: sub, quotedBody: quotedHTML,
+                      replyToMessageID: email.gmailMessageID ?? "", threadID: email.gmailThreadID ?? "")
+    }
+
+    private func replyAllMode() -> ComposeMode {
+        let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
+        let extras = email.recipients.map(\.email).filter { $0 != (detailVM.latestMessage?.to ?? email.recipients.first?.email ?? "") }
+        let toField = ([email.sender.email] + extras).joined(separator: ", ")
+        return .replyAll(to: toField, cc: email.cc.map(\.email).joined(separator: ", "),
+                         subject: sub, quotedBody: quotedHTML,
+                         replyToMessageID: email.gmailMessageID ?? "", threadID: email.gmailThreadID ?? "")
+    }
+
+    private func forwardMode() -> ComposeMode {
+        let sub = email.subject.hasPrefix("Fwd:") ? email.subject : "Fwd: \(email.subject)"
+        return .forward(subject: sub, quotedBody: quotedHTML)
+    }
+
+    // MARK: - Load
+
+    private func loadThread() {
+        guard let threadID = email.gmailThreadID else { return }
+        Task { await detailVM.loadThread(id: threadID) }
+    }
+
+    // MARK: - Attachment preview & download
+
+    private func loadAndPreview(attachment: Attachment, part: GmailMessagePart) {
+        Task {
+            guard let msgID = detailVM.latestMessage?.id else { return }
+            guard let data = try? await detailVM.downloadAttachment(messageID: msgID, part: part) else { return }
+            await MainActor.run {
+                onPreviewAttachment?(data, attachment.name, attachment.fileType)
+            }
+        }
+    }
+
+    private func downloadAttachment(attachment: Attachment, part: GmailMessagePart) {
+        Task {
+            do {
+                guard let msgID = detailVM.latestMessage?.id else { return }
+                let data = try await detailVM.downloadAttachment(messageID: msgID, part: part)
+                await MainActor.run { saveAttachmentData(data, named: attachment.name) }
+            } catch {
+                // Silently ignore download errors for now
+            }
+        }
+    }
+
+    private func saveAttachmentData(_ data: Data, named name: String) {
+        DispatchQueue.main.async {
+            let panel = NSSavePanel()
+            panel.nameFieldStringValue = name
+            panel.canCreateDirectories = true
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            try? data.write(to: url)
+        }
+    }
+
+    // MARK: - Toolbar
+
+    private var detailToolbar: some View {
+        HStack(spacing: 12) {
+            Spacer()
+
+            toolbarButton(icon: "archivebox", label: "Archive") { onArchive?() }
+            toolbarButton(icon: "trash", label: "Delete") { onDelete?() }
+
+            Divider().frame(height: 16)
+
+            Menu {
+                Section {
+                    Button { onReply?(replyMode()) }    label: { Label("Reply",     systemImage: "arrowshape.turn.up.left") }
+                    Button { onReplyAll?(replyAllMode()) } label: { Label("Reply All", systemImage: "arrowshape.turn.up.left.2") }
+                    Button { onForward?(forwardMode()) }  label: { Label("Forward",   systemImage: "arrowshape.turn.up.right") }
+                }
+                Divider()
+                Section {
+                    Button { onMarkUnread?() } label: { Label("Mark as Unread",     systemImage: "envelope.badge") }
+                    Button { onToggleStar?() } label: { Label(email.isStarred ? "Remove Star" : "Add to Favorites", systemImage: email.isStarred ? "star.slash" : "star") }
+                    Button { } label: { Label("Snooze",    systemImage: "clock") }
+                    Button { } label: { Label("Add Label", systemImage: "tag") }
+                }
+                Divider()
+                Section {
+                    Button { } label: { Label("Print",            systemImage: "printer") }
+                    Button { } label: { Label("Download Message", systemImage: "arrow.down.circle") }
+                    Button { } label: { Label("Show Original",    systemImage: "doc.text") }
+                }
+                Divider()
+                Section {
+                    Button { } label: { Label("Mute Thread",    systemImage: "bell.slash") }
+                    Button { } label: { Label("Block Sender",   systemImage: "hand.raised") }
+                    Button(role: .destructive) { onDelete?() } label: { Label("Report as Spam", systemImage: "exclamationmark.shield") }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 13))
+                    .foregroundColor(theme.textSecondary)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("More")
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+    }
+
+    private func toolbarButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(theme.textSecondary)
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(label)
+    }
+
+    // MARK: - Sender Header
+
+    private var senderHeader: some View {
+        HStack(spacing: 12) {
+            AvatarView(
+                initials: email.sender.initials,
+                color:    email.sender.avatarColor,
+                size:     40,
+                avatarURL: email.sender.avatarURL,
+                senderDomain: email.sender.domain
+            )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(email.sender.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(theme.textPrimary)
+
+                Text(email.sender.email)
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.textTertiary)
+            }
+
+            Spacer()
+
+            Text(email.date.formattedRelative)
+                .font(.system(size: 12))
+                .foregroundColor(theme.textTertiary)
+        }
+    }
+
+    // MARK: - Attachments
+
+    /// Pairs each Attachment with its source GmailMessagePart (nil for sample-data attachments).
+    private var attachmentPairs: [(Attachment, GmailMessagePart?)] {
+        if let latest = detailVM.latestMessage {
+            return latest.attachmentParts.map { part in
+                (GmailDataTransformer.makeAttachment(from: part), part)
+            }
+        }
+        return email.attachments.map { ($0, nil) }
+    }
+
+    private var attachmentsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "paperclip")
+                    .font(.system(size: 12))
+                Text("\(displayAttachments.count) Attachment\(displayAttachments.count > 1 ? "s" : "")")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundColor(theme.textSecondary)
+
+            HStack(spacing: 8) {
+                ForEach(attachmentPairs, id: \.0.id) { (attachment, part) in
+                    AttachmentChipView(
+                        attachment: attachment,
+                        onPreview: part.map { p in { loadAndPreview(attachment: attachment, part: p) } },
+                        onDownload: part.map { p in { downloadAttachment(attachment: attachment, part: p) } }
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: - Thread (previous messages)
+
+    private var threadSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Divider()
+                .background(theme.divider)
+
+            ForEach(threadMessages, id: \.id) { message in
+                GmailThreadMessageView(message: message)
+            }
+        }
+    }
+}
+
+// MARK: - Thread message card (GmailMessage)
+
+private struct GmailThreadMessageView: View {
+    let message: GmailMessage
+    @Environment(\.theme) private var theme
+
+    private var sender: Contact { GmailDataTransformer.parseContact(message.from) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                AvatarView(initials: sender.initials, color: sender.avatarColor, size: 32,
+                           avatarURL: sender.avatarURL, senderDomain: sender.domain)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(sender.name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(theme.textPrimary)
+
+                    if let date = message.date {
+                        Text(date.formattedRelative)
+                            .font(.system(size: 11))
+                            .foregroundColor(theme.textTertiary)
+                    }
+                }
+            }
+
+            Text(message.body.strippingHTML)
+                .font(.system(size: 13))
+                .foregroundColor(theme.textSecondary)
+                .lineSpacing(4)
+                .padding(.leading, 42)
+        }
+        .padding(16)
+        .background(theme.cardBackground)
+        .cornerRadius(10)
+    }
+}
+
+
+// MARK: - HTML stripping
+
+extension String {
+    var strippingHTML: String {
+        var result = self
+        // Remove style/script blocks first
+        result = result.replacingOccurrences(of: "<style[^>]*>[\\s\\S]*?</style>",  with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: "<script[^>]*>[\\s\\S]*?</script>", with: "", options: .regularExpression)
+        // Replace block tags with newlines
+        result = result.replacingOccurrences(of: "<br\\s*/?>",  with: "\n", options: .regularExpression)
+        result = result.replacingOccurrences(of: "<p[^>]*>",    with: "\n", options: .regularExpression)
+        result = result.replacingOccurrences(of: "</p>",         with: "")
+        result = result.replacingOccurrences(of: "<div[^>]*>",  with: "\n", options: .regularExpression)
+        result = result.replacingOccurrences(of: "</div>",       with: "")
+        // Strip remaining tags
+        result = result.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        // Decode common HTML entities
+        result = result.replacingOccurrences(of: "&nbsp;",  with: " ")
+        result = result.replacingOccurrences(of: "&lt;",    with: "<")
+        result = result.replacingOccurrences(of: "&gt;",    with: ">")
+        result = result.replacingOccurrences(of: "&amp;",   with: "&")
+        result = result.replacingOccurrences(of: "&quot;",  with: "\"")
+        result = result.replacingOccurrences(of: "&#39;",   with: "'")
+        // Collapse multiple blank lines
+        result = result.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+// MARK: - Detail Skeleton
+
+private struct EmailDetailSkeletonView: View {
+    @Environment(\.theme) private var theme
+    @State private var animate = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // Sender header
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(theme.textTertiary.opacity(animate ? 0.1 : 0.2))
+                        .frame(width: 40, height: 40)
+                    VStack(alignment: .leading, spacing: 6) {
+                        bar(width: 140, height: 11)
+                        bar(width: 190, height: 9)
+                    }
+                    Spacer()
+                    bar(width: 55, height: 9)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+
+                // Subject
+                bar(width: 260, height: 16)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 28)
+
+                // Body lines
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(0..<3, id: \.self) { _ in bar(height: 11) }
+                    bar(width: 220, height: 11)
+                    Spacer().frame(height: 6)
+                    ForEach(0..<4, id: \.self) { _ in bar(height: 11) }
+                    bar(width: 160, height: 11)
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                animate = true
+            }
+        }
+    }
+
+    private func bar(width: CGFloat? = nil, height: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: height / 2)
+            .fill(theme.textTertiary.opacity(animate ? 0.1 : 0.2))
+            .frame(width: width, height: height)
+            .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
+    }
+}
