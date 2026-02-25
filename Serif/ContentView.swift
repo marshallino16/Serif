@@ -19,6 +19,7 @@ struct ContentView: View {
     @State private var attachmentPreviewData: Data?
     @State private var attachmentPreviewName = ""
     @State private var attachmentPreviewFileType: Attachment.FileType = .document
+    @AppStorage("undoDuration") private var undoDuration: Int = 5
 
     private var isEditingDraft: Bool {
         guard let email = selectedEmail else { return false }
@@ -144,8 +145,38 @@ struct ContentView: View {
             Button("") { closePanel() }
                 .keyboardShortcut(.escape, modifiers: []).frame(width: 0, height: 0).opacity(0).disabled(!isPanelOpen)
 
+            UndoToastView()
+                .environment(\.theme, themeManager.currentTheme)
+                .zIndex(5)
+
             slidePanels
         }
+    }
+
+    private var behaviorSettingsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Behavior")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(themeManager.currentTheme.textPrimary)
+
+            HStack {
+                Text("Undo duration")
+                    .font(.system(size: 12))
+                    .foregroundColor(themeManager.currentTheme.textSecondary)
+                Spacer()
+                Picker("", selection: $undoDuration) {
+                    Text("5s").tag(5)
+                    Text("10s").tag(10)
+                    Text("20s").tag(20)
+                    Text("30s").tag(30)
+                }
+                .pickerStyle(.menu)
+                .frame(width: 80)
+            }
+        }
+        .padding(20)
+        .background(themeManager.currentTheme.cardBackground)
+        .cornerRadius(12)
     }
 
     @ViewBuilder
@@ -154,6 +185,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 16) {
                 ThemePickerView(themeManager: themeManager)
                 AccountsSettingsView(authViewModel: authViewModel, selectedAccountID: $selectedAccountID)
+                behaviorSettingsCard
             }
             .padding(20)
         }

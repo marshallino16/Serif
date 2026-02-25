@@ -16,6 +16,7 @@ struct EmailListView: View {
     @State private var searchText = ""
     @State private var searchFocusTrigger = false
     @State private var searchDebounceTask: Task<Void, Never>?
+    @ObservedObject private var swipeCoordinator = SwipeCoordinator.shared
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -73,12 +74,13 @@ struct EmailListView: View {
                 ScrollView {
                     LazyVStack(spacing: 2) {
                         ForEach(emails) { email in
-                            EmailRowView(
+                            SwipeableEmailRow(
                                 email: email,
-                                isSelected: selectedEmail?.id == email.id
-                            ) {
-                                selectedEmail = email
-                            }
+                                isSelected: selectedEmail?.id == email.id,
+                                onTap: { selectedEmail = email },
+                                onArchive: onArchive.map { action in { action(email) } },
+                                onDelete:  onDelete.map  { action in { action(email) } }
+                            )
                             .contextMenu { emailContextMenu(for: email) }
                         }
 
@@ -99,6 +101,7 @@ struct EmailListView: View {
                     }
                     .padding(.vertical, 4)
                 }
+                .scrollDisabled(swipeCoordinator.isSwipeActive)
                 .focusable()
                 .focusEffectDisabled(true)
                 .onKeyPress(.upArrow) {
