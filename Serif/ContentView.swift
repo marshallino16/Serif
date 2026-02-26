@@ -119,12 +119,20 @@ struct ContentView: View {
     }
 
     private func handleMessagesCountChange(_ count: Int) {
-        if selectedEmail == nil { selectedEmail = mailboxViewModel.emails.first }
+        guard selectedEmail == nil else { return }
+        guard selectedFolder != .trash, selectedFolder != .spam else { return }
+        let first = mailboxViewModel.emails.first
+        selectedEmail = first
+        if let first { markAsReadIfNeeded(first) }
     }
 
     private func handleSelectedEmailChange(_ email: Email?) {
-        guard let email = email,
-              let msgID = email.gmailMessageID,
+        guard let email else { return }
+        markAsReadIfNeeded(email)
+    }
+
+    private func markAsReadIfNeeded(_ email: Email) {
+        guard let msgID = email.gmailMessageID,
               let message = mailboxViewModel.messages.first(where: { $0.id == msgID }),
               message.isUnread else { return }
         Task {
