@@ -240,6 +240,55 @@ struct ContentView: View {
         .cornerRadius(12)
     }
 
+    @State private var isRefreshingContacts = false
+
+    private var contactsSettingsCard: some View {
+        let acctID = selectedAccountID ?? authViewModel.primaryAccount?.id ?? ""
+        let count = ContactStore.shared.contacts(for: acctID).count
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Contacts")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(themeManager.currentTheme.textPrimary)
+
+            HStack {
+                Text("\(count) contacts cached")
+                    .font(.system(size: 12))
+                    .foregroundColor(themeManager.currentTheme.textSecondary)
+
+                Spacer()
+
+                Button {
+                    guard !isRefreshingContacts else { return }
+                    isRefreshingContacts = true
+                    Task {
+                        await GmailProfileService.shared.refreshContacts(accountID: acctID)
+                        isRefreshingContacts = false
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        if isRefreshingContacts {
+                            ProgressView()
+                                .scaleEffect(0.5)
+                                .frame(width: 12, height: 12)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 11))
+                        }
+                        Text(isRefreshingContacts ? "Refreshing…" : "Refresh")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(themeManager.currentTheme.accentPrimary)
+                }
+                .buttonStyle(.plain)
+                .disabled(isRefreshingContacts)
+            }
+        }
+        .padding(20)
+        .background(themeManager.currentTheme.cardBackground)
+        .cornerRadius(12)
+    }
+
     private var signatureSettingsCard: some View {
         let aliases = mailboxViewModel.sendAsAliases
         let defaultEmail = aliases.first(where: { $0.isPrimary == true })?.sendAsEmail
@@ -335,6 +384,7 @@ struct ContentView: View {
                 ThemePickerView(themeManager: themeManager)
                 AccountsSettingsView(authViewModel: authViewModel, selectedAccountID: $selectedAccountID)
                 behaviorSettingsCard
+                contactsSettingsCard
                 signatureSettingsCard
             }
             .padding(20)

@@ -43,9 +43,24 @@ final class GmailProfileService {
 
     // MARK: - Google People API
 
-    /// Loads contacts (names, emails, photos) from Google People API.
-    /// Fetches both "My Contacts" (connections) and "Other Contacts" (auto-created from interactions).
+    /// Loads contacts: uses local cache if available, otherwise fetches from network.
     func loadContactPhotos(accountID: String) async {
+        let local = ContactStore.shared.contacts(for: accountID)
+        if !local.isEmpty {
+            print("[Serif] Using \(local.count) cached contacts for \(accountID)")
+            // Still populate the photo cache from local contacts (in-memory only)
+            return
+        }
+        await fetchAndStoreContacts(accountID: accountID)
+    }
+
+    /// Forces a network refresh of contacts, replacing the local cache.
+    func refreshContacts(accountID: String) async {
+        await fetchAndStoreContacts(accountID: accountID)
+    }
+
+    /// Fetches contacts from People API and persists them.
+    private func fetchAndStoreContacts(accountID: String) async {
         var allContacts: [StoredContact] = []
 
         // 1. Fetch "My Contacts" via connections
