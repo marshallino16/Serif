@@ -19,7 +19,9 @@ struct ContentView: View {
     @State private var attachmentPreviewData: Data?
     @State private var attachmentPreviewName = ""
     @State private var attachmentPreviewFileType: Attachment.FileType = .document
-    @AppStorage("undoDuration") private var undoDuration: Int = 5
+    @AppStorage("undoDuration")      private var undoDuration:      Int = 5
+    @AppStorage("refreshInterval")   private var refreshInterval:   Int = 120
+    @State private var lastRefreshedAt: Date?
 
     private var isEditingDraft: Bool {
         guard let email = selectedEmail else { return false }
@@ -63,8 +65,9 @@ struct ContentView: View {
             .onChange(of: authViewModel.accounts, perform: handleAccountsChange)
             .onChange(of: mailboxViewModel.messages.count, perform: handleMessagesCountChange)
             .onChange(of: selectedEmail, perform: handleSelectedEmailChange)
-            .onReceive(Timer.publish(every: 120, on: .main, in: .common).autoconnect()) { _ in
+            .onReceive(Timer.publish(every: TimeInterval(refreshInterval), on: .main, in: .common).autoconnect()) { _ in
                 guard !mailboxViewModel.isLoading, !mailboxViewModel.accountID.isEmpty else { return }
+                lastRefreshedAt = Date()
                 Task {
                     await loadCurrentFolder()
                     await mailboxViewModel.loadCategoryUnreadCounts()
@@ -81,6 +84,7 @@ struct ContentView: View {
                 await mailboxViewModel.loadLabels()
                 await mailboxViewModel.loadCategoryUnreadCounts()
                 await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
+                lastRefreshedAt = Date()
             }
         } else {
             selectedEmail = mailStore.emails(for: .inbox).first
@@ -182,6 +186,25 @@ struct ContentView: View {
                 .pickerStyle(.menu)
                 .frame(width: 80)
             }
+
+            Divider().background(themeManager.currentTheme.divider)
+
+            HStack {
+                Text("Refresh interval")
+                    .font(.system(size: 12))
+                    .foregroundColor(themeManager.currentTheme.textSecondary)
+                Spacer()
+                Picker("", selection: $refreshInterval) {
+                    Text("2 min").tag(120)
+                    Text("5 min").tag(300)
+                    Text("10 min").tag(600)
+                    Text("1 hour").tag(3600)
+                }
+                .pickerStyle(.menu)
+                .frame(width: 80)
+            }
+
+            RefreshStatusView(lastRefreshedAt: lastRefreshedAt, refreshInterval: refreshInterval)
         }
         .padding(20)
         .background(themeManager.currentTheme.cardBackground)
@@ -465,5 +488,61 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(themeManager.currentTheme.detailBackground)
+    }
+}
+
+// MARK: - Refresh Status
+
+private struct RefreshStatusView: View {
+    let lastRefreshedAt: Date?
+    let refreshInterval: Int
+    @State private var now: Date = Date()
+    @Environment(\.theme) private var theme
+
+    private var timer: Timer.TimerPublisher {
+        Timer.publish(every: 1, on: .main, in: .common)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Image(systemName: "clock.arrow.2.circlepath")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.textTertiary)
+                Text(lastRefreshLabel)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.textTertiary)
+                Spacer()
+            }
+            HStack {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.textTertiary)
+                Text(nextRefreshLabel)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.textTertiary)
+                Spacer()
+            }
+        }
+        .onReceive(timer.autoconnect()) { date in now = date }
+    }
+
+    private var lastRefreshLabel: String {
+        guard let last = lastRefreshedAt else { return "Last refresh: never" }
+        let elapsed = Int(now.timeIntervalSince(last))
+        if elapsed < 60 { return "Last refresh: \(elapsed)s ago" }
+        let mins = elapsed / 60
+        return "Last refresh: \(mins) min ago"
+    }
+
+    private var nextRefreshLabel: String {
+        guard let last = lastRefreshedAt else { return "Next refresh: soon" }
+        let elapsed = now.timeIntervalSince(last)
+        let remaining = max(0, Double(refreshInterval) - elapsed)
+        let secs = Int(remaining)
+        if secs < 60 { return "Next refresh: in \(secs)s" }
+        let mins = secs / 60
+        let rem  = secs % 60
+        return rem > 0 ? "Next refresh: in \(mins)m \(rem)s" : "Next refresh: in \(mins)m"
     }
 }
