@@ -368,12 +368,14 @@ struct EmailDetailView: View {
                         let starred = detailVM.latestMessage?.isStarred ?? email.isStarred
                         Label(starred ? "Remove from Favorites" : "Add to Favorites", systemImage: starred ? "star.slash" : "star")
                     }
-                    Button { } label: { Label("Snooze",    systemImage: "clock") }
-                    Button { } label: { Label("Add Label", systemImage: "tag") }
                 }
                 Divider()
                 Section {
-                    Button { } label: { Label("Print",            systemImage: "printer") }
+                    Button {
+                        if let msg = detailVM.latestMessage {
+                            EmailPrintService.shared.printEmail(message: msg, email: email)
+                        }
+                    } label: { Label("Print", systemImage: "printer") }
                     Button { onDownloadMessage?(detailVM) } label: { Label("Download Message", systemImage: "arrow.down.circle") }
                     Button { onShowOriginal?(detailVM) } label: { Label("Show Original",    systemImage: "doc.text") }
                 }
