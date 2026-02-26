@@ -266,6 +266,7 @@ final class MailboxViewModel: ObservableObject {
                     // Same set of messages — refresh metadata silently (read status, labels…)
                     messages = page
                 }
+                SubscriptionsStore.shared.analyze(page.map { makeEmail(from: $0) })
             } else {
                 // Load more: append only new messages at the bottom
                 let existingIDs = Set(messages.map(\.id))
@@ -274,6 +275,7 @@ final class MailboxViewModel: ObservableObject {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
                         messages = messages + newOnes
                     }
+                    SubscriptionsStore.shared.analyze(newOnes.map { makeEmail(from: $0) })
                 }
             }
         } catch {
@@ -309,10 +311,12 @@ final class MailboxViewModel: ObservableObject {
             attachments:    message.attachmentParts.map(GmailDataTransformer.makeAttachment),
             folder:         GmailDataTransformer.folderFor(labelIDs: msgLabelIDs),
             labels:         emailLabels,
-            isDraft:        message.isDraft,
-            gmailMessageID: message.id,
-            gmailThreadID:  message.threadId,
-            gmailLabelIDs:  msgLabelIDs
+            isDraft:             message.isDraft,
+            gmailMessageID:      message.id,
+            gmailThreadID:       message.threadId,
+            gmailLabelIDs:       msgLabelIDs,
+            isFromMailingList:   message.isFromMailingList,
+            unsubscribeURL:      message.unsubscribeURL
         )
     }
 }

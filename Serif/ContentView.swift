@@ -5,6 +5,7 @@ struct ContentView: View {
     @StateObject private var mailStore = MailStore()
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var mailboxViewModel = MailboxViewModel(accountID: "")
+    @ObservedObject private var subscriptionsStore = SubscriptionsStore.shared
     @State private var selectedAccountID: String?
     @State private var selectedFolder: Folder = .inbox
     @State private var selectedInboxCategory: InboxCategory? = .all
@@ -19,6 +20,10 @@ struct ContentView: View {
     @State private var attachmentPreviewData: Data?
     @State private var attachmentPreviewName = ""
     @State private var attachmentPreviewFileType: Attachment.FileType = .document
+    @State private var showOriginal = false
+    @State private var originalMessage: GmailMessage?
+    @State private var originalRawSource: String?
+    @State private var isLoadingOriginal = false
     @AppStorage("undoDuration")      private var undoDuration:      Int = 5
     @AppStorage("refreshInterval")   private var refreshInterval:   Int = 120
     @State private var lastRefreshedAt: Date?
@@ -28,13 +33,14 @@ struct ContentView: View {
         return email.isDraft
     }
 
-    private var isPanelOpen: Bool { showSettings || showHelp || showDebug || showAttachmentPreview }
+    private var isPanelOpen: Bool { showSettings || showHelp || showDebug || showAttachmentPreview || showOriginal }
 
     private func closePanel() {
         showSettings = false
         showHelp = false
         showDebug = false
         showAttachmentPreview = false
+        showOriginal = false
     }
 
     // MARK: - Email source
@@ -42,6 +48,9 @@ struct ContentView: View {
     private var displayedEmails: [Email] {
         if selectedFolder == .drafts {
             return mailStore.emails(for: .drafts)
+        }
+        if selectedFolder == .subscriptions {
+            return subscriptionsStore.entries
         }
         return mailboxViewModel.emails
     }
@@ -246,6 +255,26 @@ struct ContentView: View {
         .zIndex(10)
         #endif
 
+        SlidePanel(isPresented: $showOriginal, title: "Original Message") {
+            if let msg = originalMessage {
+                OriginalMessageView(
+                    message: msg,
+                    rawSource: originalRawSource,
+                    isLoading: isLoadingOriginal
+                )
+            } else {
+                VStack {
+                    Spacer()
+                    ProgressView()
+                        .tint(themeManager.currentTheme.textTertiary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .environment(\.theme, themeManager.currentTheme)
+        .zIndex(10)
+
         SlidePanel(isPresented: $showAttachmentPreview, title: attachmentPreviewName, scrollable: false) {
             if let data = attachmentPreviewData {
                 AttachmentPreviewView(
@@ -326,7 +355,8 @@ struct ContentView: View {
         } else {
             EmailListView(
                 emails: displayedEmails,
-                isLoading: selectedFolder != .drafts && mailboxViewModel.isLoading,
+                isLoading: selectedFolder == .subscriptions ? subscriptionsStore.isAnalyzing
+                         : selectedFolder != .drafts && mailboxViewModel.isLoading,
                 onLoadMore: { Task { await mailboxViewModel.loadMore() } },
                 onSearch: { query in
                     if query.isEmpty {
@@ -335,11 +365,12 @@ struct ContentView: View {
                         Task { await mailboxViewModel.search(query: query) }
                     }
                 },
-                onArchive:    { archiveEmail($0) },
-                onDelete:     { deleteEmail($0) },
-                onToggleStar: { toggleStarEmail($0) },
-                onMarkUnread: { markUnreadEmail($0) },
-                onMarkSpam:   { markSpamEmail($0) },
+                onArchive:      { archiveEmail($0) },
+                onDelete:       { deleteEmail($0) },
+                onToggleStar:   { toggleStarEmail($0) },
+                onMarkUnread:   { markUnreadEmail($0) },
+                onMarkSpam:     { markSpamEmail($0) },
+                onUnsubscribe:  { unsubscribeEmail($0) },
                 searchResetTrigger: searchResetTrigger,
                 selectedEmail: $selectedEmail,
                 selectedFolder: $selectedFolder
@@ -389,6 +420,41 @@ struct ContentView: View {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                         showAttachmentPreview = true
                     }
+                },
+                onShowOriginal: { vm in
+                    guard let msg = vm.latestMessage else { return }
+                    originalMessage = msg
+                    originalRawSource = nil
+                    isLoadingOriginal = true
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                        showOriginal = true
+                    }
+                    Task {
+                        do {
+                            let raw = try await GmailMessageService.shared.getRawMessage(id: msg.id, accountID: vm.accountID)
+                            originalRawSource = raw.rawSource
+                        } catch {
+                            originalRawSource = nil
+                        }
+                        isLoadingOriginal = false
+                    }
+                },
+                onDownloadMessage: { vm in
+                    guard let msg = vm.latestMessage else { return }
+                    Task {
+                        do {
+                            let raw = try await GmailMessageService.shared.getRawMessage(id: msg.id, accountID: vm.accountID)
+                            if let source = raw.rawSource {
+                                await MainActor.run {
+                                    let panel = NSSavePanel()
+                                    panel.nameFieldStringValue = "\(msg.subject).eml"
+                                    panel.canCreateDirectories = true
+                                    guard panel.runModal() == .OK, let url = panel.url else { return }
+                                    try? source.data(using: .utf8)?.write(to: url)
+                                }
+                            }
+                        } catch { }
+                    }
                 }
             )
             .id(email.id)
@@ -414,6 +480,8 @@ struct ContentView: View {
             }
         case .drafts:
             break  // local only
+        case .subscriptions:
+            break  // populated by SubscriptionsStore.shared, no Gmail query needed
         case .attachments:
             await mailboxViewModel.loadFolder(labelIDs: [], query: "has:attachment")
         default:
@@ -467,6 +535,12 @@ struct ContentView: View {
             await mailboxViewModel.spam(msgID)
             selectedEmail = mailboxViewModel.emails.first
         }
+    }
+
+    private func unsubscribeEmail(_ email: Email) {
+        guard let url = email.unsubscribeURL else { return }
+        SubscriptionsStore.shared.removeEntry(for: email)
+        Task { await UnsubscribeService.shared.unsubscribe(url: url, oneClick: false) }
     }
 
     // MARK: - Compose

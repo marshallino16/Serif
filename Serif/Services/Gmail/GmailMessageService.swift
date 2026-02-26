@@ -32,6 +32,11 @@ final class GmailMessageService {
         try await client.request(path: "/users/me/messages/\(id)?format=\(format)", accountID: accountID)
     }
 
+    /// Fetches the raw RFC 2822 source of a message.
+    func getRawMessage(id: String, accountID: String) async throws -> GmailMessage {
+        try await getMessage(id: id, accountID: accountID, format: "raw")
+    }
+
     /// Fetches a batch of message IDs in groups of 5 to avoid "too many concurrent requests".
     func getMessages(ids: [String], accountID: String, format: String = "metadata") async throws -> [GmailMessage] {
         let batchSize = 5

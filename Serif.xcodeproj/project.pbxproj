@@ -59,6 +59,9 @@
 		A10001010000000000000085 /* AttachmentPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000085 /* AttachmentPreviewView.swift */; };
 		A10001010000000000000089 /* SwipeableEmailRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000089 /* SwipeableEmailRow.swift */; };
 		A1000101000000000000008A /* UndoActionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000008A /* UndoActionManager.swift */; };
+		A1000101000000000000008C /* UnsubscribeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000008C /* UnsubscribeService.swift */; };
+		A1000101000000000000008D /* SubscriptionsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000008D /* SubscriptionsStore.swift */; };
+		A1000101000000000000008E /* OriginalMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000008E /* OriginalMessageView.swift */; };
 		A1000101000000000000008B /* UndoToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000008B /* UndoToastView.swift */; };
 		A10001010000000000000086 /* GmailDataTransformer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000086 /* GmailDataTransformer.swift */; };
 		A10001010000000000000087 /* DateFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000087 /* DateFormatting.swift */; };
@@ -120,6 +123,9 @@
 		A10002010000000000000085 /* AttachmentPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentPreviewView.swift; sourceTree = "<group>"; };
 		A10002010000000000000089 /* SwipeableEmailRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeableEmailRow.swift; sourceTree = "<group>"; };
 		A1000201000000000000008A /* UndoActionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoActionManager.swift; sourceTree = "<group>"; };
+		A1000201000000000000008C /* UnsubscribeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsubscribeService.swift; sourceTree = "<group>"; };
+		A1000201000000000000008D /* SubscriptionsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsStore.swift; sourceTree = "<group>"; };
+		A1000201000000000000008E /* OriginalMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OriginalMessageView.swift; sourceTree = "<group>"; };
 		A1000201000000000000008B /* UndoToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToastView.swift; sourceTree = "<group>"; };
 		A10002010000000000000086 /* GmailDataTransformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailDataTransformer.swift; sourceTree = "<group>"; };
 		A10002010000000000000087 /* DateFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
@@ -232,6 +238,7 @@
 				A10002010000000000000084 /* HTMLEmailView.swift */,
 				A1000201000000000000000C /* AttachmentChipView.swift */,
 				A10002010000000000000085 /* AttachmentPreviewView.swift */,
+				A1000201000000000000008E /* OriginalMessageView.swift */,
 				A1000201000000000000000D /* ReplyBarView.swift */,
 			);
 			path = EmailDetail;
@@ -314,6 +321,8 @@
 				A10004010000000000000023 /* Gmail */,
 				A10002010000000000000081 /* APICache.swift */,
 				A1000201000000000000008A /* UndoActionManager.swift */,
+				A1000201000000000000008C /* UnsubscribeService.swift */,
+				A1000201000000000000008D /* SubscriptionsStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -487,6 +496,9 @@
 				A10001010000000000000085 /* AttachmentPreviewView.swift in Sources */,
 				A10001010000000000000089 /* SwipeableEmailRow.swift in Sources */,
 				A1000101000000000000008A /* UndoActionManager.swift in Sources */,
+				A1000101000000000000008C /* UnsubscribeService.swift in Sources */,
+				A1000101000000000000008D /* SubscriptionsStore.swift in Sources */,
+				A1000101000000000000008E /* OriginalMessageView.swift in Sources */,
 				A1000101000000000000008B /* UndoToastView.swift in Sources */,
 			A10001010000000000000086 /* GmailDataTransformer.swift in Sources */,
 				A10001010000000000000087 /* DateFormatting.swift in Sources */,

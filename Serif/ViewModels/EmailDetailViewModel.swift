@@ -3,9 +3,11 @@ import SwiftUI
 /// Drives the email detail / thread view.
 @MainActor
 final class EmailDetailViewModel: ObservableObject {
-    @Published var thread:     GmailThread?
-    @Published var isLoading   = false
-    @Published var error:      String?
+    @Published var thread:          GmailThread?
+    @Published var isLoading        = false
+    @Published var error:           String?
+    @Published var rawSource:       String?
+    @Published var isLoadingRaw     = false
 
     let accountID: String
 
@@ -52,6 +54,21 @@ final class EmailDetailViewModel: ObservableObject {
             updated[idx].labelIds = labelIDs
         }
         thread = GmailThread(id: thread!.id, historyId: thread!.historyId, messages: updated)
+    }
+
+    // MARK: - Raw source
+
+    func fetchRawSource() async {
+        guard let msgID = latestMessage?.id else { return }
+        guard rawSource == nil else { return }
+        isLoadingRaw = true
+        defer { isLoadingRaw = false }
+        do {
+            let raw = try await GmailMessageService.shared.getRawMessage(id: msgID, accountID: accountID)
+            rawSource = raw.rawSource
+        } catch {
+            rawSource = nil
+        }
     }
 
     // MARK: - Convenience

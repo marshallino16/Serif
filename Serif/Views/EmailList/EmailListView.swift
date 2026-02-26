@@ -10,6 +10,7 @@ struct EmailListView: View {
     let onToggleStar: ((Email) -> Void)?
     let onMarkUnread: ((Email) -> Void)?
     let onMarkSpam: ((Email) -> Void)?
+    let onUnsubscribe: ((Email) -> Void)?
     let searchResetTrigger: Int
     @Binding var selectedEmail: Email?
     @Binding var selectedFolder: Folder
@@ -38,6 +39,25 @@ struct EmailListView: View {
                         .foregroundColor(theme.textPrimary)
 
                     Spacer()
+
+                    // Bulk-unsubscribe button shown only in the Subscriptions folder
+                    if selectedFolder == .subscriptions, !emails.isEmpty, let onUnsubscribe {
+                        let unsubscribable = emails.filter { $0.isFromMailingList && $0.unsubscribeURL != nil }
+                        if !unsubscribable.isEmpty {
+                            Button {
+                                unsubscribable.forEach { onUnsubscribe($0) }
+                            } label: {
+                                Text("Unsubscribe All (\(unsubscribable.count))")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.orange)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Color.orange.opacity(0.1))
+                                    .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
 
                     Menu {
                         Button { sortOrder = .dateNewest }  label: { Label("Date (Newest)",  systemImage: sortOrder == .dateNewest  ? "checkmark" : "") }
@@ -177,6 +197,13 @@ struct EmailListView: View {
                   systemImage: email.isStarred ? "star.slash" : "star")
         }
         Button { onMarkUnread?(email) } label: { Label("Mark as Unread", systemImage: "envelope.badge") }
+
+        if email.isFromMailingList && email.unsubscribeURL != nil {
+            Divider()
+            Button(role: .destructive) { onUnsubscribe?(email) } label: {
+                Label("Unsubscribe", systemImage: "xmark.circle")
+            }
+        }
 
         Divider()
 

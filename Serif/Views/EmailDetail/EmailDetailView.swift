@@ -15,11 +15,31 @@ struct EmailDetailView: View {
     var onForward:     ((ComposeMode) -> Void)?
 
     var onPreviewAttachment: ((Data, String, Attachment.FileType) -> Void)?
+    var onShowOriginal: ((EmailDetailViewModel) -> Void)?
+    var onDownloadMessage: ((EmailDetailViewModel) -> Void)?
 
     @StateObject private var detailVM: EmailDetailViewModel
     @State private var showLabelPicker = false
     @State private var emailBodyHeight: CGFloat = 100
+    @State private var isUnsubscribing = false
     @Environment(\.theme) private var theme
+
+    /// Best available unsubscribe URL: header-based (from full thread) or body-scanned.
+    private var resolvedUnsubscribeURL: URL? {
+        if let url = detailVM.latestMessage?.unsubscribeURL { return url }
+        if let html = detailVM.latestMessage?.htmlBody ?? detailVM.latestMessage?.plainBody {
+            return UnsubscribeService.extractBodyUnsubscribeURL(from: html)
+        }
+        return email.unsubscribeURL
+    }
+
+    private var isMailingList: Bool {
+        detailVM.latestMessage?.isFromMailingList ?? email.isFromMailingList || resolvedUnsubscribeURL != nil
+    }
+
+    private var oneClick: Bool {
+        detailVM.latestMessage?.supportsOneClickUnsubscribe ?? false
+    }
 
     init(
         email: Email,
@@ -34,7 +54,9 @@ struct EmailDetailView: View {
         onReply:               ((ComposeMode) -> Void)? = nil,
         onReplyAll:            ((ComposeMode) -> Void)? = nil,
         onForward:             ((ComposeMode) -> Void)? = nil,
-        onPreviewAttachment:   ((Data, String, Attachment.FileType) -> Void)? = nil
+        onPreviewAttachment:   ((Data, String, Attachment.FileType) -> Void)? = nil,
+        onShowOriginal:        ((EmailDetailViewModel) -> Void)? = nil,
+        onDownloadMessage:     ((EmailDetailViewModel) -> Void)? = nil
     ) {
         self.email        = email
         self.accountID    = accountID
@@ -49,6 +71,8 @@ struct EmailDetailView: View {
         self.onReplyAll            = onReplyAll
         self.onForward             = onForward
         self.onPreviewAttachment   = onPreviewAttachment
+        self.onShowOriginal        = onShowOriginal
+        self.onDownloadMessage     = onDownloadMessage
         self._detailVM             = StateObject(wrappedValue: EmailDetailViewModel(accountID: accountID))
     }
 
@@ -292,6 +316,35 @@ struct EmailDetailView: View {
         HStack(spacing: 12) {
             Spacer()
 
+            // Unsubscribe button — only shown for mailing lists
+            if isMailingList, let url = resolvedUnsubscribeURL {
+                Button {
+                    isUnsubscribing = true
+                    Task {
+                        await UnsubscribeService.shared.unsubscribe(url: url, oneClick: oneClick)
+                        isUnsubscribing = false
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        if isUnsubscribing {
+                            ProgressView().scaleEffect(0.6).frame(width: 12, height: 12)
+                        }
+                        Text("Unsubscribe")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .disabled(isUnsubscribing)
+                .help(oneClick ? "One-click unsubscribe" : "Open unsubscribe page")
+
+                Divider().frame(height: 16)
+            }
+
             toolbarButton(icon: "archivebox", label: "Archive") { onArchive?() }
             toolbarButton(icon: "trash", label: "Delete") { onDelete?() }
 
@@ -313,8 +366,8 @@ struct EmailDetailView: View {
                 Divider()
                 Section {
                     Button { } label: { Label("Print",            systemImage: "printer") }
-                    Button { } label: { Label("Download Message", systemImage: "arrow.down.circle") }
-                    Button { } label: { Label("Show Original",    systemImage: "doc.text") }
+                    Button { onDownloadMessage?(detailVM) } label: { Label("Download Message", systemImage: "arrow.down.circle") }
+                    Button { onShowOriginal?(detailVM) } label: { Label("Show Original",    systemImage: "doc.text") }
                 }
                 Divider()
                 Section {

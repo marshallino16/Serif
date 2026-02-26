@@ -21,6 +21,9 @@ struct Email: Identifiable, Equatable {
     var gmailMessageID: String?
     var gmailThreadID: String?
     var gmailLabelIDs: [String]
+    // Mailing-list / unsubscribe
+    var isFromMailingList: Bool
+    var unsubscribeURL: URL?
 
     init(
         id: UUID = UUID(),
@@ -40,7 +43,9 @@ struct Email: Identifiable, Equatable {
         isDraft: Bool = false,
         gmailMessageID: String? = nil,
         gmailThreadID: String? = nil,
-        gmailLabelIDs: [String] = []
+        gmailLabelIDs: [String] = [],
+        isFromMailingList: Bool = false,
+        unsubscribeURL: URL? = nil
     ) {
         self.id = id
         self.sender = sender
@@ -60,6 +65,8 @@ struct Email: Identifiable, Equatable {
         self.gmailMessageID = gmailMessageID
         self.gmailThreadID = gmailThreadID
         self.gmailLabelIDs = gmailLabelIDs
+        self.isFromMailingList = isFromMailingList
+        self.unsubscribeURL = unsubscribeURL
     }
 }
 
@@ -206,6 +213,7 @@ enum Folder: String, CaseIterable, Identifiable {
     case sent = "Sent"
     case drafts = "Drafts"
     case attachments = "Attachments"
+    case subscriptions = "Subscriptions"
     case archive = "Archive"
     case spam = "Spam"
     case trash = "Trash"
@@ -214,14 +222,15 @@ enum Folder: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .inbox: return "tray.fill"
-        case .starred: return "star.fill"
-        case .sent: return "paperplane.fill"
-        case .drafts: return "doc.text.fill"
-        case .attachments: return "paperclip"
-        case .archive: return "archivebox.fill"
-        case .spam: return "exclamationmark.shield.fill"
-        case .trash: return "trash.fill"
+        case .inbox:         return "tray.fill"
+        case .starred:       return "star.fill"
+        case .sent:          return "paperplane.fill"
+        case .drafts:        return "doc.text.fill"
+        case .attachments:   return "paperclip"
+        case .subscriptions: return "newspaper.fill"
+        case .archive:       return "archivebox.fill"
+        case .spam:          return "exclamationmark.shield.fill"
+        case .trash:         return "trash.fill"
         }
     }
 
@@ -236,16 +245,17 @@ enum Folder: String, CaseIterable, Identifiable {
         case .drafts:      return "DRAFT"
         case .spam:        return "SPAM"
         case .trash:       return "TRASH"
-        case .archive, .attachments: return nil
+        case .archive, .attachments, .subscriptions: return nil
         }
     }
 
     /// Gmail search query for folders that don't map to a single label.
     var gmailQuery: String? {
         switch self {
-        case .archive:     return "-in:inbox -in:trash -in:spam -in:drafts"
-        case .attachments: return "has:attachment"
-        default:           return nil
+        case .archive:       return "-in:inbox -in:trash -in:spam -in:drafts"
+        case .attachments:   return "has:attachment"
+        case .subscriptions: return nil
+        default:             return nil
         }
     }
 }

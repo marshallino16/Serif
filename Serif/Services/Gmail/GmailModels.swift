@@ -24,6 +24,7 @@ struct GmailMessage: Decodable {
     let payload:      GmailMessagePart?
     let sizeEstimate: Int?
     let historyId:    String?
+    let raw:          String?   // base64url-encoded RFC 2822 source (format=raw)
 }
 
 struct GmailMessagePart: Decodable {
@@ -201,6 +202,34 @@ extension GmailMessage {
     var isStarred: Bool { labelIds?.contains("STARRED")  ?? false }
     var isDraft:   Bool { labelIds?.contains("DRAFT")    ?? false }
 
+    /// True when the message was sent by a mailing list (List-Unsubscribe or List-Id header present).
+    var isFromMailingList: Bool {
+        header(named: "List-Unsubscribe") != nil || header(named: "List-Id") != nil
+    }
+
+    /// Parses the List-Unsubscribe header and returns the best URL (HTTPS preferred over mailto).
+    var unsubscribeURL: URL? {
+        guard let raw = header(named: "List-Unsubscribe") else { return nil }
+        var https: URL? = nil
+        var mailto: URL? = nil
+        var pos = raw.startIndex
+        while let open = raw[pos...].firstIndex(of: "<") {
+            let after = raw.index(after: open)
+            if let close = raw[after...].firstIndex(of: ">") {
+                let entry = String(raw[after..<close]).trimmingCharacters(in: .whitespaces)
+                if entry.hasPrefix("http"), https == nil  { https = URL(string: entry) }
+                if entry.hasPrefix("mailto"), mailto == nil { mailto = URL(string: entry) }
+                pos = raw.index(after: close)
+            } else { break }
+        }
+        return https ?? mailto
+    }
+
+    /// True when RFC 8058 one-click unsubscribe via POST is supported.
+    var supportsOneClickUnsubscribe: Bool {
+        header(named: "List-Unsubscribe-Post") != nil
+    }
+
     /// Recursively extracts text/html body.
     var htmlBody:  String? { extractBody(mimeType: "text/html",  from: payload) }
     var plainBody: String? { extractBody(mimeType: "text/plain", from: payload) }
@@ -209,6 +238,12 @@ extension GmailMessage {
 
     /// Parts that are actual file attachments.
     var attachmentParts: [GmailMessagePart] { collectAttachments(from: payload) }
+
+    /// Decodes the raw RFC 2822 source from base64url.
+    var rawSource: String? {
+        guard let raw = raw else { return nil }
+        return decodeBase64URL(raw)
+    }
 
     // MARK: Private helpers
 
