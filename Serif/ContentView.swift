@@ -187,6 +187,10 @@ struct ContentView: View {
             Button("") { closePanel() }
                 .keyboardShortcut(.escape, modifiers: []).frame(width: 0, height: 0).opacity(0).disabled(!isPanelOpen)
 
+            OfflineToastView()
+                .environment(\.theme, themeManager.currentTheme)
+                .zIndex(4)
+
             UndoToastView()
                 .environment(\.theme, themeManager.currentTheme)
                 .zIndex(5)
