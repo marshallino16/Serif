@@ -25,6 +25,7 @@ struct EmailDetailView: View {
     @State private var highlightedIndex: Int = 0
     @State private var emailBodyHeight: CGFloat = 100
     @State private var isUnsubscribing = false
+    @State private var didUnsubscribe = false
     @State private var showSenderInfo = false
     @Environment(\.theme) private var theme
 
@@ -43,6 +44,12 @@ struct EmailDetailView: View {
 
     private var oneClick: Bool {
         detailVM.latestMessage?.supportsOneClickUnsubscribe ?? false
+    }
+
+    private var alreadyUnsubscribed: Bool {
+        if didUnsubscribe { return true }
+        guard let msgID = email.gmailMessageID else { return false }
+        return UnsubscribeService.shared.isUnsubscribed(messageID: msgID)
     }
 
     init(
@@ -418,29 +425,47 @@ struct EmailDetailView: View {
 
             // Unsubscribe button — only shown for mailing lists
             if isMailingList, let url = resolvedUnsubscribeURL {
-                Button {
-                    isUnsubscribing = true
-                    Task {
-                        await UnsubscribeService.shared.unsubscribe(url: url, oneClick: oneClick)
-                        isUnsubscribing = false
-                    }
-                } label: {
+                if alreadyUnsubscribed {
                     HStack(spacing: 4) {
-                        if isUnsubscribing {
-                            ProgressView().scaleEffect(0.6).frame(width: 12, height: 12)
-                        }
-                        Text("Unsubscribe")
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("Unsubscribed")
                             .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundColor(.orange)
+                    .foregroundColor(theme.textTertiary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.orange.opacity(0.1))
+                    .background(theme.hoverBackground)
                     .cornerRadius(6)
+                } else {
+                    Button {
+                        isUnsubscribing = true
+                        Task {
+                            let msgID = email.gmailMessageID
+                            let success = await UnsubscribeService.shared.unsubscribe(
+                                url: url, oneClick: oneClick, messageID: msgID
+                            )
+                            isUnsubscribing = false
+                            if success { didUnsubscribe = true }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            if isUnsubscribing {
+                                ProgressView().scaleEffect(0.6).frame(width: 12, height: 12)
+                            }
+                            Text("Unsubscribe")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isUnsubscribing)
+                    .help(oneClick ? "One-click unsubscribe" : "Open unsubscribe page")
                 }
-                .buttonStyle(.plain)
-                .disabled(isUnsubscribing)
-                .help(oneClick ? "One-click unsubscribe" : "Open unsubscribe page")
 
                 Divider().frame(height: 16)
             }

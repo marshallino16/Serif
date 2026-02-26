@@ -7,23 +7,46 @@ final class UnsubscribeService {
     static let shared = UnsubscribeService()
     private init() {}
 
+    private let doneKey = "unsubscribedMessageIDs"
+
+    // MARK: - Persisted state
+
+    func isUnsubscribed(messageID: String) -> Bool {
+        let set = UserDefaults.standard.stringArray(forKey: doneKey) ?? []
+        return set.contains(messageID)
+    }
+
+    private func markUnsubscribed(messageID: String) {
+        var set = UserDefaults.standard.stringArray(forKey: doneKey) ?? []
+        guard !set.contains(messageID) else { return }
+        set.append(messageID)
+        UserDefaults.standard.set(set, forKey: doneKey)
+    }
+
     // MARK: - Perform unsubscribe
 
-    func unsubscribe(url: URL, oneClick: Bool) async {
+    /// Returns `true` when we can confirm the unsubscribe succeeded (one-click with 2xx).
+    @discardableResult
+    func unsubscribe(url: URL, oneClick: Bool, messageID: String? = nil) async -> Bool {
         if oneClick && (url.scheme == "https" || url.scheme == "http") {
-            await performOneClickPost(url: url)
+            let success = await performOneClickPost(url: url)
+            if success, let messageID { markUnsubscribed(messageID: messageID) }
+            return success
         } else {
             NSWorkspace.shared.open(url)
+            return false
         }
     }
 
     /// RFC 8058: POST with body "List-Unsubscribe=One-Click"
-    private func performOneClickPost(url: URL) async {
+    private func performOneClickPost(url: URL) async -> Bool {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.httpBody = "List-Unsubscribe=One-Click".data(using: .utf8)
-        _ = try? await URLSession.shared.data(for: request)
+        guard let (_, response) = try? await URLSession.shared.data(for: request),
+              let http = response as? HTTPURLResponse else { return false }
+        return (200...299).contains(http.statusCode)
     }
 
     // MARK: - Body link scanning

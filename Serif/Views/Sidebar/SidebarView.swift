@@ -32,8 +32,8 @@ struct SidebarView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 48)
-                .padding(.bottom, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 16)
             } else {
                 Spacer().frame(height: 52)
             }
