@@ -1,5 +1,49 @@
 import SwiftUI
 
+// MARK: - Mail Cache Store (file-based, per account + folder)
+
+final class MailCacheStore {
+    static let shared = MailCacheStore()
+    private init() {
+        try? FileManager.default.createDirectory(at: baseDir, withIntermediateDirectories: true)
+    }
+
+    private var baseDir: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("com.serif.app/mail-cache", isDirectory: true)
+    }
+
+    private func fileURL(accountID: String, folderKey: String) -> URL {
+        let accountDir = baseDir.appendingPathComponent(accountID, isDirectory: true)
+        try? FileManager.default.createDirectory(at: accountDir, withIntermediateDirectories: true)
+        let safe = folderKey.replacingOccurrences(of: "/", with: "_")
+        return accountDir.appendingPathComponent("\(safe).json")
+    }
+
+    /// Builds a stable cache key from label IDs and optional query.
+    static func folderKey(labelIDs: [String], query: String?) -> String {
+        let base = labelIDs.sorted().joined(separator: "+")
+        if let q = query, !q.isEmpty {
+            return "\(base)_q_\(q.hashValue)"
+        }
+        return base.isEmpty ? "_all" : base
+    }
+
+    func load(accountID: String, folderKey: String) -> [GmailMessage] {
+        let url = fileURL(accountID: accountID, folderKey: folderKey)
+        guard let data = try? Data(contentsOf: url),
+              let messages = try? JSONDecoder().decode([GmailMessage].self, from: data)
+        else { return [] }
+        return messages
+    }
+
+    func save(_ messages: [GmailMessage], accountID: String, folderKey: String) {
+        let url = fileURL(accountID: accountID, folderKey: folderKey)
+        guard let data = try? JSONEncoder().encode(messages) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+}
+
 /// Drives the email list for a given account and folder.
 @MainActor
 final class MailboxViewModel: ObservableObject {
@@ -81,11 +125,19 @@ final class MailboxViewModel: ObservableObject {
 
     func switchAccount(_ id: String) async {
         accountID     = id
-        messages      = []
         nextPageToken = nil
         readIDs       = []
         error         = nil
         messageCache  = [:]
+        // Load disk cache for default folder
+        let folderKey = MailCacheStore.folderKey(labelIDs: currentLabelIDs, query: currentQuery)
+        let cached = MailCacheStore.shared.load(accountID: id, folderKey: folderKey)
+        if !cached.isEmpty {
+            for msg in cached { messageCache[msg.id] = msg }
+            messages = cached
+        } else {
+            messages = []
+        }
     }
 
     // MARK: - Mutations
@@ -243,10 +295,26 @@ final class MailboxViewModel: ObservableObject {
 
     // MARK: - Private fetch
 
+    private var currentFolderKey: String {
+        MailCacheStore.folderKey(labelIDs: currentLabelIDs, query: currentQuery)
+    }
+
     private func fetchMessages(reset: Bool, clearFirst: Bool = false) async {
         guard !accountID.isEmpty else { return }
-        // clearFirst=true only on actual folder/query change → show skeleton
-        if clearFirst { messages = [] }
+        let folderKey = currentFolderKey
+
+        // Pre-populate in-memory cache from disk (avoids re-fetching known messages)
+        if reset {
+            let cached = MailCacheStore.shared.load(accountID: accountID, folderKey: folderKey)
+            if !cached.isEmpty {
+                for msg in cached { messageCache[msg.id] = msg }
+                // Show cached messages instantly on folder change (no skeleton)
+                if clearFirst { messages = cached }
+            } else if clearFirst {
+                messages = []
+            }
+        }
+
         isLoading = true
         error     = nil
         defer { isLoading = false }
@@ -274,7 +342,6 @@ final class MailboxViewModel: ObservableObject {
             let page = refs.compactMap { messageCache[$0.id] }
 
             if reset {
-                // Diff: animate only genuine additions / removals
                 let pageIDs     = Set(page.map(\.id))
                 let existingIDs = Set(messages.map(\.id))
                 let hasChanges  = pageIDs != existingIDs
@@ -284,12 +351,12 @@ final class MailboxViewModel: ObservableObject {
                         messages = page
                     }
                 } else {
-                    // Same set of messages — refresh metadata silently (read status, labels…)
                     messages = page
                 }
                 SubscriptionsStore.shared.analyze(page.map { makeEmail(from: $0) })
+                // Persist to disk
+                MailCacheStore.shared.save(page, accountID: accountID, folderKey: folderKey)
             } else {
-                // Load more: append only new messages at the bottom
                 let existingIDs = Set(messages.map(\.id))
                 let newOnes = page.filter { !existingIDs.contains($0.id) }
                 if !newOnes.isEmpty {
@@ -298,6 +365,8 @@ final class MailboxViewModel: ObservableObject {
                     }
                     SubscriptionsStore.shared.analyze(newOnes.map { makeEmail(from: $0) })
                 }
+                // Persist full list to disk
+                MailCacheStore.shared.save(messages, accountID: accountID, folderKey: folderKey)
             }
         } catch {
             self.error = error.localizedDescription
