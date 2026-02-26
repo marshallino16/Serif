@@ -70,26 +70,101 @@ struct HTMLEmailView: NSViewRepresentable {
         }
         </style>
         <script>
+        // ── Dark-mode readability fix ────────────────────────────────────────
+        // Walks common text elements, computes WCAG contrast ratio against the
+        // dark background, and lightens only colours that fall below the threshold
+        // while preserving hue and saturation as much as possible.
+        function fixDarkModeColors() {
+            if (!window.matchMedia('(prefers-color-scheme: dark)').matches) return;
+
+            var BG_LUM = 0.015; // approximate dark-theme background luminance (~#1c1c1e)
+            var MIN_CR = 4.0;   // WCAG AA large-text threshold (good balance vs aggression)
+
+            function linearize(c) {
+                c /= 255;
+                return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+            }
+            function relativeLum(r, g, b) {
+                return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+            }
+            function contrastWith(lum) {
+                var hi = Math.max(lum, BG_LUM), lo = Math.min(lum, BG_LUM);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            function parseRgb(s) {
+                var i = s.indexOf('(');
+                if (i < 0) return null;
+                var parts = s.slice(i + 1).split(',');
+                return parts.length >= 3 ? [parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])] : null;
+            }
+            function hue2rgb(p, q, t) {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 0.5) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            }
+            // Raise lightness (HSL) just enough to reach MIN_CR, keeps hue+sat intact
+            function lightenToContrast(r, g, b) {
+                r /= 255; g /= 255; b /= 255;
+                var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+                var h = 0, s = 0, l = (mx + mn) / 2;
+                if (mx !== mn) {
+                    var d = mx - mn;
+                    s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+                    if      (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+                    else if (mx === g) h = (b - r) / d + 2;
+                    else               h = (r - g) / d + 4;
+                    h /= 6;
+                }
+                for (var tl = Math.max(l + 0.1, 0.55); tl <= 1.0; tl += 0.04) {
+                    var q2 = tl < 0.5 ? tl * (1 + s) : tl + s - tl * s;
+                    var p2 = 2 * tl - q2;
+                    var nr = Math.round(hue2rgb(p2, q2, h + 1/3) * 255);
+                    var ng = Math.round(hue2rgb(p2, q2, h)       * 255);
+                    var nb = Math.round(hue2rgb(p2, q2, h - 1/3) * 255);
+                    if (contrastWith(relativeLum(nr, ng, nb)) >= MIN_CR)
+                        return 'rgb(' + nr + ',' + ng + ',' + nb + ')';
+                }
+                return 'rgb(232,234,237)'; // safe fallback
+            }
+
+            function processEl(el) {
+                var c = window.getComputedStyle(el).color;
+                var rgb = parseRgb(c);
+                if (!rgb) return;
+                if (contrastWith(relativeLum(rgb[0], rgb[1], rgb[2])) >= MIN_CR) return;
+                el.style.setProperty('color', lightenToContrast(rgb[0], rgb[1], rgb[2]), 'important');
+            }
+
+            document.querySelectorAll(
+                'body,p,div,span,td,th,li,a,font,b,strong,em,i,h1,h2,h3,h4,h5,h6,small,label,cite,blockquote'
+            ).forEach(processEl);
+        }
+
+        // ── Image monitoring + trigger colour fix on load ────────────────────
         window.addEventListener('load', function() {
+            fixDarkModeColors();
+
             var imgs = document.querySelectorAll('img');
-            var loaded = 0, failed = 0;
             imgs.forEach(function(img) {
                 window.webkit.messageHandlers.imageLog.postMessage(
                     'img src=' + img.src.substring(0,80) + ' complete=' + img.complete + ' naturalW=' + img.naturalWidth
                 );
                 if (!img.complete) {
                     img.addEventListener('load', function() {
-                        loaded++;
                         window.webkit.messageHandlers.imageLog.postMessage('LOADED: ' + this.src.substring(0,80));
                         window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
                     });
                     img.addEventListener('error', function() {
-                        failed++;
                         window.webkit.messageHandlers.imageLog.postMessage('FAILED: ' + this.src.substring(0,80));
                     });
                 }
             });
-            window.webkit.messageHandlers.imageLog.postMessage('Total imgs: ' + imgs.length + ', already complete: ' + Array.from(imgs).filter(i=>i.complete).length);
+            window.webkit.messageHandlers.imageLog.postMessage(
+                'Total imgs: ' + imgs.length + ', already complete: ' + Array.from(imgs).filter(function(i){return i.complete;}).length
+            );
         });
         </script>
         </head>
