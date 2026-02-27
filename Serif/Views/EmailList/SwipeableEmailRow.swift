@@ -174,18 +174,13 @@ final class SwipeRowState: ObservableObject {
         withAnimation(.easeIn(duration: 0.22)) {
             dragOffset = right ? 500 : -500
         }
-        let label  = right ? "Archived" : "Moved to Trash"
         let action = right ? onArchive : onDelete
 
         Task { [weak self] in
             guard let self else { return }
             try? await Task.sleep(nanoseconds: 220_000_000)
             withAnimation(.easeOut(duration: 0.18)) { self.isCollapsed = true }
-            UndoActionManager.shared.schedule(
-                label: label,
-                onConfirm: { action?() },
-                onUndo: { [weak self] in self?.undoDismiss() }
-            )
+            action?()
         }
     }
 

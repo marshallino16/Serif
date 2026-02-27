@@ -12,11 +12,11 @@ final class ThemeManager: ObservableObject {
         .nord,
         .rose,
         .xcodeDark,
-        .monokai,
+        .emerald,
         .solarizedDark,
         .dracula,
         .oneDark,
-        .slackAubergine,
+        .sunset,
         .light,
     ]
 
@@ -90,7 +90,7 @@ final class ThemeManager: ObservableObject {
     }
 
     private static func theme(byId id: String) -> Theme {
-        let all: [Theme] = [.midnight, .ocean, .charcoal, .nord, .rose, .xcodeDark, .monokai, .solarizedDark, .dracula, .oneDark, .slackAubergine, .light]
+        let all: [Theme] = [.midnight, .ocean, .charcoal, .nord, .rose, .xcodeDark, .emerald, .solarizedDark, .dracula, .oneDark, .sunset, .light]
         return all.first { $0.id == id } ?? .midnight
     }
 }

@@ -181,34 +181,34 @@ extension Theme {
         tagBackground: Color(hex: "#3F4450")
     )
 
-    // MARK: - Monokai
-    static let monokai = Theme(
-        id: "monokai",
-        name: "Monokai",
-        icon: "paintbrush.fill",
-        sidebarBackground: Color(hex: "#1E1F1C"),
-        listBackground: Color(hex: "#272822"),
-        detailBackground: Color(hex: "#272822"),
-        cardBackground: Color(hex: "#3E3D32"),
-        selectedCardBackground: Color(hex: "#49483E"),
-        hoverBackground: Color(hex: "#3E3D32"),
-        searchBarBackground: Color(hex: "#3E3D32"),
-        accentPrimary: Color(hex: "#A6E22E"),
-        accentSecondary: Color(hex: "#66D9EF"),
-        textPrimary: Color(hex: "#F8F8F2"),
-        textSecondary: Color(hex: "#A6A18A"),
-        textTertiary: Color(hex: "#75715E"),
-        textInverse: Color(hex: "#272822"),
-        border: Color(hex: "#49483E"),
-        divider: Color(hex: "#3E3D32"),
-        unreadIndicator: Color(hex: "#F92672"),
-        attachmentBackground: Color(hex: "#3E3D32"),
-        avatarRing: Color(hex: "#A6E22E"),
-        destructive: Color(hex: "#F92672"),
-        buttonPrimary: Color(hex: "#A6E22E"),
-        buttonSecondary: Color(hex: "#49483E"),
-        inputBackground: Color(hex: "#272822"),
-        tagBackground: Color(hex: "#49483E")
+    // MARK: - Emerald
+    static let emerald = Theme(
+        id: "emerald",
+        name: "Emerald",
+        icon: "leaf.fill",
+        sidebarBackground: Color(hex: "#0B1A14"),
+        listBackground: Color(hex: "#0F211A"),
+        detailBackground: Color(hex: "#132920"),
+        cardBackground: Color(hex: "#1A3428"),
+        selectedCardBackground: Color(hex: "#224032"),
+        hoverBackground: Color(hex: "#1A3428"),
+        searchBarBackground: Color(hex: "#1A3428"),
+        accentPrimary: Color(hex: "#34D399"),
+        accentSecondary: Color(hex: "#6EE7B7"),
+        textPrimary: Color(hex: "#ECFDF5"),
+        textSecondary: Color(hex: "#86AF98"),
+        textTertiary: Color(hex: "#4A7A64"),
+        textInverse: Color(hex: "#0B1A14"),
+        border: Color(hex: "#224032"),
+        divider: Color(hex: "#1A3428"),
+        unreadIndicator: Color(hex: "#34D399"),
+        attachmentBackground: Color(hex: "#1A3428"),
+        avatarRing: Color(hex: "#34D399"),
+        destructive: Color(hex: "#F87171"),
+        buttonPrimary: Color(hex: "#10B981"),
+        buttonSecondary: Color(hex: "#224032"),
+        inputBackground: Color(hex: "#0F211A"),
+        tagBackground: Color(hex: "#224032")
     )
 
     // MARK: - Solarized Dark
@@ -301,34 +301,34 @@ extension Theme {
         tagBackground: Color(hex: "#3E4451")
     )
 
-    // MARK: - Slack Aubergine
-    static let slackAubergine = Theme(
-        id: "slack-aubergine",
-        name: "Aubergine",
-        icon: "number",
-        sidebarBackground: Color(hex: "#3F0E40"),
-        listBackground: Color(hex: "#1A1D21"),
-        detailBackground: Color(hex: "#1A1D21"),
-        cardBackground: Color(hex: "#222529"),
-        selectedCardBackground: Color(hex: "#1264A3"),
-        hoverBackground: Color(hex: "#222529"),
-        searchBarBackground: Color(hex: "#222529"),
-        accentPrimary: Color(hex: "#1264A3"),
-        accentSecondary: Color(hex: "#2BAC76"),
-        textPrimary: Color(hex: "#D1D2D3"),
-        textSecondary: Color(hex: "#9B9D9F"),
-        textTertiary: Color(hex: "#616163"),
-        textInverse: Color(hex: "#FFFFFF"),
-        border: Color(hex: "#35373B"),
-        divider: Color(hex: "#2C2D30"),
-        unreadIndicator: Color(hex: "#1264A3"),
-        attachmentBackground: Color(hex: "#222529"),
-        avatarRing: Color(hex: "#1264A3"),
-        destructive: Color(hex: "#E01E5A"),
-        buttonPrimary: Color(hex: "#007A5A"),
-        buttonSecondary: Color(hex: "#35373B"),
-        inputBackground: Color(hex: "#222529"),
-        tagBackground: Color(hex: "#35373B")
+    // MARK: - Sunset
+    static let sunset = Theme(
+        id: "sunset",
+        name: "Sunset",
+        icon: "sunset.fill",
+        sidebarBackground: Color(hex: "#1A0F0A"),
+        listBackground: Color(hex: "#211510"),
+        detailBackground: Color(hex: "#2A1A14"),
+        cardBackground: Color(hex: "#35221A"),
+        selectedCardBackground: Color(hex: "#422C22"),
+        hoverBackground: Color(hex: "#35221A"),
+        searchBarBackground: Color(hex: "#35221A"),
+        accentPrimary: Color(hex: "#FB923C"),
+        accentSecondary: Color(hex: "#F472B6"),
+        textPrimary: Color(hex: "#FFF7ED"),
+        textSecondary: Color(hex: "#B89A82"),
+        textTertiary: Color(hex: "#7A5F4A"),
+        textInverse: Color(hex: "#1A0F0A"),
+        border: Color(hex: "#422C22"),
+        divider: Color(hex: "#35221A"),
+        unreadIndicator: Color(hex: "#FB923C"),
+        attachmentBackground: Color(hex: "#35221A"),
+        avatarRing: Color(hex: "#FB923C"),
+        destructive: Color(hex: "#EF4444"),
+        buttonPrimary: Color(hex: "#F97316"),
+        buttonSecondary: Color(hex: "#422C22"),
+        inputBackground: Color(hex: "#211510"),
+        tagBackground: Color(hex: "#422C22")
     )
 
     // MARK: - Light
