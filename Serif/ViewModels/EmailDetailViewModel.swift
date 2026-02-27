@@ -8,6 +8,17 @@ final class EmailDetailViewModel: ObservableObject {
     @Published var error:           String?
     @Published var rawSource:       String?
     @Published var isLoadingRaw     = false
+    @Published var trackerResult:   TrackerResult?
+    @Published var allowTrackers    = false
+
+    /// HTML to render: sanitized (trackers stripped) or original when user allows.
+    var displayHTML: String? {
+        guard let result = trackerResult else { return nil }
+        return allowTrackers ? result.originalHTML : result.sanitizedHTML
+    }
+
+    var blockedTrackerCount: Int { trackerResult?.trackerCount ?? 0 }
+    var hasBlockedTrackers: Bool { !allowTrackers && (trackerResult?.hasTrackers ?? false) }
 
     let accountID: String
 
@@ -20,17 +31,20 @@ final class EmailDetailViewModel: ObservableObject {
     func loadThread(id: String) async {
         isLoading = true
         error     = nil
+        allowTrackers = false
         defer { isLoading = false }
 
         // Load from disk cache first (instant + offline)
         if let cached = MailCacheStore.shared.loadThread(accountID: accountID, threadID: id) {
             thread = cached
+            analyzeTrackers()
         }
 
         // Refresh from API
         do {
             let fresh = try await GmailMessageService.shared.getThread(id: id, accountID: accountID)
             thread = fresh
+            analyzeTrackers()
             MailCacheStore.shared.saveThread(fresh, accountID: accountID)
             // Mark all unread messages in the thread as read
             for message in fresh.messages ?? [] where message.isUnread {
@@ -40,6 +54,20 @@ final class EmailDetailViewModel: ObservableObject {
             // Keep cached thread if API fails (offline mode)
             if thread == nil { self.error = error.localizedDescription }
         }
+    }
+
+    func allowBlockedContent() {
+        allowTrackers = true
+    }
+
+    // MARK: - Tracker analysis
+
+    private func analyzeTrackers() {
+        guard let html = latestMessage?.htmlBody, !html.isEmpty else {
+            trackerResult = nil
+            return
+        }
+        trackerResult = TrackerBlockerService.shared.sanitize(html: html)
     }
 
     // MARK: - Attachments

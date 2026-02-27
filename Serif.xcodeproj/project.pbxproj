@@ -27,6 +27,8 @@
 		A10001010000000000000011 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000011 /* ComposeView.swift */; };
 		A10001010000000000000090 /* AutocompleteTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000090 /* AutocompleteTextField.swift */; };
 		A10001010000000000000091 /* MailCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000091 /* MailCacheStore.swift */; };
+		A10001010000000000000092 /* TrackerBlockerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000092 /* TrackerBlockerService.swift */; };
+		A10001010000000000000093 /* TrackerBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000093 /* TrackerBannerView.swift */; };
 		A10001010000000000000040 /* AttachmentsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000040 /* AttachmentsListView.swift */; };
 		A10001010000000000000050 /* RichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000050 /* RichTextEditor.swift */; };
 		A10001010000000000000051 /* FormattingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000051 /* FormattingToolbar.swift */; };
@@ -93,6 +95,8 @@
 		A10002010000000000000011 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
 		A10002010000000000000090 /* AutocompleteTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutocompleteTextField.swift; sourceTree = "<group>"; };
 		A10002010000000000000091 /* MailCacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailCacheStore.swift; sourceTree = "<group>"; };
+		A10002010000000000000092 /* TrackerBlockerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerBlockerService.swift; sourceTree = "<group>"; };
+		A10002010000000000000093 /* TrackerBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerBannerView.swift; sourceTree = "<group>"; };
 		A10002010000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10002010000000000000013 /* Serif.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Serif.entitlements; sourceTree = "<group>"; };
 		A10002010000000000000099 /* Serif.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Serif.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -246,6 +250,7 @@
 				A10002010000000000000085 /* AttachmentPreviewView.swift */,
 				A1000201000000000000008E /* OriginalMessageView.swift */,
 				A1000201000000000000000D /* ReplyBarView.swift */,
+				A10002010000000000000093 /* TrackerBannerView.swift */,
 			);
 			path = EmailDetail;
 			sourceTree = "<group>";
@@ -332,6 +337,7 @@
 				A1000201000000000000008D /* SubscriptionsStore.swift */,
 				A1000201000000000000008F /* EmailPrintService.swift */,
 				A10002010000000000000091 /* MailCacheStore.swift */,
+				A10002010000000000000092 /* TrackerBlockerService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -511,6 +517,8 @@
 				A1000101000000000000008E /* OriginalMessageView.swift in Sources */,
 				A1000101000000000000008F /* EmailPrintService.swift in Sources */,
 				A10001010000000000000091 /* MailCacheStore.swift in Sources */,
+				A10001010000000000000092 /* TrackerBlockerService.swift in Sources */,
+				A10001010000000000000093 /* TrackerBannerView.swift in Sources */,
 				A1000101000000000000008B /* UndoToastView.swift in Sources */,
 			A10001010000000000000086 /* GmailDataTransformer.swift in Sources */,
 				A10001010000000000000087 /* DateFormatting.swift in Sources */,

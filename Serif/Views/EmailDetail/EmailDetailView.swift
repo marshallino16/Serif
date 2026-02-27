@@ -144,7 +144,16 @@ struct EmailDetailView: View {
                                 .padding(.bottom, 20)
                                 .zIndex(1)
 
-                            let rawHTML = detailVM.latestMessage?.htmlBody ?? ""
+                            if detailVM.hasBlockedTrackers {
+                                TrackerBannerView(
+                                    trackerCount: detailVM.blockedTrackerCount,
+                                    onAllow: { detailVM.allowBlockedContent() }
+                                )
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 12)
+                            }
+
+                            let rawHTML = detailVM.displayHTML ?? detailVM.latestMessage?.htmlBody ?? ""
                             let htmlToRender = rawHTML.isEmpty
                                 ? "<p>\(detailVM.latestMessage?.plainBody ?? email.body)</p>"
                                 : rawHTML
