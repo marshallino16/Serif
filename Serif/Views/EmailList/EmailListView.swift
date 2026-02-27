@@ -49,10 +49,10 @@ struct EmailListView: View {
                             } label: {
                                 Text("Unsubscribe All (\(unsubscribable.count))")
                                     .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(theme.destructive)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)
-                                    .background(Color.orange.opacity(0.1))
+                                    .background(theme.destructive.opacity(0.1))
                                     .cornerRadius(6)
                             }
                             .buttonStyle(.plain)

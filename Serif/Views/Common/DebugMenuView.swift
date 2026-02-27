@@ -114,7 +114,7 @@ struct DebugMenuView: View {
 
                     Text(entry.statusLabel)
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        .foregroundColor(entry.statusColor)
+                        .foregroundColor(statusColor(for: entry.statusLevel))
                         .frame(width: 40, alignment: .trailing)
 
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
@@ -262,6 +262,15 @@ struct DebugMenuView: View {
                 .textCase(.uppercase)
                 .tracking(0.5)
             content()
+        }
+    }
+
+    private func statusColor(for level: APILogEntry.StatusLevel) -> Color {
+        switch level {
+        case .success: return theme.accentSecondary
+        case .cached:  return theme.textTertiary
+        case .warning: return theme.unreadIndicator
+        case .error:   return theme.destructive
         }
     }
 

@@ -624,6 +624,18 @@ struct ContentView: View {
                             }
                         } catch { }
                     }
+                },
+                onUnsubscribe: { url, oneClick, msgID in
+                    await UnsubscribeService.shared.unsubscribe(url: url, oneClick: oneClick, messageID: msgID)
+                },
+                onPrint: { msg, email in
+                    EmailPrintService.shared.printEmail(message: msg, email: email)
+                },
+                checkUnsubscribed: { msgID in
+                    UnsubscribeService.shared.isUnsubscribed(messageID: msgID)
+                },
+                extractBodyUnsubscribeURL: { html in
+                    UnsubscribeService.extractBodyUnsubscribeURL(from: html)
                 }
             )
             .id(email.id)

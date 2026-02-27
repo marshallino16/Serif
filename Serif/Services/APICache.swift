@@ -1,6 +1,6 @@
 #if DEBUG
 import Foundation
-import SwiftUI
+import Combine
 
 // MARK: - API Log Entry
 
@@ -52,14 +52,14 @@ struct APILogEntry: Identifiable {
         String(path.split(separator: "?").first ?? Substring(path))
     }
 
-    var statusColor: Color {
-        guard let code = statusCode else { return .red }
+    enum StatusLevel { case success, cached, warning, error }
+
+    var statusLevel: StatusLevel {
+        guard let code = statusCode else { return .error }
         switch code {
-        case 200...299: return fromCache ? Color.gray : Color.green
-        case 429:       return .orange
-        case 400...499: return .red
-        case 500...599: return .red
-        default:        return .yellow
+        case 200...299: return fromCache ? .cached : .success
+        case 429:       return .warning
+        default:        return .error
         }
     }
 

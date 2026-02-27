@@ -18,6 +18,10 @@ struct EmailDetailView: View {
     var onPreviewAttachment: ((Data, String, Attachment.FileType) -> Void)?
     var onShowOriginal: ((EmailDetailViewModel) -> Void)?
     var onDownloadMessage: ((EmailDetailViewModel) -> Void)?
+    var onUnsubscribe: ((URL, Bool, String?) async -> Bool)?
+    var onPrint: ((GmailMessage, Email) -> Void)?
+    var checkUnsubscribed: ((String) -> Bool)?
+    var extractBodyUnsubscribeURL: ((String) -> URL?)?
 
     @StateObject private var detailVM: EmailDetailViewModel
     @State private var labelSearchText = ""
@@ -32,9 +36,8 @@ struct EmailDetailView: View {
     /// Best available unsubscribe URL: header-based (from full thread) or body-scanned.
     private var resolvedUnsubscribeURL: URL? {
         if let url = detailVM.latestMessage?.unsubscribeURL { return url }
-        if let html = detailVM.latestMessage?.htmlBody ?? detailVM.latestMessage?.plainBody {
-            return UnsubscribeService.extractBodyUnsubscribeURL(from: html)
-        }
+        if let html = detailVM.latestMessage?.htmlBody ?? detailVM.latestMessage?.plainBody,
+           let url = extractBodyUnsubscribeURL?(html) { return url }
         return email.unsubscribeURL
     }
 
@@ -49,7 +52,7 @@ struct EmailDetailView: View {
     private var alreadyUnsubscribed: Bool {
         if didUnsubscribe { return true }
         guard let msgID = email.gmailMessageID else { return false }
-        return UnsubscribeService.shared.isUnsubscribed(messageID: msgID)
+        return checkUnsubscribed?(msgID) ?? false
     }
 
     init(
@@ -68,7 +71,11 @@ struct EmailDetailView: View {
         onCreateAndAddLabel:   ((String, @escaping (String?) -> Void) -> Void)? = nil,
         onPreviewAttachment:   ((Data, String, Attachment.FileType) -> Void)? = nil,
         onShowOriginal:        ((EmailDetailViewModel) -> Void)? = nil,
-        onDownloadMessage:     ((EmailDetailViewModel) -> Void)? = nil
+        onDownloadMessage:     ((EmailDetailViewModel) -> Void)? = nil,
+        onUnsubscribe:         ((URL, Bool, String?) async -> Bool)? = nil,
+        onPrint:               ((GmailMessage, Email) -> Void)? = nil,
+        checkUnsubscribed:     ((String) -> Bool)? = nil,
+        extractBodyUnsubscribeURL: ((String) -> URL?)? = nil
     ) {
         self.email        = email
         self.accountID    = accountID
@@ -86,6 +93,10 @@ struct EmailDetailView: View {
         self.onPreviewAttachment   = onPreviewAttachment
         self.onShowOriginal        = onShowOriginal
         self.onDownloadMessage     = onDownloadMessage
+        self.onUnsubscribe         = onUnsubscribe
+        self.onPrint               = onPrint
+        self.checkUnsubscribed     = checkUnsubscribed
+        self.extractBodyUnsubscribeURL = extractBodyUnsubscribeURL
         self._detailVM             = StateObject(wrappedValue: EmailDetailViewModel(accountID: accountID))
     }
 
@@ -442,9 +453,7 @@ struct EmailDetailView: View {
                         isUnsubscribing = true
                         Task {
                             let msgID = email.gmailMessageID
-                            let success = await UnsubscribeService.shared.unsubscribe(
-                                url: url, oneClick: oneClick, messageID: msgID
-                            )
+                            let success = await onUnsubscribe?(url, oneClick, msgID) ?? false
                             isUnsubscribing = false
                             if success { didUnsubscribe = true }
                         }
@@ -456,10 +465,10 @@ struct EmailDetailView: View {
                             Text("Unsubscribe")
                                 .font(.system(size: 12, weight: .medium))
                         }
-                        .foregroundColor(.orange)
+                        .foregroundColor(theme.destructive)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(Color.orange.opacity(0.1))
+                        .background(theme.destructive.opacity(0.1))
                         .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
@@ -497,7 +506,7 @@ struct EmailDetailView: View {
                 Section {
                     Button {
                         if let msg = detailVM.latestMessage {
-                            EmailPrintService.shared.printEmail(message: msg, email: email)
+                            onPrint?(msg, email)
                         }
                     } label: { Label("Print", systemImage: "printer") }
                     Button { onDownloadMessage?(detailVM) } label: { Label("Download Message", systemImage: "arrow.down.circle") }

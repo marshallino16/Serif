@@ -11,6 +11,7 @@ struct SwipeableEmailRow: View {
     let onDelete: (() -> Void)?
 
     @StateObject private var state = SwipeRowState()
+    @Environment(\.theme) private var theme
 
     var body: some View {
         ZStack {
@@ -35,7 +36,7 @@ struct SwipeableEmailRow: View {
     }
 
     private var archiveBg: some View {
-        Color(hex: "#00B894")
+        theme.accentSecondary
             .overlay(
                 HStack(spacing: 6) {
                     Image(systemName: "archivebox.fill")
@@ -44,13 +45,13 @@ struct SwipeableEmailRow: View {
                         .font(.system(size: 12, weight: .semibold))
                     Spacer()
                 }
-                .foregroundColor(.white)
+                .foregroundColor(theme.textInverse)
                 .padding(.leading, 20)
             )
     }
 
     private var deleteBg: some View {
-        Color(hex: "#F85149")
+        theme.destructive
             .overlay(
                 HStack(spacing: 6) {
                     Spacer()
@@ -59,7 +60,7 @@ struct SwipeableEmailRow: View {
                     Image(systemName: "trash.fill")
                         .font(.system(size: 14, weight: .semibold))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(theme.textInverse)
                 .padding(.trailing, 20)
             )
     }

@@ -72,7 +72,7 @@ struct EmailRowView: View {
                     if email.isStarred {
                         Image(systemName: "star.fill")
                             .font(.system(size: 10))
-                            .foregroundColor(Color(hex: "#FDCB6E"))
+                            .foregroundColor(theme.avatarRing)
                     }
                     if email.hasAttachments {
                         Image(systemName: "paperclip")

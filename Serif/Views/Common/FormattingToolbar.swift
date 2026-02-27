@@ -241,6 +241,7 @@ struct ColorGridPopover: View {
     @Binding var showPopover: Bool
     let colorGrid: [[NSColor]]
     @State private var customColor: Color = .white
+    @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 12) {
@@ -259,7 +260,7 @@ struct ColorGridPopover: View {
                                     .frame(width: 22, height: 22)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 3)
-                                            .stroke(isSelected(color) ? Color.white : Color.white.opacity(0.15), lineWidth: isSelected(color) ? 2 : 1)
+                                            .stroke(isSelected(color) ? theme.textInverse : theme.textInverse.opacity(0.15), lineWidth: isSelected(color) ? 2 : 1)
                                     )
                             }
                             .buttonStyle(.plain)
