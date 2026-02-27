@@ -42,6 +42,45 @@ final class MailCacheStore {
         guard let data = try? JSONEncoder().encode(messages) else { return }
         try? data.write(to: url, options: .atomic)
     }
+
+    // MARK: - Labels cache
+
+    func loadLabels(accountID: String) -> [GmailLabel] {
+        let url = fileURL(accountID: accountID, folderKey: "_labels")
+        guard let data = try? Data(contentsOf: url),
+              let labels = try? JSONDecoder().decode([GmailLabel].self, from: data)
+        else { return [] }
+        return labels
+    }
+
+    func saveLabels(_ labels: [GmailLabel], accountID: String) {
+        let url = fileURL(accountID: accountID, folderKey: "_labels")
+        guard let data = try? JSONEncoder().encode(labels) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+
+    // MARK: - Thread cache (full format, for offline HTML)
+
+    private func threadURL(accountID: String, threadID: String) -> URL {
+        let dir = baseDir.appendingPathComponent(accountID, isDirectory: true)
+            .appendingPathComponent("threads", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("\(threadID).json")
+    }
+
+    func loadThread(accountID: String, threadID: String) -> GmailThread? {
+        let url = threadURL(accountID: accountID, threadID: threadID)
+        guard let data = try? Data(contentsOf: url),
+              let thread = try? JSONDecoder().decode(GmailThread.self, from: data)
+        else { return nil }
+        return thread
+    }
+
+    func saveThread(_ thread: GmailThread, accountID: String) {
+        let url = threadURL(accountID: accountID, threadID: thread.id)
+        guard let data = try? JSONEncoder().encode(thread) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
 }
 
 /// Drives the email list for a given account and folder.
@@ -94,8 +133,20 @@ final class MailboxViewModel: ObservableObject {
     }
 
     func loadLabels() async {
-        do { labels = try await GmailLabelService.shared.listLabels(accountID: accountID) }
-        catch { self.error = error.localizedDescription }
+        // Load from disk cache first
+        let cached = MailCacheStore.shared.loadLabels(accountID: accountID)
+        if !cached.isEmpty && labels.isEmpty {
+            labels = cached
+        }
+        // Refresh from API
+        do {
+            let fresh = try await GmailLabelService.shared.listLabels(accountID: accountID)
+            labels = fresh
+            MailCacheStore.shared.saveLabels(fresh, accountID: accountID)
+        } catch {
+            // Keep cached labels if API fails
+            if labels.isEmpty { self.error = error.localizedDescription }
+        }
     }
 
     func loadSendAs() async {

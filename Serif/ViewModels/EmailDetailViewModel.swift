@@ -21,14 +21,24 @@ final class EmailDetailViewModel: ObservableObject {
         isLoading = true
         error     = nil
         defer { isLoading = false }
+
+        // Load from disk cache first (instant + offline)
+        if let cached = MailCacheStore.shared.loadThread(accountID: accountID, threadID: id) {
+            thread = cached
+        }
+
+        // Refresh from API
         do {
-            thread = try await GmailMessageService.shared.getThread(id: id, accountID: accountID)
+            let fresh = try await GmailMessageService.shared.getThread(id: id, accountID: accountID)
+            thread = fresh
+            MailCacheStore.shared.saveThread(fresh, accountID: accountID)
             // Mark all unread messages in the thread as read
-            for message in thread?.messages ?? [] where message.isUnread {
+            for message in fresh.messages ?? [] where message.isUnread {
                 try? await GmailMessageService.shared.markAsRead(id: message.id, accountID: accountID)
             }
         } catch {
-            self.error = error.localizedDescription
+            // Keep cached thread if API fails (offline mode)
+            if thread == nil { self.error = error.localizedDescription }
         }
     }
 
