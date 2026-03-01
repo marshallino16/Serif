@@ -517,7 +517,7 @@ struct ContentView: View {
         if !isPanelOpen {
             ToolbarItem(placement: .primaryAction) {
                 Button { composeNewEmail() } label: {
-                    Image(systemName: "square.and.pencil").foregroundColor(themeManager.currentTheme.accentPrimary)
+                    Image(systemName: "square.and.pencil").foregroundColor(themeManager.currentTheme.textPrimary)
                 }
                 .keyboardShortcut("n", modifiers: .command)
                 .help("Compose (⌘N)")

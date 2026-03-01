@@ -29,9 +29,10 @@ struct SidebarView: View {
             // Logo
             if isExpanded {
                 HStack {
-                    Text("Serif")
-                        .font(.custom("PPLocomotiveNew-Light", size: 20))
-                        .foregroundColor(theme.textPrimary)
+                    Image("SerifLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 22)
                     Spacer()
                 }
                 .padding(.horizontal, 16)
