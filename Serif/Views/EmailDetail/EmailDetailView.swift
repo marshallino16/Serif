@@ -610,7 +610,7 @@ struct EmailDetailView: View {
 
             Spacer()
 
-            Text(email.date.formattedRelative)
+            Text(email.date.formattedFull)
                 .font(.system(size: 12))
                 .foregroundColor(theme.textTertiary)
         }
