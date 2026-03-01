@@ -30,6 +30,12 @@ struct SwipeableEmailRow: View {
         .onAppear {
             state.onArchive = onArchive
             state.onDelete  = onDelete
+            // Reset dismissed/collapsed state in case this row was restored via undo.
+            // SwiftUI may reuse the @StateObject for the same ForEach identity,
+            // so the old collapsed state would persist without this reset.
+            if state.isCollapsed || state.dragOffset != 0 {
+                state.undoDismiss()
+            }
             state.attach()
         }
         .onDisappear { state.detach() }

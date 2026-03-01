@@ -2,13 +2,77 @@ import Foundation
 
 final class MailStore: ObservableObject {
     @Published var emails: [Email]
+    @Published var gmailDrafts: [Email] = []
+    @Published var isLoadingGmailDrafts = false
 
     init(emails: [Email] = []) {
         self.emails = emails
     }
 
     func emails(for folder: Folder) -> [Email] {
-        emails.filter { $0.folder == folder }
+        if folder == .drafts {
+            // Merge local drafts (newest first) + Gmail drafts, sorted by date
+            let localDrafts = emails.filter { $0.folder == .drafts }
+            return (localDrafts + gmailDrafts).sorted { $0.date > $1.date }
+        }
+        return emails.filter { $0.folder == folder }
+    }
+
+    // MARK: - Gmail Drafts Sync
+
+    func syncGmailDrafts(accountID: String) async {
+        guard !accountID.isEmpty else { return }
+        await MainActor.run { isLoadingGmailDrafts = true }
+        defer { Task { @MainActor in isLoadingGmailDrafts = false } }
+        do {
+            let listResponse = try await GmailDraftService.shared.listDrafts(accountID: accountID)
+            let draftRefs = listResponse.drafts ?? []
+            guard !draftRefs.isEmpty else {
+                await MainActor.run { gmailDrafts = [] }
+                return
+            }
+            let draftIDs = draftRefs.map(\.id)
+            let fetched = try await GmailDraftService.shared.getDrafts(
+                ids: draftIDs, accountID: accountID, format: "full"
+            )
+            let emails = fetched.compactMap { draft -> Email? in
+                guard let message = draft.message else { return nil }
+                return Self.makeEmailFromGmailDraft(draft: draft, message: message)
+            }
+            await MainActor.run { gmailDrafts = emails }
+        } catch {
+            // Silently fail — keep existing cached drafts if any
+            print("[GmailDraftSync] Error: \(error.localizedDescription)")
+        }
+    }
+
+    /// Converts a Gmail draft + message into a read-only Email for display.
+    private static func makeEmailFromGmailDraft(draft: GmailDraft, message: GmailMessage) -> Email {
+        let msgLabelIDs = message.labelIds ?? []
+        return Email(
+            id:             GmailDataTransformer.deterministicUUID(from: draft.id),
+            sender:         GmailDataTransformer.parseContact(message.from),
+            recipients:     GmailDataTransformer.parseContacts(message.to),
+            cc:             GmailDataTransformer.parseContacts(message.cc),
+            subject:        message.subject,
+            body:           message.body,
+            preview:        message.snippet ?? "",
+            date:           message.date ?? Date(),
+            isRead:         true,
+            isStarred:      message.isStarred,
+            hasAttachments: !message.attachmentParts.isEmpty,
+            attachments:    message.attachmentParts.map(GmailDataTransformer.makeAttachment),
+            folder:         .drafts,
+            labels:         [],
+            isDraft:             true,
+            isGmailDraft:        true,
+            gmailDraftID:        draft.id,
+            gmailMessageID:      message.id,
+            gmailThreadID:       message.threadId,
+            gmailLabelIDs:       msgLabelIDs,
+            isFromMailingList:   false,
+            unsubscribeURL:      nil
+        )
     }
 
     // MARK: - Drafts

@@ -16,8 +16,8 @@ struct ReplyBarView: View {
         }
         .background(theme.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(theme.isLight ? 0.08 : 0.18), radius: theme.isLight ? 16 : 24, x: 0, y: theme.isLight ? -4 : -8)
-        .shadow(color: .black.opacity(theme.isLight ? 0.03 : 0.07), radius: theme.isLight ? 3 : 6,  x: 0, y: -1)
+        .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: -2)
+        .shadow(color: .black.opacity(0.03), radius: 2, x: 0, y: -1)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(theme.border, lineWidth: 1)

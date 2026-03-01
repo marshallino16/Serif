@@ -11,8 +11,20 @@ struct ShortcutsHelpView: View {
     private let sections: [(title: String, shortcuts: [Shortcut])] = [
         ("Navigation", [
             Shortcut(keys: "↑ / ↓", description: "Previous / next email"),
-            Shortcut(keys: "⌫", description: "Move to Trash"),
             Shortcut(keys: "⌘N", description: "New email"),
+        ]),
+        ("Actions", [
+            Shortcut(keys: "E", description: "Archive"),
+            Shortcut(keys: "⌫", description: "Move to Trash"),
+            Shortcut(keys: "S", description: "Toggle star"),
+            Shortcut(keys: "U", description: "Mark as unread"),
+            Shortcut(keys: "R", description: "Mark as read"),
+            Shortcut(keys: "⌘Z", description: "Undo last action"),
+        ]),
+        ("Selection", [
+            Shortcut(keys: "⌘A", description: "Select all"),
+            Shortcut(keys: "⌘+Click", description: "Toggle selection"),
+            Shortcut(keys: "⇧+Click", description: "Range select"),
         ]),
         ("Composition", [
             Shortcut(keys: "⌘↵", description: "Send email"),

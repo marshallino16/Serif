@@ -17,6 +17,8 @@ struct Email: Identifiable, Equatable {
     var folder: Folder
     var labels: [EmailLabel]
     var isDraft: Bool
+    var isGmailDraft: Bool
+    var gmailDraftID: String?
     // Gmail API bridge
     var gmailMessageID: String?
     var gmailThreadID: String?
@@ -41,6 +43,8 @@ struct Email: Identifiable, Equatable {
         folder: Folder = .inbox,
         labels: [EmailLabel] = [],
         isDraft: Bool = false,
+        isGmailDraft: Bool = false,
+        gmailDraftID: String? = nil,
         gmailMessageID: String? = nil,
         gmailThreadID: String? = nil,
         gmailLabelIDs: [String] = [],
@@ -62,6 +66,8 @@ struct Email: Identifiable, Equatable {
         self.folder = folder
         self.labels = labels
         self.isDraft = isDraft
+        self.isGmailDraft = isGmailDraft
+        self.gmailDraftID = gmailDraftID
         self.gmailMessageID = gmailMessageID
         self.gmailThreadID = gmailThreadID
         self.gmailLabelIDs = gmailLabelIDs

@@ -44,7 +44,7 @@ struct AccountsSettingsView: View {
         .padding(20)
         .background(theme.cardBackground)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(theme.isLight ? 0.06 : 0), radius: 8, y: 2)
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
     }
 
     private func accountRow(_ account: GmailAccount) -> some View {

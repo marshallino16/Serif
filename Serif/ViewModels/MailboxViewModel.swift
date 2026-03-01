@@ -11,12 +11,18 @@ final class MailboxViewModel: ObservableObject {
     @Published var sendAsAliases:         [GmailSendAs] = []
     @Published var readIDs:               Set<String> = []
     @Published var categoryUnreadCounts:  [InboxCategory: Int] = [:]
+    /// Set by `restoreOptimistically` so the UI can re-select the restored email.
+    @Published var lastRestoredMessageID: String?
 
     var accountID: String
     private var currentLabelIDs: [String] = ["INBOX"]
     private var currentQuery:    String?
     /// In-memory cache of fetched messages (metadata format) keyed by message ID.
     private var messageCache: [String: GmailMessage] = [:]
+    /// Tracks the current fetch task so it can be cancelled when a new one starts.
+    private var activeFetchTask: Task<Void, Never>?
+    /// Monotonically increasing token to discard stale results from races.
+    private var fetchGeneration: UInt64 = 0
 
     init(accountID: String) {
         self.accountID = accountID
@@ -30,23 +36,48 @@ final class MailboxViewModel: ObservableObject {
 
     // MARK: - Load
 
+    /// Cancels any in-flight fetch and starts a new folder load.
     func loadFolder(labelIDs: [String], query: String? = nil) async {
         let isFolderChange = labelIDs != currentLabelIDs || query != currentQuery
         currentLabelIDs = labelIDs
         currentQuery    = query
-        await fetchMessages(reset: true, clearFirst: isFolderChange)
+        cancelActiveFetch()
+        let gen = nextGeneration()
+        activeFetchTask = Task {
+            await fetchMessages(reset: true, clearFirst: isFolderChange, generation: gen)
+        }
+        await activeFetchTask?.value
     }
 
+    /// Cancels any in-flight fetch and starts a new search.
     func search(query: String) async {
         let newQuery = query.isEmpty ? nil : query
         let isNewQuery = newQuery != currentQuery
         currentQuery = newQuery
-        await fetchMessages(reset: true, clearFirst: isNewQuery)
+        cancelActiveFetch()
+        let gen = nextGeneration()
+        activeFetchTask = Task {
+            await fetchMessages(reset: true, clearFirst: isNewQuery, generation: gen)
+        }
+        await activeFetchTask?.value
     }
 
     func loadMore() async {
         guard nextPageToken != nil else { return }
-        await fetchMessages(reset: false)
+        let gen = fetchGeneration // don't bump — loadMore appends, doesn't replace
+        await fetchMessages(reset: false, generation: gen)
+    }
+
+    /// Cancel any in-flight search/load task. Called from the view layer
+    /// when a new search or folder navigation begins.
+    func cancelActiveFetch() {
+        activeFetchTask?.cancel()
+        activeFetchTask = nil
+    }
+
+    private func nextGeneration() -> UInt64 {
+        fetchGeneration &+= 1
+        return fetchGeneration
     }
 
     func loadLabels() async {
@@ -92,6 +123,7 @@ final class MailboxViewModel: ObservableObject {
     }
 
     func switchAccount(_ id: String) async {
+        cancelActiveFetch()
         accountID     = id
         nextPageToken = nil
         readIDs       = []
@@ -188,11 +220,15 @@ final class MailboxViewModel: ObservableObject {
 
     /// Re-inserts a previously removed message at its original date position (undo path).
     func restoreOptimistically(_ message: GmailMessage) {
+        // Restore into the in-memory cache so subsequent lookups work
+        messageCache[message.id] = message
         let date = message.date ?? .distantPast
         let insertIdx = messages.firstIndex { ($0.date ?? .distantPast) < date } ?? messages.endIndex
         withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
             messages.insert(message, at: insertIdx)
         }
+        // Signal the UI to re-select this email
+        lastRestoredMessageID = message.id
     }
 
     func emptyTrash() async {
@@ -320,7 +356,7 @@ final class MailboxViewModel: ObservableObject {
         MailCacheStore.folderKey(labelIDs: currentLabelIDs, query: currentQuery)
     }
 
-    private func fetchMessages(reset: Bool, clearFirst: Bool = false) async {
+    private func fetchMessages(reset: Bool, clearFirst: Bool = false, generation: UInt64) async {
         guard !accountID.isEmpty else { return }
         let folderKey = currentFolderKey
 
@@ -346,6 +382,10 @@ final class MailboxViewModel: ObservableObject {
                 query:     currentQuery,
                 pageToken: reset ? nil : nextPageToken
             )
+
+            // Bail out if a newer request has started while we were awaiting
+            guard !Task.isCancelled, generation == fetchGeneration else { return }
+
             let refs      = list.messages ?? []
             nextPageToken = list.nextPageToken
 
@@ -357,8 +397,13 @@ final class MailboxViewModel: ObservableObject {
                     accountID: accountID,
                     format: "metadata"
                 )
+                // Check again after second await
+                guard !Task.isCancelled, generation == fetchGeneration else { return }
                 for msg in fetched { messageCache[msg.id] = msg }
             }
+
+            // Final guard before mutating published state
+            guard !Task.isCancelled, generation == fetchGeneration else { return }
 
             let page = refs.compactMap { messageCache[$0.id] }
 
@@ -389,7 +434,11 @@ final class MailboxViewModel: ObservableObject {
                 // Persist full list to disk
                 MailCacheStore.shared.save(messages, accountID: accountID, folderKey: folderKey)
             }
+        } catch is CancellationError {
+            // Silently swallow — a newer request replaced us
         } catch {
+            // Only surface the error if this is still the active generation
+            guard generation == fetchGeneration else { return }
             self.error = error.localizedDescription
         }
     }

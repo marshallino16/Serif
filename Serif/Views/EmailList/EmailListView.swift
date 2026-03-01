@@ -15,15 +15,24 @@ struct EmailListView: View {
     let onDeletePermanently: ((Email) -> Void)?
     let onMarkNotSpam: ((Email) -> Void)?
     let onEmptyTrash: (() -> Void)?
+    let onBulkArchive: (() -> Void)?
+    let onBulkDelete: (() -> Void)?
+    let onBulkMarkUnread: (() -> Void)?
+    let onBulkMarkRead: (() -> Void)?
+    let onBulkToggleStar: (() -> Void)?
     let searchResetTrigger: Int
     @Binding var selectedEmail: Email?
+    @Binding var selectedEmailIDs: Set<String>
     @Binding var selectedFolder: Folder
     @State private var searchText = ""
     @State private var searchFocusTrigger = false
     @State private var searchDebounceTask: Task<Void, Never>?
     @State private var sortOrder: EmailSortOrder = .dateNewest
+    @State private var selectionAnchorID: String?
     @ObservedObject private var swipeCoordinator = SwipeCoordinator.shared
     @Environment(\.theme) private var theme
+
+    private var isMultiSelect: Bool { selectedEmailIDs.count > 1 }
 
     private var sortedEmails: [Email] {
         switch sortOrder {
@@ -35,152 +44,10 @@ struct EmailListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text(selectedFolder.rawValue)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(theme.textPrimary)
-
-                    Spacer()
-
-                    // Bulk-unsubscribe button shown only in the Subscriptions folder
-                    if selectedFolder == .subscriptions, !emails.isEmpty, let onUnsubscribe {
-                        let unsubscribable = emails.filter { $0.isFromMailingList && $0.unsubscribeURL != nil }
-                        if !unsubscribable.isEmpty {
-                            Button {
-                                unsubscribable.forEach { onUnsubscribe($0) }
-                            } label: {
-                                Text("Unsubscribe All (\(unsubscribable.count))")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(theme.destructive)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(theme.destructive.opacity(0.1))
-                                    .cornerRadius(6)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    // Empty Trash button
-                    if selectedFolder == .trash, !emails.isEmpty, let onEmptyTrash {
-                        Button {
-                            onEmptyTrash()
-                        } label: {
-                            Text("Empty Trash")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(theme.destructive)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(theme.destructive.opacity(0.1))
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    Menu {
-                        Button { sortOrder = .dateNewest }  label: { Label("Date (Newest)",  systemImage: sortOrder == .dateNewest  ? "checkmark" : "") }
-                        Button { sortOrder = .dateOldest }  label: { Label("Date (Oldest)",  systemImage: sortOrder == .dateOldest  ? "checkmark" : "") }
-                        Button { sortOrder = .sender }       label: { Label("Sender",         systemImage: sortOrder == .sender      ? "checkmark" : "") }
-                        Button { sortOrder = .unreadFirst } label: { Label("Unread first",   systemImage: sortOrder == .unreadFirst ? "checkmark" : "") }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(sortOrder.label)
-                                .font(.system(size: 12))
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 9))
-                        }
-                        .foregroundColor(theme.textSecondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(theme.cardBackground)
-                        .cornerRadius(6)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                SearchBarView(text: $searchText, focusTrigger: $searchFocusTrigger)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 12)
-
-            Divider()
-                .background(theme.divider)
-
-            if isLoading && emails.isEmpty {
-                // Skeleton loading state
-                ScrollView {
-                    LazyVStack(spacing: 2) {
-                        ForEach(0..<9, id: \.self) { _ in
-                            EmailSkeletonRowView()
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 2) {
-                        ForEach(sortedEmails) { email in
-                            SwipeableEmailRow(
-                                email: email,
-                                isSelected: selectedEmail?.id == email.id,
-                                onTap: { selectedEmail = email },
-                                onArchive: selectedFolder == .archive ? nil : onArchive.map { action in { action(email) } },
-                                onDelete:  selectedFolder == .trash   ? nil : onDelete.map  { action in { action(email) } }
-                            )
-                            .contextMenu { emailContextMenu(for: email) }
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)),
-                                removal:   .opacity
-                            ))
-                        }
-
-                        // Load-more sentinel
-                        if !emails.isEmpty && searchText.isEmpty {
-                            Color.clear
-                                .frame(height: 1)
-                                .onAppear { onLoadMore() }
-                        }
-
-                        // Inline loading indicator for load-more
-                        if isLoading && !emails.isEmpty {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .tint(theme.textTertiary)
-                                .padding(.vertical, 8)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    .animation(.spring(response: 0.38, dampingFraction: 0.82), value: sortedEmails.map(\.id))
-                }
-                .scrollDisabled(swipeCoordinator.isSwipeActive)
-                .focusable()
-                .focusEffectDisabled(true)
-                .onKeyPress(.upArrow) {
-                    navigateToPrevious()
-                    return .handled
-                }
-                .onKeyPress(.downArrow) {
-                    navigateToNext()
-                    return .handled
-                }
-            }
-
-            // Hidden button for ⌘F
-            Button("") { searchFocusTrigger = true }
-                .keyboardShortcut("f", modifiers: .command)
-                .frame(width: 0, height: 0)
-                .opacity(0)
-
-            // Hidden button for Delete key
-            Button("") {
-                if let email = selectedEmail { onDelete?(email) }
-            }
-            .keyboardShortcut(.delete, modifiers: [])
-            .frame(width: 0, height: 0)
-            .opacity(0)
+            headerSection
+            Divider().background(theme.divider)
+            emailListSection
+            hiddenButtons
         }
         .background(theme.listBackground)
         .onChange(of: searchResetTrigger) { _ in
@@ -190,7 +57,7 @@ struct EmailListView: View {
         .onChange(of: sortOrder) { newSort in
             switch newSort {
             case .unreadFirst: onSearch("is:unread")
-            default:           onSearch(searchText)   // restores folder or current search
+            default:           onSearch(searchText)
             }
         }
         .onChange(of: searchText) { query in
@@ -205,6 +72,226 @@ struct EmailListView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(selectedFolder.rawValue)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(theme.textPrimary)
+
+                Spacer()
+
+                if selectedFolder == .subscriptions, !emails.isEmpty, let onUnsubscribe {
+                    let unsubscribable = emails.filter { $0.isFromMailingList && $0.unsubscribeURL != nil }
+                    if !unsubscribable.isEmpty {
+                        Button {
+                            unsubscribable.forEach { onUnsubscribe($0) }
+                        } label: {
+                            Text("Unsubscribe All (\(unsubscribable.count))")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(theme.destructive)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(theme.destructive.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                if selectedFolder == .trash, !emails.isEmpty, let onEmptyTrash {
+                    Button {
+                        onEmptyTrash()
+                    } label: {
+                        Text("Empty Trash")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(theme.destructive)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(theme.destructive.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Menu {
+                    Button { sortOrder = .dateNewest }  label: { Label("Date (Newest)",  systemImage: sortOrder == .dateNewest  ? "checkmark" : "") }
+                    Button { sortOrder = .dateOldest }  label: { Label("Date (Oldest)",  systemImage: sortOrder == .dateOldest  ? "checkmark" : "") }
+                    Button { sortOrder = .sender }       label: { Label("Sender",         systemImage: sortOrder == .sender      ? "checkmark" : "") }
+                    Button { sortOrder = .unreadFirst } label: { Label("Unread first",   systemImage: sortOrder == .unreadFirst ? "checkmark" : "") }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(sortOrder.label)
+                            .font(.system(size: 12))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9))
+                    }
+                    .foregroundColor(theme.textSecondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(theme.cardBackground)
+                    .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+
+            SearchBarView(text: $searchText, focusTrigger: $searchFocusTrigger)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 20)
+        .padding(.bottom, 12)
+    }
+
+    // MARK: - Email list
+
+    @ViewBuilder
+    private var emailListSection: some View {
+        if isLoading && emails.isEmpty {
+            ScrollView {
+                LazyVStack(spacing: 2) {
+                    ForEach(0..<9, id: \.self) { _ in
+                        EmailSkeletonRowView()
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        } else {
+            emailScrollView
+        }
+    }
+
+    private var emailScrollView: some View {
+        ScrollView {
+            LazyVStack(spacing: 2) {
+                ForEach(sortedEmails) { email in
+                    SwipeableEmailRow(
+                        email: email,
+                        isSelected: selectedEmailIDs.contains(email.id.uuidString),
+                        onTap: { handleTap(email: email) },
+                        onArchive: selectedFolder == .archive ? nil : onArchive.map { action in { action(email) } },
+                        onDelete:  selectedFolder == .trash   ? nil : onDelete.map  { action in { action(email) } }
+                    )
+                    .contextMenu { emailContextMenu(for: email) }
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)),
+                        removal:   .opacity
+                    ))
+                }
+
+                if !emails.isEmpty && searchText.isEmpty {
+                    Color.clear
+                        .frame(height: 1)
+                        .onAppear { onLoadMore() }
+                }
+
+                if isLoading && !emails.isEmpty {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                        .tint(theme.textTertiary)
+                        .padding(.vertical, 8)
+                }
+            }
+            .padding(.vertical, 4)
+            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: sortedEmails.map(\.id))
+        }
+        .scrollDisabled(swipeCoordinator.isSwipeActive)
+        .focusable()
+        .focusEffectDisabled(true)
+        .onKeyPress(.upArrow) { navigateToPrevious(); return .handled }
+        .onKeyPress(.downArrow) { navigateToNext(); return .handled }
+        .onKeyPress(characters: CharacterSet(charactersIn: "e")) { _ in handleKeyE() }
+        .onKeyPress(characters: CharacterSet(charactersIn: "s")) { _ in handleKeyS() }
+        .onKeyPress(characters: CharacterSet(charactersIn: "u")) { _ in handleKeyU() }
+        .onKeyPress(characters: CharacterSet(charactersIn: "r")) { _ in handleKeyR() }
+    }
+
+    // MARK: - Hidden buttons
+
+    private var hiddenButtons: some View {
+        Group {
+            Button("") { searchFocusTrigger = true }
+                .keyboardShortcut("f", modifiers: .command)
+
+            Button("") {
+                if isMultiSelect { onBulkDelete?() }
+                else if let email = selectedEmail { onDelete?(email) }
+            }
+            .keyboardShortcut(.delete, modifiers: [])
+
+            Button("") { selectAll() }
+                .keyboardShortcut("a", modifiers: .command)
+        }
+        .frame(width: 0, height: 0)
+        .opacity(0)
+    }
+
+    // MARK: - Key handlers
+
+    private func handleKeyE() -> KeyPress.Result {
+        if isMultiSelect { onBulkArchive?() }
+        else if let email = selectedEmail { onArchive?(email) }
+        return .handled
+    }
+
+    private func handleKeyS() -> KeyPress.Result {
+        if isMultiSelect { onBulkToggleStar?() }
+        else if let email = selectedEmail { onToggleStar?(email) }
+        return .handled
+    }
+
+    private func handleKeyU() -> KeyPress.Result {
+        if isMultiSelect { onBulkMarkUnread?() }
+        else if let email = selectedEmail { onMarkUnread?(email) }
+        return .handled
+    }
+
+    private func handleKeyR() -> KeyPress.Result {
+        if isMultiSelect { onBulkMarkRead?() }
+        return .handled
+    }
+
+    // MARK: - Selection
+
+    private func handleTap(email: Email) {
+        let id = email.id.uuidString
+        let modifiers = NSEvent.modifierFlags
+
+        if modifiers.contains(.command) {
+            // ⌘+click: toggle in set
+            if selectedEmailIDs.contains(id) {
+                selectedEmailIDs.remove(id)
+            } else {
+                selectedEmailIDs.insert(id)
+            }
+            selectionAnchorID = id
+            selectedEmail = selectedEmailIDs.count == 1
+                ? sortedEmails.first { selectedEmailIDs.contains($0.id.uuidString) }
+                : nil
+        } else if modifiers.contains(.shift), let anchorID = selectionAnchorID {
+            // ⇧+click: range select
+            let ids = sortedEmails.map { $0.id.uuidString }
+            if let anchorIdx = ids.firstIndex(of: anchorID),
+               let clickIdx = ids.firstIndex(of: id) {
+                let range = min(anchorIdx, clickIdx)...max(anchorIdx, clickIdx)
+                selectedEmailIDs = Set(ids[range])
+                selectedEmail = nil
+            }
+        } else {
+            // Normal click: single select
+            selectedEmailIDs = [id]
+            selectedEmail = email
+            selectionAnchorID = id
+        }
+    }
+
+    private func selectAll() {
+        selectedEmailIDs = Set(sortedEmails.map { $0.id.uuidString })
+        selectedEmail = nil
+        selectionAnchorID = sortedEmails.first?.id.uuidString
     }
 
     @ViewBuilder
@@ -260,16 +347,22 @@ struct EmailListView: View {
 
     private func navigateToPrevious() {
         guard let current = selectedEmail,
-              let index = emails.firstIndex(where: { $0.id == current.id }),
+              let index = sortedEmails.firstIndex(where: { $0.id == current.id }),
               index > 0 else { return }
-        selectedEmail = emails[index - 1]
+        let email = sortedEmails[index - 1]
+        selectedEmailIDs = [email.id.uuidString]
+        selectedEmail = email
+        selectionAnchorID = email.id.uuidString
     }
 
     private func navigateToNext() {
         guard let current = selectedEmail,
-              let index = emails.firstIndex(where: { $0.id == current.id }),
-              index < emails.count - 1 else { return }
-        selectedEmail = emails[index + 1]
+              let index = sortedEmails.firstIndex(where: { $0.id == current.id }),
+              index < sortedEmails.count - 1 else { return }
+        let email = sortedEmails[index + 1]
+        selectedEmailIDs = [email.id.uuidString]
+        selectedEmail = email
+        selectionAnchorID = email.id.uuidString
     }
 }
 

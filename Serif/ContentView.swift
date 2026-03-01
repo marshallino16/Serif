@@ -32,10 +32,16 @@ struct ContentView: View {
     @State private var lastRefreshedAt: Date?
     @State private var showEmptyTrashConfirm = false
     @State private var trashTotalCount = 0
+    @State private var selectedEmailIDs: Set<String> = []
+
+    private var selectedEmails: [Email] {
+        displayedEmails.filter { selectedEmailIDs.contains($0.id.uuidString) }
+    }
+    private var isMultiSelect: Bool { selectedEmailIDs.count > 1 }
 
     private var isEditingDraft: Bool {
         guard let email = selectedEmail else { return false }
-        return email.isDraft
+        return email.isDraft && !email.isGmailDraft
     }
 
     private var isPanelOpen: Bool { showSettings || showHelp || showDebug || showAttachmentPreview || showOriginal }
@@ -90,6 +96,15 @@ struct ContentView: View {
             .onChange(of: authViewModel.accounts, perform: handleAccountsChange)
             .onChange(of: mailboxViewModel.messages.count, perform: handleMessagesCountChange)
             .onChange(of: selectedEmail, perform: handleSelectedEmailChange)
+            .onChange(of: mailboxViewModel.lastRestoredMessageID) { msgID in
+                guard let msgID else { return }
+                mailboxViewModel.lastRestoredMessageID = nil
+                // Select the restored email so the user sees it in the detail pane
+                if let restoredEmail = mailboxViewModel.emails.first(where: { $0.gmailMessageID == msgID }) {
+                    selectedEmail = restoredEmail
+                    selectedEmailIDs = [restoredEmail.id.uuidString]
+                }
+            }
             .onReceive(Timer.publish(every: TimeInterval(refreshInterval), on: .main, in: .common).autoconnect()) { _ in
                 guard !mailboxViewModel.isLoading, !mailboxViewModel.accountID.isEmpty else { return }
                 lastRefreshedAt = Date()
@@ -119,26 +134,35 @@ struct ContentView: View {
 
     private func handleFolderChange(_ folder: Folder) {
         selectedEmail = nil
+        selectedEmailIDs = []
         searchResetTrigger += 1
         if folder != .labels { selectedLabel = nil }
-        if folder != .drafts { Task { await loadCurrentFolder() } }
+        if folder == .drafts {
+            let accountID = selectedAccountID ?? authViewModel.primaryAccount?.id ?? ""
+            Task { await mailStore.syncGmailDrafts(accountID: accountID) }
+        } else {
+            Task { await loadCurrentFolder() }
+        }
     }
 
     private func handleLabelChange() {
         guard selectedFolder == .labels, selectedLabel != nil else { return }
         selectedEmail = nil
+        selectedEmailIDs = []
         searchResetTrigger += 1
         Task { await loadCurrentFolder() }
     }
 
     private func handleCategoryChange(_ category: InboxCategory?) {
         selectedEmail = nil
+        selectedEmailIDs = []
         searchResetTrigger += 1
         Task { await loadCurrentFolder() }
     }
 
     private func handleAccountChange(_ newID: String?) {
         guard let id = newID else { return }
+        selectedEmailIDs = []
         Task {
             await mailboxViewModel.switchAccount(id)
             await loadCurrentFolder()
@@ -199,6 +223,9 @@ struct ContentView: View {
             Button("") { closePanel() }
                 .keyboardShortcut(.escape, modifiers: []).frame(width: 0, height: 0).opacity(0).disabled(!isPanelOpen)
 
+            Button("") { UndoActionManager.shared.undo() }
+                .keyboardShortcut("z", modifiers: .command).frame(width: 0, height: 0).opacity(0)
+
             OfflineToastView()
                 .environment(\.theme, themeManager.currentTheme)
                 .zIndex(4)
@@ -254,7 +281,7 @@ struct ContentView: View {
         .padding(20)
         .background(themeManager.currentTheme.cardBackground)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(themeManager.currentTheme.isLight ? 0.06 : 0), radius: 8, y: 2)
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
     }
 
     @State private var isRefreshingContacts = false
@@ -304,7 +331,7 @@ struct ContentView: View {
         .padding(20)
         .background(themeManager.currentTheme.cardBackground)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(themeManager.currentTheme.isLight ? 0.06 : 0), radius: 8, y: 2)
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
     }
 
     private var signatureSettingsCard: some View {
@@ -393,7 +420,7 @@ struct ContentView: View {
         .padding(20)
         .background(themeManager.currentTheme.cardBackground)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(themeManager.currentTheme.isLight ? 0.06 : 0), radius: 8, y: 2)
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
     }
 
     @ViewBuilder
@@ -526,7 +553,8 @@ struct ContentView: View {
             EmailListView(
                 emails: displayedEmails,
                 isLoading: selectedFolder == .subscriptions ? subscriptionsStore.isAnalyzing
-                         : selectedFolder != .drafts && mailboxViewModel.isLoading,
+                         : selectedFolder == .drafts ? mailStore.isLoadingGmailDrafts
+                         : mailboxViewModel.isLoading,
                 onLoadMore: { Task { await mailboxViewModel.loadMore() } },
                 onSearch: { query in
                     if query.isEmpty {
@@ -545,8 +573,14 @@ struct ContentView: View {
                 onDeletePermanently: { deletePermanentlyEmail($0) },
                 onMarkNotSpam:       { markNotSpamEmail($0) },
                 onEmptyTrash:        { emptyTrash() },
+                onBulkArchive:       { bulkArchive(selectedEmails) },
+                onBulkDelete:        { bulkDelete(selectedEmails) },
+                onBulkMarkUnread:    { bulkMarkUnread(selectedEmails) },
+                onBulkMarkRead:      { bulkMarkRead(selectedEmails) },
+                onBulkToggleStar:    { for e in selectedEmails { toggleStarEmail(e) } },
                 searchResetTrigger: searchResetTrigger,
                 selectedEmail: $selectedEmail,
+                selectedEmailIDs: $selectedEmailIDs,
                 selectedFolder: $selectedFolder
             )
             .frame(minWidth: 280, idealWidth: 320, maxWidth: 380)
@@ -557,7 +591,19 @@ struct ContentView: View {
 
     @ViewBuilder
     private var detailPane: some View {
-        if isEditingDraft, let draftId = selectedEmail?.id {
+        if isMultiSelect {
+            BulkActionBarView(
+                count: selectedEmailIDs.count,
+                selectedFolder: selectedFolder,
+                onArchive:    { bulkArchive(selectedEmails) },
+                onDelete:     { bulkDelete(selectedEmails) },
+                onMarkUnread: { bulkMarkUnread(selectedEmails) },
+                onMarkRead:   { bulkMarkRead(selectedEmails) },
+                onToggleStar: { for e in selectedEmails { toggleStarEmail(e) } },
+                onMoveToInbox: { bulkMoveToInbox(selectedEmails) },
+                onDeselectAll: { selectedEmailIDs = [] }
+            )
+        } else if isEditingDraft, let draftId = selectedEmail?.id {
             ComposeView(
                 mailStore: mailStore,
                 draftId: draftId,
@@ -686,7 +732,8 @@ struct ContentView: View {
                 await mailboxViewModel.loadFolder(labelIDs: [label.id])
             }
         case .drafts:
-            break  // local only
+            let accountID = selectedAccountID ?? authViewModel.primaryAccount?.id ?? ""
+            await mailStore.syncGmailDrafts(accountID: accountID)
         case .subscriptions:
             break  // populated by SubscriptionsStore.shared, no Gmail query needed
         case .attachments:
@@ -807,6 +854,67 @@ struct ContentView: View {
         guard let url = email.unsubscribeURL else { return }
         SubscriptionsStore.shared.removeEntry(for: email)
         Task { await UnsubscribeService.shared.unsubscribe(url: url, oneClick: false) }
+    }
+
+    // MARK: - Bulk actions
+
+    private func bulkArchive(_ emails: [Email]) {
+        let vm = mailboxViewModel
+        let msgIDs = emails.compactMap(\.gmailMessageID)
+        let removed = msgIDs.compactMap { vm.removeOptimistically($0) }
+        selectedEmail = nil; selectedEmailIDs = []
+        UndoActionManager.shared.schedule(
+            label: "Archived \(msgIDs.count) emails",
+            onConfirm: { Task { for id in msgIDs { await vm.archive(id) } } },
+            onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
+        )
+    }
+
+    private func bulkDelete(_ emails: [Email]) {
+        let vm = mailboxViewModel
+        let msgIDs = emails.compactMap(\.gmailMessageID)
+        let removed = msgIDs.compactMap { vm.removeOptimistically($0) }
+        selectedEmail = nil; selectedEmailIDs = []
+        UndoActionManager.shared.schedule(
+            label: "Trashed \(msgIDs.count) emails",
+            onConfirm: { Task { for id in msgIDs { await vm.trash(id) } } },
+            onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
+        )
+    }
+
+    private func bulkMarkUnread(_ emails: [Email]) {
+        let msgIDs = emails.compactMap(\.gmailMessageID)
+        selectedEmailIDs = []
+        Task { for id in msgIDs { await mailboxViewModel.markAsUnread(id) } }
+    }
+
+    private func bulkMarkRead(_ emails: [Email]) {
+        let msgs = emails.compactMap { e -> GmailMessage? in
+            guard let msgID = e.gmailMessageID else { return nil }
+            return mailboxViewModel.messages.first { $0.id == msgID }
+        }
+        selectedEmailIDs = []
+        Task { for msg in msgs { await mailboxViewModel.markAsRead(msg) } }
+    }
+
+    private func bulkMoveToInbox(_ emails: [Email]) {
+        let vm = mailboxViewModel
+        let msgIDs = emails.compactMap(\.gmailMessageID)
+        let removed = msgIDs.compactMap { vm.removeOptimistically($0) }
+        selectedEmail = nil; selectedEmailIDs = []
+        if selectedFolder == .trash {
+            UndoActionManager.shared.schedule(
+                label: "Moved \(msgIDs.count) to Inbox",
+                onConfirm: { Task { for id in msgIDs { await vm.untrash(id) } } },
+                onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
+            )
+        } else {
+            UndoActionManager.shared.schedule(
+                label: "Moved \(msgIDs.count) to Inbox",
+                onConfirm: { Task { for id in msgIDs { await vm.moveToInbox(id) } } },
+                onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
+            )
+        }
     }
 
     // MARK: - Compose
