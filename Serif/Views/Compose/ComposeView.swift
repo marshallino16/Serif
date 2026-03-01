@@ -110,7 +110,7 @@ struct ComposeView: View {
             RichTextEditor(
                 state: richTextState,
                 text: $bodyText,
-                textColorValue: .white,
+                textColorValue: NSColor(theme.textPrimary),
                 placeholder: "Write your message...",
                 autoFocus: true
             )

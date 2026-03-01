@@ -54,7 +54,7 @@ struct SlidePanel<Content: View>: View {
                 .frame(width: panelWidth)
                 .frame(maxHeight: .infinity)
                 .background(theme.listBackground)
-                .shadow(color: .black.opacity(0.5), radius: 32, x: 16, y: 0)
+                .shadow(color: .black.opacity(theme.isLight ? 0.12 : 0.5), radius: theme.isLight ? 20 : 32, x: theme.isLight ? 8 : 16, y: 0)
                 .offset(x: isPresented ? 0 : -(panelWidth + 60))
 
                 // Tap outside to dismiss

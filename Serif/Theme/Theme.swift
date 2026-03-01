@@ -40,6 +40,13 @@ struct Theme: Identifiable, Equatable {
     let inputBackground: Color
     let tagBackground: Color
 
+    /// Whether this theme has a light appearance (based on detail background luminance).
+    var isLight: Bool {
+        guard let c = NSColor(detailBackground).usingColorSpace(.sRGB) else { return false }
+        let lum = 0.299 * c.redComponent + 0.587 * c.greenComponent + 0.114 * c.blueComponent
+        return lum > 0.5
+    }
+
     static func == (lhs: Theme, rhs: Theme) -> Bool {
         lhs.id == rhs.id
         && lhs.sidebarBackground == rhs.sidebarBackground

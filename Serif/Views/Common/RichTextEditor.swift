@@ -10,7 +10,7 @@ final class RichTextState: ObservableObject {
     @Published var isStrikethrough = false
     @Published var fontFamily = "System Font"
     @Published var fontSize: CGFloat = 13
-    @Published var textColor: NSColor = .white
+    @Published var textColor: NSColor = .labelColor
     @Published var alignment: NSTextAlignment = .left
 
     weak var textView: NSTextView?
@@ -271,11 +271,11 @@ struct RichTextEditor: NSViewRepresentable {
         textView.drawsBackground = false
         textView.textContainerInset = NSSize(width: 4, height: 8)
         textView.font = NSFont.systemFont(ofSize: 13)
-        textView.textColor = .white
-        textView.insertionPointColor = .white
+        textView.textColor = textColorValue
+        textView.insertionPointColor = textColorValue
         textView.typingAttributes = [
             .font: NSFont.systemFont(ofSize: 13),
-            .foregroundColor: NSColor.white,
+            .foregroundColor: textColorValue,
         ]
         textView.delegate = context.coordinator
 
@@ -315,7 +315,7 @@ struct RichTextEditor: NSViewRepresentable {
         if state.textView !== textView {
             state.textView = textView
         }
-        textView.insertionPointColor = .white
+        textView.insertionPointColor = textColorValue
         // Sync binding → NSTextView when text changes externally
         if textView.string != text {
             textView.string = text

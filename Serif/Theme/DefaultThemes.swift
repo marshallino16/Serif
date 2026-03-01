@@ -61,34 +61,34 @@ extension Theme {
         tagBackground: Color(hex: "#203852")
     )
 
-    // MARK: - Charcoal
-    static let charcoal = Theme(
-        id: "charcoal",
-        name: "Charcoal",
-        icon: "circle.lefthalf.filled",
-        sidebarBackground: Color(hex: "#1A1A1A"),
-        listBackground: Color(hex: "#212121"),
-        detailBackground: Color(hex: "#262626"),
-        cardBackground: Color(hex: "#2E2E2E"),
-        selectedCardBackground: Color(hex: "#383838"),
-        hoverBackground: Color(hex: "#2E2E2E"),
-        searchBarBackground: Color(hex: "#2E2E2E"),
-        accentPrimary: Color(hex: "#FF9F0A"),
-        accentSecondary: Color(hex: "#30D158"),
-        textPrimary: Color(hex: "#F5F5F5"),
-        textSecondary: Color(hex: "#999999"),
-        textTertiary: Color(hex: "#666666"),
-        textInverse: Color(hex: "#1A1A1A"),
-        border: Color(hex: "#3A3A3A"),
-        divider: Color(hex: "#333333"),
-        unreadIndicator: Color(hex: "#FF9F0A"),
-        attachmentBackground: Color(hex: "#2E2E2E"),
-        avatarRing: Color(hex: "#FF9F0A"),
-        destructive: Color(hex: "#FF453A"),
-        buttonPrimary: Color(hex: "#FF9F0A"),
-        buttonSecondary: Color(hex: "#3A3A3A"),
-        inputBackground: Color(hex: "#2E2E2E"),
-        tagBackground: Color(hex: "#383838")
+    // MARK: - Serif
+    static let serif = Theme(
+        id: "serif",
+        name: "Serif",
+        icon: "book.fill",
+        sidebarBackground: Color(hex: "#181C26"),
+        listBackground: Color(hex: "#1C2230"),
+        detailBackground: Color(hex: "#202636"),
+        cardBackground: Color(hex: "#272D3C"),
+        selectedCardBackground: Color(hex: "#303848"),
+        hoverBackground: Color(hex: "#2A3040"),
+        searchBarBackground: Color(hex: "#272D3C"),
+        accentPrimary: Color(hex: "#E8736D"),
+        accentSecondary: Color(hex: "#6E88E0"),
+        textPrimary: Color(hex: "#E6E2EA"),
+        textSecondary: Color(hex: "#8A8694"),
+        textTertiary: Color(hex: "#56525E"),
+        textInverse: Color(hex: "#1C2230"),
+        border: Color(hex: "#343A4A"),
+        divider: Color(hex: "#282E3C"),
+        unreadIndicator: Color(hex: "#6E88E0"),
+        attachmentBackground: Color(hex: "#272D3C"),
+        avatarRing: Color(hex: "#E8736D"),
+        destructive: Color(hex: "#E8736D"),
+        buttonPrimary: Color(hex: "#6E88E0"),
+        buttonSecondary: Color(hex: "#343A4A"),
+        inputBackground: Color(hex: "#1C2230"),
+        tagBackground: Color(hex: "#303848")
     )
 
     // MARK: - Nord

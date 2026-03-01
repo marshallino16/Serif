@@ -117,6 +117,22 @@ final class GmailMessageService {
         )
     }
 
+    func untrashMessage(id: String, accountID: String) async throws {
+        let _: GmailMessage = try await client.request(
+            path: "/users/me/messages/\(id)/untrash",
+            method: "POST",
+            accountID: accountID
+        )
+    }
+
+    func deleteMessagePermanently(id: String, accountID: String) async throws {
+        _ = try await client.rawRequest(
+            path: "/users/me/messages/\(id)",
+            method: "DELETE",
+            accountID: accountID
+        )
+    }
+
     func spamMessage(id: String, accountID: String) async throws {
         struct ModifyRequest: Encodable { let addLabelIds: [String]; let removeLabelIds: [String] }
         let body = try JSONEncoder().encode(ModifyRequest(addLabelIds: ["SPAM"], removeLabelIds: ["INBOX"]))

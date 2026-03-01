@@ -64,6 +64,7 @@ struct ContentView: View {
         withLifecycle(
             mainLayout
                 .environment(\.theme, themeManager.currentTheme)
+                .preferredColorScheme(themeManager.currentTheme.isLight ? .light : .dark)
                 .background(themeManager.currentTheme.detailBackground)
                 .frame(minWidth: 900, minHeight: 600)
                 .toolbar { toolbarContent }
@@ -253,6 +254,7 @@ struct ContentView: View {
         .padding(20)
         .background(themeManager.currentTheme.cardBackground)
         .cornerRadius(12)
+        .shadow(color: .black.opacity(themeManager.currentTheme.isLight ? 0.06 : 0), radius: 8, y: 2)
     }
 
     @State private var isRefreshingContacts = false
@@ -302,6 +304,7 @@ struct ContentView: View {
         .padding(20)
         .background(themeManager.currentTheme.cardBackground)
         .cornerRadius(12)
+        .shadow(color: .black.opacity(themeManager.currentTheme.isLight ? 0.06 : 0), radius: 8, y: 2)
     }
 
     private var signatureSettingsCard: some View {
@@ -390,6 +393,7 @@ struct ContentView: View {
         .padding(20)
         .background(themeManager.currentTheme.cardBackground)
         .cornerRadius(12)
+        .shadow(color: .black.opacity(themeManager.currentTheme.isLight ? 0.06 : 0), radius: 8, y: 2)
     }
 
     @ViewBuilder
@@ -486,7 +490,7 @@ struct ContentView: View {
         if !isPanelOpen {
             ToolbarItem(placement: .primaryAction) {
                 Button { composeNewEmail() } label: {
-                    Image(systemName: "square.and.pencil").foregroundColor(.white)
+                    Image(systemName: "square.and.pencil").foregroundColor(themeManager.currentTheme.accentPrimary)
                 }
                 .keyboardShortcut("n", modifiers: .command)
                 .help("Compose (⌘N)")
@@ -535,9 +539,12 @@ struct ContentView: View {
                 onDelete:       { deleteEmail($0) },
                 onToggleStar:   { toggleStarEmail($0) },
                 onMarkUnread:   { markUnreadEmail($0) },
-                onMarkSpam:     { markSpamEmail($0) },
-                onUnsubscribe:  { unsubscribeEmail($0) },
-                onEmptyTrash:   { emptyTrash() },
+                onMarkSpam:          { markSpamEmail($0) },
+                onUnsubscribe:       { unsubscribeEmail($0) },
+                onMoveToInbox:       { moveToInboxEmail($0) },
+                onDeletePermanently: { deletePermanentlyEmail($0) },
+                onMarkNotSpam:       { markNotSpamEmail($0) },
+                onEmptyTrash:        { emptyTrash() },
                 searchResetTrigger: searchResetTrigger,
                 selectedEmail: $selectedEmail,
                 selectedFolder: $selectedFolder
@@ -568,8 +575,11 @@ struct ContentView: View {
             EmailDetailView(
                 email: email,
                 accountID: selectedAccountID ?? authViewModel.primaryAccount?.id ?? "",
-                onArchive:    selectedFolder == .archive ? nil : { archiveEmail(email) },
-                onDelete:     selectedFolder == .trash   ? nil : { deleteEmail(email) },
+                onArchive:           selectedFolder == .archive ? nil : { archiveEmail(email) },
+                onDelete:            selectedFolder == .trash   ? nil : { deleteEmail(email) },
+                onMoveToInbox:       selectedFolder == .archive || selectedFolder == .trash ? { moveToInboxEmail(email) } : nil,
+                onDeletePermanently: selectedFolder == .trash ? { deletePermanentlyEmail(email) } : nil,
+                onMarkNotSpam:       selectedFolder == .spam ? { markNotSpamEmail(email) } : nil,
                 onToggleStar: { isCurrentlyStarred in
                     guard let msgID = email.gmailMessageID else { return }
                     Task { await mailboxViewModel.toggleStar(msgID, isStarred: isCurrentlyStarred) }
@@ -739,6 +749,50 @@ struct ContentView: View {
             guard trashTotalCount > 0 else { return }
             showEmptyTrashConfirm = true
         }
+    }
+
+    private func moveToInboxEmail(_ email: Email) {
+        guard let msgID = email.gmailMessageID else { return }
+        let vm = mailboxViewModel
+        let removed = vm.removeOptimistically(msgID)
+        selectedEmail = vm.emails.first
+        if selectedFolder == .trash {
+            UndoActionManager.shared.schedule(
+                label: "Moved to Inbox",
+                onConfirm: { Task { await vm.untrash(msgID) } },
+                onUndo:    { if let msg = removed { vm.restoreOptimistically(msg) } }
+            )
+        } else {
+            UndoActionManager.shared.schedule(
+                label: "Moved to Inbox",
+                onConfirm: { Task { await vm.moveToInbox(msgID) } },
+                onUndo:    { if let msg = removed { vm.restoreOptimistically(msg) } }
+            )
+        }
+    }
+
+    private func deletePermanentlyEmail(_ email: Email) {
+        guard let msgID = email.gmailMessageID else { return }
+        let vm = mailboxViewModel
+        let removed = vm.removeOptimistically(msgID)
+        selectedEmail = vm.emails.first
+        UndoActionManager.shared.schedule(
+            label: "Deleted permanently",
+            onConfirm: { Task { await vm.deletePermanently(msgID) } },
+            onUndo:    { if let msg = removed { vm.restoreOptimistically(msg) } }
+        )
+    }
+
+    private func markNotSpamEmail(_ email: Email) {
+        guard let msgID = email.gmailMessageID else { return }
+        let vm = mailboxViewModel
+        let removed = vm.removeOptimistically(msgID)
+        selectedEmail = vm.emails.first
+        UndoActionManager.shared.schedule(
+            label: "Moved to Inbox",
+            onConfirm: { Task { await vm.unspam(msgID) } },
+            onUndo:    { if let msg = removed { vm.restoreOptimistically(msg) } }
+        )
     }
 
     private func markSpamEmail(_ email: Email) {

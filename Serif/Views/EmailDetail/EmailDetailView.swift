@@ -3,10 +3,13 @@ import SwiftUI
 struct EmailDetailView: View {
     let email: Email
     let accountID: String
-    var onArchive:     (() -> Void)?
-    var onDelete:      (() -> Void)?
-    var onToggleStar:  ((Bool) -> Void)?
-    var onMarkUnread:  (() -> Void)?
+    var onArchive:            (() -> Void)?
+    var onDelete:             (() -> Void)?
+    var onMoveToInbox:        (() -> Void)?
+    var onDeletePermanently:  (() -> Void)?
+    var onMarkNotSpam:        (() -> Void)?
+    var onToggleStar:         ((Bool) -> Void)?
+    var onMarkUnread:         (() -> Void)?
     var allLabels:     [GmailLabel]
     var onAddLabel:    ((String) -> Void)?
     var onRemoveLabel: ((String) -> Void)?
@@ -58,10 +61,13 @@ struct EmailDetailView: View {
     init(
         email: Email,
         accountID: String,
-        onArchive:     (() -> Void)? = nil,
-        onDelete:      (() -> Void)? = nil,
-        onToggleStar:  ((Bool) -> Void)? = nil,
-        onMarkUnread:  (() -> Void)? = nil,
+        onArchive:            (() -> Void)? = nil,
+        onDelete:             (() -> Void)? = nil,
+        onMoveToInbox:        (() -> Void)? = nil,
+        onDeletePermanently:  (() -> Void)? = nil,
+        onMarkNotSpam:        (() -> Void)? = nil,
+        onToggleStar:         ((Bool) -> Void)? = nil,
+        onMarkUnread:         (() -> Void)? = nil,
         allLabels:             [GmailLabel] = [],
         onAddLabel:            ((String) -> Void)? = nil,
         onRemoveLabel:         ((String) -> Void)? = nil,
@@ -77,12 +83,15 @@ struct EmailDetailView: View {
         checkUnsubscribed:     ((String) -> Bool)? = nil,
         extractBodyUnsubscribeURL: ((String) -> URL?)? = nil
     ) {
-        self.email        = email
-        self.accountID    = accountID
-        self.onArchive    = onArchive
-        self.onDelete     = onDelete
-        self.onToggleStar = onToggleStar
-        self.onMarkUnread = onMarkUnread
+        self.email              = email
+        self.accountID          = accountID
+        self.onArchive          = onArchive
+        self.onDelete           = onDelete
+        self.onMoveToInbox      = onMoveToInbox
+        self.onDeletePermanently = onDeletePermanently
+        self.onMarkNotSpam      = onMarkNotSpam
+        self.onToggleStar       = onToggleStar
+        self.onMarkUnread       = onMarkUnread
         self.allLabels    = allLabels
         self.onAddLabel   = onAddLabel
         self.onRemoveLabel = onRemoveLabel
@@ -494,6 +503,9 @@ struct EmailDetailView: View {
             if let onDelete {
                 toolbarButton(icon: "trash", label: "Delete") { onDelete() }
             }
+            if let onMoveToInbox {
+                toolbarButton(icon: "tray.and.arrow.down", label: "Move to Inbox") { onMoveToInbox() }
+            }
 
             Divider().frame(height: 16)
 
@@ -529,7 +541,14 @@ struct EmailDetailView: View {
                 Section {
                     Button { } label: { Label("Mute Thread",    systemImage: "bell.slash") }
                     Button { } label: { Label("Block Sender",   systemImage: "hand.raised") }
-                    Button(role: .destructive) { onDelete?() } label: { Label("Report as Spam", systemImage: "exclamationmark.shield") }
+                    if let onMarkNotSpam {
+                        Button { onMarkNotSpam() } label: { Label("Not Spam", systemImage: "tray.and.arrow.down") }
+                    } else {
+                        Button(role: .destructive) { onDelete?() } label: { Label("Report as Spam", systemImage: "exclamationmark.shield") }
+                    }
+                    if let onDeletePermanently {
+                        Button(role: .destructive) { onDeletePermanently() } label: { Label("Delete Permanently", systemImage: "trash.slash") }
+                    }
                 }
             } label: {
                 Image(systemName: "ellipsis")

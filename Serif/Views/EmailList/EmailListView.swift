@@ -11,6 +11,9 @@ struct EmailListView: View {
     let onMarkUnread: ((Email) -> Void)?
     let onMarkSpam: ((Email) -> Void)?
     let onUnsubscribe: ((Email) -> Void)?
+    let onMoveToInbox: ((Email) -> Void)?
+    let onDeletePermanently: ((Email) -> Void)?
+    let onMarkNotSpam: ((Email) -> Void)?
     let onEmptyTrash: (() -> Void)?
     let searchResetTrigger: Int
     @Binding var selectedEmail: Email?
@@ -219,6 +222,18 @@ struct EmailListView: View {
             Button(role: .destructive) { onDelete?(email) } label: { Label("Move to Trash", systemImage: "trash") }
         }
 
+        if selectedFolder == .archive || selectedFolder == .trash {
+            Button { onMoveToInbox?(email) } label: { Label("Move to Inbox", systemImage: "tray.and.arrow.down") }
+        }
+
+        if selectedFolder == .trash {
+            Button(role: .destructive) { onDeletePermanently?(email) } label: { Label("Delete Permanently", systemImage: "trash.slash") }
+        }
+
+        if selectedFolder == .spam {
+            Button { onMarkNotSpam?(email) } label: { Label("Not Spam", systemImage: "tray.and.arrow.down") }
+        }
+
         Divider()
 
         Button { onToggleStar?(email) } label: {
@@ -236,8 +251,10 @@ struct EmailListView: View {
 
         Divider()
 
-        Button(role: .destructive) { onMarkSpam?(email) } label: {
-            Label("Report as Spam", systemImage: "exclamationmark.shield")
+        if selectedFolder != .spam {
+            Button(role: .destructive) { onMarkSpam?(email) } label: {
+                Label("Report as Spam", systemImage: "exclamationmark.shield")
+            }
         }
     }
 

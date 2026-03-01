@@ -209,6 +209,45 @@ final class MailboxViewModel: ObservableObject {
         }
     }
 
+    func moveToInbox(_ messageID: String) async {
+        do {
+            try await GmailMessageService.shared.modifyLabels(
+                id: messageID, add: ["INBOX"], remove: [], accountID: accountID
+            )
+            messages.removeAll { $0.id == messageID }
+            messageCache[messageID] = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func untrash(_ messageID: String) async {
+        do {
+            try await GmailMessageService.shared.untrashMessage(id: messageID, accountID: accountID)
+            try await GmailMessageService.shared.modifyLabels(
+                id: messageID, add: ["INBOX"], remove: [], accountID: accountID
+            )
+            messages.removeAll { $0.id == messageID }
+            messageCache[messageID] = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func deletePermanently(_ messageID: String) async {
+        do {
+            try await GmailMessageService.shared.deleteMessagePermanently(id: messageID, accountID: accountID)
+            messages.removeAll { $0.id == messageID }
+            messageCache[messageID] = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func unspam(_ messageID: String) async {
+        do {
+            try await GmailMessageService.shared.modifyLabels(
+                id: messageID, add: ["INBOX"], remove: ["SPAM"], accountID: accountID
+            )
+            messages.removeAll { $0.id == messageID }
+            messageCache[messageID] = nil
+        } catch { self.error = error.localizedDescription }
+    }
+
     func spam(_ messageID: String) async {
         do {
             try await GmailMessageService.shared.spamMessage(id: messageID, accountID: accountID)
