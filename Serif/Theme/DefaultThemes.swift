@@ -181,34 +181,34 @@ extension Theme {
         tagBackground: Color(hex: "#3F4450")
     )
 
-    // MARK: - Emerald
+    // MARK: - Papier
     static let emerald = Theme(
         id: "emerald",
-        name: "Emerald",
-        icon: "leaf.fill",
-        sidebarBackground: Color(hex: "#0B1A14"),
-        listBackground: Color(hex: "#0F211A"),
-        detailBackground: Color(hex: "#132920"),
-        cardBackground: Color(hex: "#1A3428"),
-        selectedCardBackground: Color(hex: "#224032"),
-        hoverBackground: Color(hex: "#1A3428"),
-        searchBarBackground: Color(hex: "#1A3428"),
-        accentPrimary: Color(hex: "#34D399"),
-        accentSecondary: Color(hex: "#6EE7B7"),
-        textPrimary: Color(hex: "#ECFDF5"),
-        textSecondary: Color(hex: "#86AF98"),
-        textTertiary: Color(hex: "#4A7A64"),
-        textInverse: Color(hex: "#0B1A14"),
-        border: Color(hex: "#224032"),
-        divider: Color(hex: "#1A3428"),
-        unreadIndicator: Color(hex: "#34D399"),
-        attachmentBackground: Color(hex: "#1A3428"),
-        avatarRing: Color(hex: "#34D399"),
-        destructive: Color(hex: "#F87171"),
-        buttonPrimary: Color(hex: "#10B981"),
-        buttonSecondary: Color(hex: "#224032"),
-        inputBackground: Color(hex: "#0F211A"),
-        tagBackground: Color(hex: "#224032")
+        name: "Papier",
+        icon: "doc.plaintext",
+        sidebarBackground: Color(hex: "#E8DFD0"),
+        listBackground: Color(hex: "#F0E8DA"),
+        detailBackground: Color(hex: "#F5EDE0"),
+        cardBackground: Color(hex: "#EAE1D2"),
+        selectedCardBackground: Color(hex: "#D9CEBB"),
+        hoverBackground: Color(hex: "#E2D8C8"),
+        searchBarBackground: Color(hex: "#E2D8C8"),
+        accentPrimary: Color(hex: "#1B3A4B"),
+        accentSecondary: Color(hex: "#D96A3B"),
+        textPrimary: Color(hex: "#1C1917"),
+        textSecondary: Color(hex: "#57534E"),
+        textTertiary: Color(hex: "#A8A29E"),
+        textInverse: Color(hex: "#F5EDE0"),
+        border: Color(hex: "#D6CDB9"),
+        divider: Color(hex: "#DDD4C4"),
+        unreadIndicator: Color(hex: "#D96A3B"),
+        attachmentBackground: Color(hex: "#E2D8C8"),
+        avatarRing: Color(hex: "#1B3A4B"),
+        destructive: Color(hex: "#C4432B"),
+        buttonPrimary: Color(hex: "#1B3A4B"),
+        buttonSecondary: Color(hex: "#D6CDB9"),
+        inputBackground: Color(hex: "#F0E8DA"),
+        tagBackground: Color(hex: "#D6CDB9")
     )
 
     // MARK: - Solarized Dark
