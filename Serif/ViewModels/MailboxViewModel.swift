@@ -15,7 +15,6 @@ final class MailboxViewModel: ObservableObject {
     @Published var lastRestoredMessageID: String?
 
     var accountID: String
-    var attachmentIndexer: AttachmentIndexer?
     private var currentLabelIDs: [String] = ["INBOX"]
     private var currentQuery:    String?
     /// In-memory cache of fetched messages (metadata format) keyed by message ID.
@@ -136,16 +135,6 @@ final class MailboxViewModel: ObservableObject {
         if !cached.isEmpty {
             for msg in cached { messageCache[msg.id] = msg }
             messages = cached
-            // Index cached attachments on account switch
-            if let indexer = attachmentIndexer {
-                let cachedEmails = cached.map { makeEmail(from: $0) }
-                let pairs = cachedEmails.flatMap { email in
-                    email.attachments.map { (attachment: $0, email: email) }
-                }
-                if !pairs.isEmpty {
-                    Task { await indexer.register(attachments: pairs) }
-                }
-            }
         } else {
             messages = []
         }
@@ -378,16 +367,6 @@ final class MailboxViewModel: ObservableObject {
                 for msg in cached { messageCache[msg.id] = msg }
                 // Show cached messages instantly on folder change (no skeleton)
                 if clearFirst { messages = cached }
-                // Index cached attachments immediately
-                if let indexer = attachmentIndexer {
-                    let cachedEmails = cached.map { makeEmail(from: $0) }
-                    let pairs = cachedEmails.flatMap { email in
-                        email.attachments.map { (attachment: $0, email: email) }
-                    }
-                    if !pairs.isEmpty {
-                        Task { await indexer.register(attachments: pairs) }
-                    }
-                }
             } else if clearFirst {
                 messages = []
             }
@@ -456,16 +435,6 @@ final class MailboxViewModel: ObservableObject {
                 MailCacheStore.shared.save(messages, accountID: accountID, folderKey: folderKey)
             }
 
-            // Register attachments for indexing
-            if let indexer = attachmentIndexer {
-                let emailsList = self.emails
-                let pairs = emailsList.flatMap { email in
-                    email.attachments.map { (attachment: $0, email: email) }
-                }
-                if !pairs.isEmpty {
-                    Task { await indexer.register(attachments: pairs) }
-                }
-            }
         } catch is CancellationError {
             // Silently swallow — a newer request replaced us
         } catch {

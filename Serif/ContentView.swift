@@ -320,15 +320,15 @@ struct ContentView: View {
                 attachmentStore?.refresh()
             }
             attachmentIndexer = indexer
-            mailboxViewModel.attachmentIndexer = indexer
             Task {
-                await indexer.resumeQueue()
                 await loadCurrentFolder()
                 await mailboxViewModel.loadLabels()
                 await mailboxViewModel.loadSendAs()
                 await mailboxViewModel.loadCategoryUnreadCounts()
                 await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
                 lastRefreshedAt = Date()
+                // Background: resume pending + discover all attachments from Gmail
+                await indexer.resumeAndDiscover()
             }
         } else {
             selectedEmail = mailStore.emails(for: .inbox).first
@@ -372,8 +372,10 @@ struct ContentView: View {
             messageService: .shared,
             accountID: id
         )
+        indexer.onProgressUpdate = { [weak attachmentStore] in
+            attachmentStore?.refresh()
+        }
         attachmentIndexer = indexer
-        mailboxViewModel.attachmentIndexer = indexer
         Task {
             await mailboxViewModel.switchAccount(id)
             await loadCurrentFolder()
@@ -381,6 +383,7 @@ struct ContentView: View {
             await mailboxViewModel.loadSendAs()
             await mailboxViewModel.loadCategoryUnreadCounts()
             await GmailProfileService.shared.loadContactPhotos(accountID: id)
+            await indexer.resumeAndDiscover()
         }
     }
 
