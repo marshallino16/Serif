@@ -136,6 +136,16 @@ final class MailboxViewModel: ObservableObject {
         if !cached.isEmpty {
             for msg in cached { messageCache[msg.id] = msg }
             messages = cached
+            // Index cached attachments on account switch
+            if let indexer = attachmentIndexer {
+                let cachedEmails = cached.map { makeEmail(from: $0) }
+                let pairs = cachedEmails.flatMap { email in
+                    email.attachments.map { (attachment: $0, email: email) }
+                }
+                if !pairs.isEmpty {
+                    Task { await indexer.register(attachments: pairs) }
+                }
+            }
         } else {
             messages = []
         }
@@ -368,6 +378,16 @@ final class MailboxViewModel: ObservableObject {
                 for msg in cached { messageCache[msg.id] = msg }
                 // Show cached messages instantly on folder change (no skeleton)
                 if clearFirst { messages = cached }
+                // Index cached attachments immediately
+                if let indexer = attachmentIndexer {
+                    let cachedEmails = cached.map { makeEmail(from: $0) }
+                    let pairs = cachedEmails.flatMap { email in
+                        email.attachments.map { (attachment: $0, email: email) }
+                    }
+                    if !pairs.isEmpty {
+                        Task { await indexer.register(attachments: pairs) }
+                    }
+                }
             } else if clearFirst {
                 messages = []
             }
