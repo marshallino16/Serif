@@ -15,6 +15,7 @@ final class MailboxViewModel: ObservableObject {
     @Published var lastRestoredMessageID: String?
 
     var accountID: String
+    var attachmentIndexer: AttachmentIndexer?
     private var currentLabelIDs: [String] = ["INBOX"]
     private var currentQuery:    String?
     /// In-memory cache of fetched messages (metadata format) keyed by message ID.
@@ -433,6 +434,17 @@ final class MailboxViewModel: ObservableObject {
                 }
                 // Persist full list to disk
                 MailCacheStore.shared.save(messages, accountID: accountID, folderKey: folderKey)
+            }
+
+            // Register attachments for indexing
+            if let indexer = attachmentIndexer {
+                let emailsList = self.emails
+                let pairs = emailsList.flatMap { email in
+                    email.attachments.map { (attachment: $0, email: email) }
+                }
+                if !pairs.isEmpty {
+                    Task { await indexer.register(attachments: pairs) }
+                }
             }
         } catch is CancellationError {
             // Silently swallow — a newer request replaced us

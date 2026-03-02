@@ -7,8 +7,10 @@ struct ContentView: View {
     @StateObject private var mailboxViewModel = MailboxViewModel(accountID: "")
     @StateObject private var actionCoordinator: EmailActionCoordinator
     @StateObject private var panelCoordinator = PanelCoordinator()
+    @StateObject private var attachmentStore = AttachmentStore(database: .shared)
     @ObservedObject private var subscriptionsStore = SubscriptionsStore.shared
     @State private var selectedAccountID: String?
+    @State private var attachmentIndexer: AttachmentIndexer?
     @State private var selectedFolder: Folder = .inbox
     @State private var selectedInboxCategory: InboxCategory? = .all
     @State private var selectedLabel: GmailLabel?
@@ -91,43 +93,47 @@ struct ContentView: View {
                     userLabels: mailboxViewModel.labels.filter { !$0.isSystemLabel }
                 )
 
-                ListPaneView(
-                    emails: displayedEmails,
-                    isLoading: listIsLoading,
-                    selectedFolder: $selectedFolder,
-                    searchResetTrigger: searchResetTrigger,
-                    selectedEmail: $selectedEmail,
-                    selectedEmailIDs: $selectedEmailIDs,
-                    searchFocusTrigger: $searchFocusTrigger,
-                    actionCoordinator: actionCoordinator,
-                    mailboxViewModel: mailboxViewModel,
-                    onSelectNext: { selectedEmail = $0 },
-                    onLoadCurrentFolder: { await loadCurrentFolder() },
-                    onEmptyTrashRequested: { count in trashTotalCount = count; showEmptyTrashConfirm = true }
-                )
+                if selectedFolder == .attachments {
+                    AttachmentExplorerView(store: attachmentStore)
+                } else {
+                    ListPaneView(
+                        emails: displayedEmails,
+                        isLoading: listIsLoading,
+                        selectedFolder: $selectedFolder,
+                        searchResetTrigger: searchResetTrigger,
+                        selectedEmail: $selectedEmail,
+                        selectedEmailIDs: $selectedEmailIDs,
+                        searchFocusTrigger: $searchFocusTrigger,
+                        actionCoordinator: actionCoordinator,
+                        mailboxViewModel: mailboxViewModel,
+                        onSelectNext: { selectedEmail = $0 },
+                        onLoadCurrentFolder: { await loadCurrentFolder() },
+                        onEmptyTrashRequested: { count in trashTotalCount = count; showEmptyTrashConfirm = true }
+                    )
 
-                Divider().background(themeManager.currentTheme.divider)
+                    Divider().background(themeManager.currentTheme.divider)
 
-                DetailPaneView(
-                    selectedEmail: selectedEmail,
-                    selectedEmailIDs: selectedEmailIDs,
-                    selectedFolder: selectedFolder,
-                    displayedEmails: displayedEmails,
-                    actionCoordinator: actionCoordinator,
-                    mailboxViewModel: mailboxViewModel,
-                    mailStore: mailStore,
-                    accountID: accountID,
-                    fromAddress: authViewModel.primaryAccount?.email ?? "",
-                    composeMode: composeMode,
-                    signatureForNew: signatureForNew,
-                    signatureForReply: signatureForReply,
-                    panelCoordinator: panelCoordinator,
-                    onSelectNext: { selectedEmail = $0 },
-                    onClearSelection: { selectedEmail = nil; selectedEmailIDs = [] },
-                    onDeselectAll: { selectedEmailIDs = [] },
-                    onStartCompose: { mode in startCompose(mode: mode) },
-                    onDiscardDraft: { id in discardDraft(id: id) }
-                )
+                    DetailPaneView(
+                        selectedEmail: selectedEmail,
+                        selectedEmailIDs: selectedEmailIDs,
+                        selectedFolder: selectedFolder,
+                        displayedEmails: displayedEmails,
+                        actionCoordinator: actionCoordinator,
+                        mailboxViewModel: mailboxViewModel,
+                        mailStore: mailStore,
+                        accountID: accountID,
+                        fromAddress: authViewModel.primaryAccount?.email ?? "",
+                        composeMode: composeMode,
+                        signatureForNew: signatureForNew,
+                        signatureForReply: signatureForReply,
+                        panelCoordinator: panelCoordinator,
+                        onSelectNext: { selectedEmail = $0 },
+                        onClearSelection: { selectedEmail = nil; selectedEmailIDs = [] },
+                        onDeselectAll: { selectedEmailIDs = [] },
+                        onStartCompose: { mode in startCompose(mode: mode) },
+                        onDiscardDraft: { id in discardDraft(id: id) }
+                    )
+                }
             }
 
             keyboardShortcuts
@@ -305,6 +311,13 @@ struct ContentView: View {
         if let account = authViewModel.primaryAccount {
             selectedAccountID = account.id
             mailboxViewModel.accountID = account.id
+            let indexer = AttachmentIndexer(
+                database: .shared,
+                messageService: .shared,
+                accountID: account.id
+            )
+            attachmentIndexer = indexer
+            mailboxViewModel.attachmentIndexer = indexer
             Task {
                 await loadCurrentFolder()
                 await mailboxViewModel.loadLabels()
@@ -323,7 +336,9 @@ struct ContentView: View {
         selectedEmailIDs = []
         searchResetTrigger += 1
         if folder != .labels { selectedLabel = nil }
-        if folder == .drafts {
+        if folder == .attachments {
+            attachmentStore.refresh()
+        } else if folder == .drafts {
             Task { await mailStore.syncGmailDrafts(accountID: accountID) }
         } else {
             Task { await loadCurrentFolder() }
@@ -348,6 +363,13 @@ struct ContentView: View {
     private func handleAccountChange(_ newID: String?) {
         guard let id = newID else { return }
         selectedEmailIDs = []
+        let indexer = AttachmentIndexer(
+            database: .shared,
+            messageService: .shared,
+            accountID: id
+        )
+        attachmentIndexer = indexer
+        mailboxViewModel.attachmentIndexer = indexer
         Task {
             await mailboxViewModel.switchAccount(id)
             await loadCurrentFolder()

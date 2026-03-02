@@ -26,17 +26,8 @@ struct ListPaneView: View {
     }
 
     var body: some View {
-        Group {
-            if selectedFolder == .attachments {
-                AttachmentsListView(
-                    mailboxViewModel: mailboxViewModel,
-                    selectedEmail: $selectedEmail
-                )
-            } else {
-                emailList
-            }
-        }
-        .frame(minWidth: 280, idealWidth: 320, maxWidth: 380)
+        emailList
+            .frame(minWidth: 280, idealWidth: 320, maxWidth: 380)
     }
 
     private var emailList: some View {
