@@ -32,12 +32,14 @@ struct SidebarView: View {
                     Image("SerifLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 22)
+                        .frame(height: 12)
                     Spacer()
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 16)
+                Spacer()
+                    .frame(height: 10)
             } else {
                 Spacer().frame(height: 52)
             }

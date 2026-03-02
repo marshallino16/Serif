@@ -6,19 +6,26 @@ struct OnboardingView: View {
     @State private var isSigningIn = false
     @State private var signInError: String?
 
-    // Animation states - text
-    @State private var showTopLine = false
-    @State private var showSerif = false
-    @State private var showBottomLine = false
+    // Animation states
+    @State private var showTaglineTop = false
+    @State private var showSer = false
+    @State private var showIcon = false
+    @State private var iconDrop: CGFloat = -40
+    @State private var showF = false
+    @State private var showTaglineBottom = false
     @State private var showButton = false
-    @State private var serifScale: CGFloat = 0.85
+    @State private var iconRotation: Double = -12
+    @State private var iconScale: CGFloat = 0.3
 
-    // Animation states - ambient light orbs
-    @State private var orb1Offset: CGSize = CGSize(width: -120, height: -80)
-    @State private var orb2Offset: CGSize = CGSize(width: 150, height: 60)
-    @State private var orb3Offset: CGSize = CGSize(width: -40, height: 120)
-    @State private var orb4Offset: CGSize = CGSize(width: 80, height: -140)
+    // Ambient orbs
+    @State private var orb1Offset: CGSize = CGSize(width: -140, height: -100)
+    @State private var orb2Offset: CGSize = CGSize(width: 160, height: 80)
+    @State private var orb3Offset: CGSize = CGSize(width: -60, height: 140)
     @State private var orbsVisible = false
+
+    // Logo colors
+    private let coral = Color(red: 0.94, green: 0.44, blue: 0.44)   // #F07070
+    private let blue  = Color(red: 0.42, green: 0.61, blue: 0.96)   // #6B9BF5
 
     var body: some View {
         ZStack {
@@ -26,41 +33,62 @@ struct OnboardingView: View {
             Color(hex: "#010409")
                 .ignoresSafeArea()
 
-            // MARK: - Ambient light orbs (moving behind content)
+            // Ambient lights — logo colors
             ambientLights
 
-            // MARK: - Content
+            // Content
             VStack(spacing: 0) {
                 Spacer()
 
                 // Headline
                 HStack(alignment: .center, spacing: 0) {
                     Text("THERE'S A NEW")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(hex: "#8B949E"))
-                        .tracking(11 * 0.09)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(11 * 0.18)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.trailing, 20)
-                        .opacity(showTopLine ? 1 : 0)
-                        .offset(x: showTopLine ? 0 : -10)
+                        .opacity(showTaglineTop ? 1 : 0)
+                        .offset(x: showTaglineTop ? 0 : -10)
 
-                    Text("Serif")
-                        .font(.custom("PPLocomotiveNew-Light", size: 96))
-                        .foregroundColor(.white)
-                        .opacity(showSerif ? 1 : 0)
-                        .scaleEffect(serifScale)
+                    // Ser [icon] f
+                    HStack(alignment: .center, spacing: 0) {
+                        Text("Ser")
+                            .font(.system(size: 80, weight: .bold, design: .default))
+                            .foregroundColor(.white)
+                            .opacity(showSer ? 1 : 0)
+                            .offset(x: showSer ? 0 : 30)
+
+                        Image("SerifLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 60)
+                            .opacity(showIcon ? 1 : 0)
+                            .scaleEffect(iconScale)
+                            .rotationEffect(.degrees(iconRotation))
+                            .offset(y: iconDrop)
+                            .padding(.horizontal, -2)
+
+                        Text("f")
+                            .font(.system(size: 80, weight: .bold, design: .default))
+                            .foregroundColor(.white)
+                            .opacity(showF ? 1 : 0)
+                            .offset(x: showF ? 0 : -30)
+                    }
 
                     Text("IN TOWN")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(hex: "#8B949E"))
-                        .tracking(11 * 0.09)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(11 * 0.18)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, 20)
-                        .opacity(showBottomLine ? 1 : 0)
-                        .offset(x: showBottomLine ? 0 : 10)
+                        .opacity(showTaglineBottom ? 1 : 0)
+                        .offset(x: showTaglineBottom ? 0 : 10)
                 }
+                    .opacity(showTaglineBottom ? 1 : 0)
+                    .offset(y: showTaglineBottom ? 0 : -8)
 
-                Spacer().frame(height: 48)
+                Spacer().frame(height: 56)
 
                 // Google Sign-In button
                 Button {
@@ -70,34 +98,37 @@ struct OnboardingView: View {
                         if isSigningIn {
                             ProgressView()
                                 .scaleEffect(0.7)
-                                .tint(Color(hex: "#4285F4"))
+                                .tint(blue)
                         } else {
                             Text("G")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(Color(hex: "#4285F4"))
+                                .foregroundColor(blue)
                         }
-                        Text(isSigningIn ? "Signing in…" : "Sign in with Google")
+                        Text(isSigningIn ? "Signing in\u{2026}" : "Sign in with Google")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(Color(hex: "#1C1C1E"))
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .frame(minWidth: 220)
-                    .background(Color.white.opacity(isSigningIn ? 0.8 : 1))
-                    .cornerRadius(8)
-                    .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 14)
+                    .frame(minWidth: 230)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.white)
+                            .shadow(color: coral.opacity(0.25), radius: 20, y: 8)
+                            .shadow(color: blue.opacity(0.2), radius: 30, y: 12)
+                    )
                 }
                 .buttonStyle(.plain)
                 .disabled(isSigningIn)
                 .opacity(showButton ? 1 : 0)
-                .offset(y: showButton ? 0 : 20)
+                .offset(y: showButton ? 0 : 24)
 
                 if let error = signInError {
                     Text(error)
                         .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#FF6B6B"))
+                        .foregroundColor(coral)
                         .multilineTextAlignment(.center)
-                        .padding(.top, 8)
+                        .padding(.top, 12)
                         .opacity(showButton ? 1 : 0)
                 }
 
@@ -119,35 +150,35 @@ struct OnboardingView: View {
 
     private var ambientLights: some View {
         ZStack {
-            // Orb 1 — large blue, slow drift
+            // Coral orb
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [Color(hex: "#58A6FF").opacity(0.35), Color.clear],
                         center: .center,
                         startRadius: 0,
-                        endRadius: 220
+                        endRadius: 240
                     )
                 )
-                .frame(width: 450, height: 450)
+                .frame(width: 500, height: 500)
                 .offset(orb1Offset)
-                .blur(radius: 80)
+                .blur(radius: 90)
 
-            // Orb 2 — purple/indigo accent
+            // Blue orb
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [Color(hex: "#A371F7").opacity(0.28), Color.clear],
                         center: .center,
                         startRadius: 0,
-                        endRadius: 180
+                        endRadius: 200
                     )
                 )
-                .frame(width: 380, height: 380)
+                .frame(width: 420, height: 420)
                 .offset(orb2Offset)
-                .blur(radius: 70)
+                .blur(radius: 80)
 
-            // Orb 3 — green accent
+            // Subtle warm accent
             Circle()
                 .fill(
                     RadialGradient(
@@ -157,23 +188,9 @@ struct OnboardingView: View {
                         endRadius: 160
                     )
                 )
-                .frame(width: 320, height: 320)
+                .frame(width: 340, height: 340)
                 .offset(orb3Offset)
-                .blur(radius: 60)
-
-            // Orb 4 — blue accent
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [Color(hex: "#58A6FF").opacity(0.24), Color.clear],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 200
-                    )
-                )
-                .frame(width: 400, height: 400)
-                .offset(orb4Offset)
-                .blur(radius: 90)
+                .blur(radius: 70)
         }
         .opacity(orbsVisible ? 1 : 0)
     }
@@ -181,50 +198,61 @@ struct OnboardingView: View {
     // MARK: - Animation Sequence
 
     private func runAnimationSequence() {
-        // Fade in ambient lights
-        withAnimation(.easeIn(duration: 1.5)) {
+        // 1. Ambient orbs fade in
+        withAnimation(.easeIn(duration: 1.8)) {
             orbsVisible = true
         }
-
-        // Start orb drift loops
         startOrbAnimations()
 
-        // Text reveal sequence
-        withAnimation(.easeOut(duration: 0.6).delay(0.6)) {
-            showTopLine = true
+        // 2. "Ser" slides in from left
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5)) {
+            showSer = true
         }
-        withAnimation(.spring(response: 0.7, dampingFraction: 0.75).delay(1.0)) {
-            showSerif = true
-            serifScale = 1.0
+
+        // 3. Icon drops in with rotation + bounce
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.55).delay(0.9)) {
+            showIcon = true
+            iconDrop = 0
+            iconRotation = 0
+            iconScale = 1.0
         }
-        withAnimation(.easeOut(duration: 0.6).delay(1.5)) {
-            showBottomLine = true
+
+        // 4. "f" slides in from right
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(1.2)) {
+            showF = true
         }
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(2.1)) {
+
+        // 5. Taglines
+        withAnimation(.easeOut(duration: 0.5).delay(1.6)) {
+            showTaglineTop = true
+        }
+        withAnimation(.easeOut(duration: 0.5).delay(1.8)) {
+            showTaglineBottom = true
+        }
+
+        // 6. Button
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(2.3)) {
             showButton = true
         }
     }
 
     private func startOrbAnimations() {
-        withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
-            orb1Offset = CGSize(width: 100, height: 60)
+        withAnimation(.easeInOut(duration: 9).repeatForever(autoreverses: true)) {
+            orb1Offset = CGSize(width: 120, height: 80)
         }
-        withAnimation(.easeInOut(duration: 10).repeatForever(autoreverses: true).delay(0.5)) {
-            orb2Offset = CGSize(width: -130, height: -80)
+        withAnimation(.easeInOut(duration: 11).repeatForever(autoreverses: true).delay(0.5)) {
+            orb2Offset = CGSize(width: -140, height: -90)
         }
-        withAnimation(.easeInOut(duration: 9).repeatForever(autoreverses: true).delay(1.0)) {
-            orb3Offset = CGSize(width: 80, height: -100)
-        }
-        withAnimation(.easeInOut(duration: 11).repeatForever(autoreverses: true).delay(0.3)) {
-            orb4Offset = CGSize(width: -100, height: 100)
+        withAnimation(.easeInOut(duration: 10).repeatForever(autoreverses: true).delay(1.0)) {
+            orb3Offset = CGSize(width: 90, height: -110)
         }
     }
 
     // MARK: - Sign In
 
     private func handleSignIn() async {
-        isSigningIn  = true
-        signInError  = nil
+        isSigningIn = true
+        signInError = nil
         await authViewModel.signIn()
         isSigningIn = false
         if authViewModel.hasAccounts {
@@ -250,7 +278,7 @@ struct OnboardingView: View {
                 window.isMovableByWindowBackground = true
                 window.titlebarAppearsTransparent = true
                 window.titleVisibility = .hidden
-                window.backgroundColor = NSColor(red: 0.004, green: 0.016, blue: 0.035, alpha: 1)
+                window.backgroundColor = NSColor(red: 0.031, green: 0.035, blue: 0.047, alpha: 1)
             }
         }
     }
