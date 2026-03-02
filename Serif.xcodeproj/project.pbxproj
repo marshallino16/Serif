@@ -89,6 +89,10 @@
 		A100010100000000000000CE /* SidebarRowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000CE /* SidebarRowViews.swift */; };
 		A100010100000000000000CF /* AccountSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000CF /* AccountSwitcherView.swift */; };
 		A100010100000000000000D0 /* AccountAvatarBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000D0 /* AccountAvatarBubble.swift */; };
+		A100010100000000000000D1 /* SlidePanelsOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000D1 /* SlidePanelsOverlay.swift */; };
+		A100010100000000000000D2 /* DetailPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000D2 /* DetailPaneView.swift */; };
+		A100010100000000000000D3 /* ListPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000D3 /* ListPaneView.swift */; };
+		A100010100000000000000D4 /* PanelCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000D4 /* PanelCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -176,6 +180,10 @@
 		A100020100000000000000CE /* SidebarRowViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarRowViews.swift; sourceTree = "<group>"; };
 		A100020100000000000000CF /* AccountSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSwitcherView.swift; sourceTree = "<group>"; };
 		A100020100000000000000D0 /* AccountAvatarBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountAvatarBubble.swift; sourceTree = "<group>"; };
+		A100020100000000000000D1 /* SlidePanelsOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlidePanelsOverlay.swift; sourceTree = "<group>"; };
+		A100020100000000000000D2 /* DetailPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailPaneView.swift; sourceTree = "<group>"; };
+		A100020100000000000000D3 /* ListPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListPaneView.swift; sourceTree = "<group>"; };
+		A100020100000000000000D4 /* PanelCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -269,6 +277,7 @@
 				A1000201000000000000000A /* EmailRowView.swift */,
 				A10002010000000000000089 /* SwipeableEmailRow.swift */,
 				A100020100000000000000A0 /* BulkActionBarView.swift */,
+				A100020100000000000000D3 /* ListPaneView.swift */,
 			);
 			path = EmailList;
 			sourceTree = "<group>";
@@ -282,6 +291,7 @@
 				A100020100000000000000CB /* SenderInfoPopover.swift */,
 				A100020100000000000000CC /* EmailDetailSkeletonView.swift */,
 				A100020100000000000000CD /* GmailThreadMessageView.swift */,
+				A100020100000000000000D2 /* DetailPaneView.swift */,
 				A10002010000000000000084 /* HTMLEmailView.swift */,
 				A1000201000000000000000C /* AttachmentChipView.swift */,
 				A10002010000000000000085 /* AttachmentPreviewView.swift */,
@@ -308,6 +318,7 @@
 				A10002010000000000000083 /* LabelChipView.swift */,
 				A100020100000000000000C6 /* SettingsCardsView.swift */,
 				A100020100000000000000D0 /* AccountAvatarBubble.swift */,
+				A100020100000000000000D1 /* SlidePanelsOverlay.swift */,
 			);
 			path = Common;
 			sourceTree = "<group>";
@@ -417,6 +428,7 @@
 				A1000201000000000000007D /* EmailDetailViewModel.swift */,
 				A1000201000000000000007E /* ComposeViewModel.swift */,
 				A100020100000000000000C5 /* EmailActionCoordinator.swift */,
+				A100020100000000000000D4 /* PanelCoordinator.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -595,6 +607,10 @@
 				A100010100000000000000CE /* SidebarRowViews.swift in Sources */,
 				A100010100000000000000CF /* AccountSwitcherView.swift in Sources */,
 				A100010100000000000000D0 /* AccountAvatarBubble.swift in Sources */,
+				A100010100000000000000D1 /* SlidePanelsOverlay.swift in Sources */,
+				A100010100000000000000D2 /* DetailPaneView.swift in Sources */,
+				A100010100000000000000D3 /* ListPaneView.swift in Sources */,
+				A100010100000000000000D4 /* PanelCoordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
