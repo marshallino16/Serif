@@ -339,6 +339,7 @@ struct ContentView: View {
         if let account = authViewModel.primaryAccount {
             selectedAccountID = account.id
             mailboxViewModel.accountID = account.id
+            SubscriptionsStore.shared.accountID = account.id
             attachmentStore.accountID = account.id
             loadSignatures(for: account.id)
             let indexer = AttachmentIndexer(
@@ -410,7 +411,7 @@ struct ContentView: View {
         loadSignatures(for: id)
         selectedEmailIDs = []
         ThumbnailCache.shared.clearAll()
-        SubscriptionsStore.shared.removeAll()
+        SubscriptionsStore.shared.accountID = id
         attachmentStore.accountID = id
         attachmentStore.refresh()
         let indexer = AttachmentIndexer(

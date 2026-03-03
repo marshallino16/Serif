@@ -1,5 +1,11 @@
 import Foundation
 
+/// Wrapper that stores messages alongside pagination state.
+struct FolderCache: Codable {
+    var messages: [GmailMessage]
+    var nextPageToken: String?
+}
+
 /// File-based cache for mails, labels, and threads — per account + folder.
 final class MailCacheStore {
     static let shared = MailCacheStore()
@@ -28,14 +34,32 @@ final class MailCacheStore {
         return base.isEmpty ? "_all" : base
     }
 
-    // MARK: - Messages
+    // MARK: - Messages (FolderCache — with pagination metadata)
+
+    func loadFolderCache(accountID: String, folderKey: String) -> FolderCache {
+        let url = fileURL(accountID: accountID, folderKey: folderKey)
+        guard let data = try? Data(contentsOf: url) else { return FolderCache(messages: []) }
+        // Try new FolderCache format first
+        if let cache = try? JSONDecoder().decode(FolderCache.self, from: data) {
+            return cache
+        }
+        // Backward compat: old format was plain [GmailMessage]
+        if let messages = try? JSONDecoder().decode([GmailMessage].self, from: data) {
+            return FolderCache(messages: messages)
+        }
+        return FolderCache(messages: [])
+    }
+
+    func saveFolderCache(_ cache: FolderCache, accountID: String, folderKey: String) {
+        let url = fileURL(accountID: accountID, folderKey: folderKey)
+        guard let data = try? JSONEncoder().encode(cache) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+
+    // MARK: - Messages (legacy — used by switchAccount and other non-folder code)
 
     func load(accountID: String, folderKey: String) -> [GmailMessage] {
-        let url = fileURL(accountID: accountID, folderKey: folderKey)
-        guard let data = try? Data(contentsOf: url),
-              let messages = try? JSONDecoder().decode([GmailMessage].self, from: data)
-        else { return [] }
-        return messages
+        loadFolderCache(accountID: accountID, folderKey: folderKey).messages
     }
 
     func save(_ messages: [GmailMessage], accountID: String, folderKey: String) {

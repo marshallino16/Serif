@@ -48,6 +48,7 @@ final class AccountStore {
         MailCacheStore.shared.deleteAccount(id)
         UnsubscribeService.shared.clearAccount(id)
         ContactStore.shared.deleteAccount(id)
+        Task { @MainActor in SubscriptionsStore.shared.deleteAccount(id) }
     }
 
     func update(_ account: GmailAccount) {

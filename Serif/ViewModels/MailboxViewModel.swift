@@ -25,6 +25,15 @@ final class MailboxViewModel: ObservableObject {
     /// Monotonically increasing token to discard stale results from races.
     private var fetchGeneration: UInt64 = 0
 
+    // MARK: - Local pagination state
+    /// Full set of messages loaded from disk cache.
+    private var allCachedMessages: [GmailMessage] = []
+    /// Current offset into allCachedMessages for local pagination.
+    private var localOffset: Int = 0
+    /// API page token persisted from disk cache (for resuming API pagination).
+    private var savedPageToken: String?
+    private let pageSize = 50
+
     init(accountID: String) {
         self.accountID = accountID
     }
@@ -64,9 +73,36 @@ final class MailboxViewModel: ObservableObject {
     }
 
     func loadMore() async {
+        // 1. Serve from local cache — skip pages with only duplicates
+        while localOffset < allCachedMessages.count {
+            let end = min(localOffset + pageSize, allCachedMessages.count)
+            let localPage = Array(allCachedMessages[localOffset..<end])
+            let existingIDs = Set(messages.map(\.id))
+            let newOnes = localPage.filter { !existingIDs.contains($0.id) }
+            localOffset = end
+            if !newOnes.isEmpty {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+                    messages.append(contentsOf: newOnes)
+                }
+                return
+            }
+            // All duplicates — continue to next chunk or fall through to API
+        }
+        // 2. Local cache exhausted — fetch from API.
+        //    Use savedPageToken (end of cache) if available, otherwise nextPageToken
+        //    (from initial sync). Then skip through duplicate API pages automatically.
+        if let saved = savedPageToken {
+            nextPageToken  = saved
+            savedPageToken = nil
+        }
         guard nextPageToken != nil else { return }
         let gen = fetchGeneration // don't bump — loadMore appends, doesn't replace
+        let countBefore = messages.count
         await fetchMessages(reset: false, generation: gen)
+        // If API returned only duplicates, keep fetching until we get new content
+        while messages.count == countBefore && nextPageToken != nil && !Task.isCancelled {
+            await fetchMessages(reset: false, generation: gen)
+        }
     }
 
     /// Cancel any in-flight search/load task. Called from the view layer
@@ -130,12 +166,18 @@ final class MailboxViewModel: ObservableObject {
         readIDs       = []
         error         = nil
         messageCache  = [:]
-        // Load disk cache for default folder
+        allCachedMessages = []
+        localOffset       = 0
+        savedPageToken    = nil
+        // Load disk cache for default folder (paginated)
         let folderKey = MailCacheStore.folderKey(labelIDs: currentLabelIDs, query: currentQuery)
-        let cached = MailCacheStore.shared.load(accountID: id, folderKey: folderKey)
-        if !cached.isEmpty {
-            for msg in cached { messageCache[msg.id] = msg }
-            messages = cached
+        let cache = MailCacheStore.shared.loadFolderCache(accountID: id, folderKey: folderKey)
+        if !cache.messages.isEmpty {
+            allCachedMessages = cache.messages
+            savedPageToken    = cache.nextPageToken
+            for msg in allCachedMessages { messageCache[msg.id] = msg }
+            messages    = Array(allCachedMessages.prefix(pageSize))
+            localOffset = messages.count
         } else {
             messages = []
         }
@@ -196,6 +238,7 @@ final class MailboxViewModel: ObservableObject {
             try await GmailMessageService.shared.trashMessage(id: messageID, accountID: accountID)
             messages.removeAll { $0.id == messageID }   // no-op if already removed optimistically
             messageCache[messageID] = nil
+            allCachedMessages.removeAll { $0.id == messageID }
             saveCacheToDisk()
         } catch { self.error = error.localizedDescription }
     }
@@ -205,6 +248,7 @@ final class MailboxViewModel: ObservableObject {
             try await GmailMessageService.shared.archiveMessage(id: messageID, accountID: accountID)
             messages.removeAll { $0.id == messageID }   // no-op if already removed optimistically
             messageCache[messageID] = nil
+            allCachedMessages.removeAll { $0.id == messageID }
             saveCacheToDisk()
         } catch { self.error = error.localizedDescription }
     }
@@ -218,6 +262,7 @@ final class MailboxViewModel: ObservableObject {
         withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
             messages.remove(at: idx)
         }
+        allCachedMessages.removeAll { $0.id == messageID }
         saveCacheToDisk()
         return msg
     }
@@ -239,14 +284,18 @@ final class MailboxViewModel: ObservableObject {
     func emptyTrash() async {
         let backup = messages
         let cacheBackup = messageCache
+        let cachedBackup = allCachedMessages
         messages.removeAll()
         messageCache.removeAll()
+        allCachedMessages.removeAll()
+        localOffset = 0
         saveCacheToDisk()
         do {
             try await GmailMessageService.shared.emptyTrash(accountID: accountID)
         } catch {
             messages = backup
             messageCache = cacheBackup
+            allCachedMessages = cachedBackup
             saveCacheToDisk()
             self.error = error.localizedDescription
         }
@@ -255,14 +304,18 @@ final class MailboxViewModel: ObservableObject {
     func emptySpam() async {
         let backup = messages
         let cacheBackup = messageCache
+        let cachedBackup = allCachedMessages
         messages.removeAll()
         messageCache.removeAll()
+        allCachedMessages.removeAll()
+        localOffset = 0
         saveCacheToDisk()
         do {
             try await GmailMessageService.shared.emptySpam(accountID: accountID)
         } catch {
             messages = backup
             messageCache = cacheBackup
+            allCachedMessages = cachedBackup
             saveCacheToDisk()
             self.error = error.localizedDescription
         }
@@ -376,7 +429,12 @@ final class MailboxViewModel: ObservableObject {
     // MARK: - Disk Cache Sync
 
     private func saveCacheToDisk() {
-        MailCacheStore.shared.save(messages, accountID: accountID, folderKey: currentFolderKey)
+        // Rebuild: displayed messages (current state) + not-yet-displayed cached messages
+        let displayedIDs = Set(messages.map(\.id))
+        let remaining = allCachedMessages.filter { !displayedIDs.contains($0.id) }
+        allCachedMessages = messages + remaining
+        let cache = FolderCache(messages: allCachedMessages, nextPageToken: savedPageToken)
+        MailCacheStore.shared.saveFolderCache(cache, accountID: accountID, folderKey: currentFolderKey)
     }
 
     // MARK: - Private fetch
@@ -389,15 +447,27 @@ final class MailboxViewModel: ObservableObject {
         guard !accountID.isEmpty else { return }
         let folderKey = currentFolderKey
 
-        // Pre-populate in-memory cache from disk (avoids re-fetching known messages)
+        // ── Local-first: load from disk cache and paginate locally ──
         if reset {
-            let cached = MailCacheStore.shared.load(accountID: accountID, folderKey: folderKey)
-            if !cached.isEmpty {
-                for msg in cached { messageCache[msg.id] = msg }
-                // Show cached messages instantly on folder change (no skeleton)
-                if clearFirst { messages = cached }
-            } else if clearFirst {
-                messages = []
+            let cache = MailCacheStore.shared.loadFolderCache(accountID: accountID, folderKey: folderKey)
+            allCachedMessages = cache.messages
+            savedPageToken    = cache.nextPageToken
+            if !allCachedMessages.isEmpty {
+                for msg in allCachedMessages { messageCache[msg.id] = msg }
+                // Show first page instantly (no skeleton)
+                let firstPage = Array(allCachedMessages.prefix(pageSize))
+                localOffset   = firstPage.count
+                if clearFirst || messages.isEmpty {
+                    messages = firstPage
+                } else {
+                    // Same folder reload — only update if content differs
+                    let cachedIDs   = Set(firstPage.map(\.id))
+                    let currentIDs  = Set(messages.map(\.id))
+                    if cachedIDs != currentIDs { messages = firstPage }
+                }
+            } else {
+                localOffset = 0
+                if clearFirst { messages = [] }
             }
         }
 
@@ -405,11 +475,12 @@ final class MailboxViewModel: ObservableObject {
         error     = nil
         defer { isLoading = false }
         do {
+            // ── API sync: fetch latest page to discover new messages ──
             let list = try await GmailMessageService.shared.listMessages(
                 accountID: accountID,
                 labelIDs:  currentLabelIDs,
                 query:     currentQuery,
-                pageToken: reset ? nil : nextPageToken
+                pageToken: reset ? nil : (nextPageToken ?? savedPageToken)
             )
 
             // Bail out if a newer request has started while we were awaiting
@@ -445,31 +516,48 @@ final class MailboxViewModel: ObservableObject {
             let page = refs.compactMap { messageCache[$0.id] }
 
             if reset {
-                let pageIDs     = Set(page.map(\.id))
-                let existingIDs = Set(messages.map(\.id))
-                let hasChanges  = pageIDs != existingIDs
+                // Find truly new messages (from API but not in our cached set)
+                let cachedIDs = Set(allCachedMessages.map(\.id))
+                let newMessages = page.filter { !cachedIDs.contains($0.id) }
 
-                if hasChanges {
+                if !newMessages.isEmpty {
+                    // Prepend new messages to allCachedMessages and display
+                    allCachedMessages.insert(contentsOf: newMessages, at: 0)
+                    for msg in newMessages { messageCache[msg.id] = msg }
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
-                        messages = page
+                        messages.insert(contentsOf: newMessages, at: 0)
                     }
-                } else {
-                    messages = page
+                    localOffset += newMessages.count
+                    SubscriptionsStore.shared.analyze(newMessages.map { makeEmail(from: $0) })
                 }
-                SubscriptionsStore.shared.analyze(page.map { makeEmail(from: $0) })
-                // Persist to disk
-                MailCacheStore.shared.save(page, accountID: accountID, folderKey: folderKey)
+                // Save updated cache with pagination token
+                let cacheToSave = FolderCache(
+                    messages: allCachedMessages,
+                    nextPageToken: nextPageToken ?? savedPageToken
+                )
+                MailCacheStore.shared.saveFolderCache(cacheToSave, accountID: accountID, folderKey: folderKey)
             } else {
+                // loadMore via API — append new messages
                 let existingIDs = Set(messages.map(\.id))
                 let newOnes = page.filter { !existingIDs.contains($0.id) }
                 if !newOnes.isEmpty {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
-                        messages = messages + newOnes
+                        messages.append(contentsOf: newOnes)
                     }
+                    // Also append to allCachedMessages for future local pagination
+                    let cachedIDs = Set(allCachedMessages.map(\.id))
+                    let trulyNew = newOnes.filter { !cachedIDs.contains($0.id) }
+                    allCachedMessages.append(contentsOf: trulyNew)
+                    localOffset = allCachedMessages.count
                     SubscriptionsStore.shared.analyze(newOnes.map { makeEmail(from: $0) })
                 }
-                // Persist full list to disk
-                MailCacheStore.shared.save(messages, accountID: accountID, folderKey: folderKey)
+                // Update savedPageToken and persist
+                savedPageToken = nextPageToken
+                let cacheToSave = FolderCache(
+                    messages: allCachedMessages,
+                    nextPageToken: nextPageToken
+                )
+                MailCacheStore.shared.saveFolderCache(cacheToSave, accountID: accountID, folderKey: folderKey)
             }
 
         } catch is CancellationError {
