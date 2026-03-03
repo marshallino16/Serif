@@ -25,6 +25,8 @@ struct ContentView: View {
     @State private var lastRefreshedAt: Date?
     @State private var showEmptyTrashConfirm = false
     @State private var trashTotalCount = 0
+    @State private var showEmptySpamConfirm = false
+    @State private var spamTotalCount = 0
     @State private var selectedEmailIDs: Set<String> = []
     @State private var searchFocusTrigger = false
 
@@ -71,6 +73,15 @@ struct ContentView: View {
                 } message: {
                     Text("This will permanently delete \(trashTotalCount) message\(trashTotalCount == 1 ? "" : "s"). This action cannot be undone.")
                 }
+                .alert("Empty Spam", isPresented: $showEmptySpamConfirm) {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Delete All", role: .destructive) {
+                        selectedEmail = nil
+                        Task { await mailboxViewModel.emptySpam() }
+                    }
+                } message: {
+                    Text("This will permanently delete \(spamTotalCount) spam message\(spamTotalCount == 1 ? "" : "s"). This action cannot be undone.")
+                }
         )
     }
 
@@ -108,7 +119,8 @@ struct ContentView: View {
                         mailboxViewModel: mailboxViewModel,
                         onSelectNext: { selectedEmail = $0 },
                         onLoadCurrentFolder: { await loadCurrentFolder() },
-                        onEmptyTrashRequested: { count in trashTotalCount = count; showEmptyTrashConfirm = true }
+                        onEmptyTrashRequested: { count in trashTotalCount = count; showEmptyTrashConfirm = true },
+                        onEmptySpamRequested: { count in spamTotalCount = count; showEmptySpamConfirm = true }
                     )
 
                     Divider().background(themeManager.currentTheme.divider)

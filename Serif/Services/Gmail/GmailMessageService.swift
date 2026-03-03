@@ -184,6 +184,35 @@ final class GmailMessageService {
         }
     }
 
+    /// Permanently deletes all messages in Spam.
+    func emptySpam(accountID: String) async throws {
+        var pageToken: String? = nil
+        var allIDs: [String] = []
+        repeat {
+            let response = try await listMessages(
+                accountID: accountID,
+                labelIDs: ["SPAM"],
+                pageToken: pageToken,
+                maxResults: 100
+            )
+            allIDs.append(contentsOf: response.messages?.map(\.id) ?? [])
+            pageToken = response.nextPageToken
+        } while pageToken != nil
+
+        guard !allIDs.isEmpty else { return }
+
+        for batch in stride(from: 0, to: allIDs.count, by: 100) {
+            let ids = Array(allIDs[batch..<min(batch + 100, allIDs.count)])
+            struct BatchDeleteRequest: Encodable { let ids: [String] }
+            let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
+            _ = try await client.rawRequest(
+                path: "/users/me/messages/batchDelete",
+                method: "POST", body: body, contentType: "application/json",
+                accountID: accountID
+            )
+        }
+    }
+
     // MARK: - Attachments
 
     /// Downloads raw attachment data by attachment ID.

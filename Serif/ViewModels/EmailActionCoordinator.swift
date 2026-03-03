@@ -119,6 +119,21 @@ class EmailActionCoordinator: ObservableObject {
         }
     }
 
+    func emptySpam(accountID: String, onConfirm: @escaping (Int) -> Void) {
+        guard !accountID.isEmpty else { return }
+        Task {
+            var count: Int
+            do {
+                let label = try await GmailLabelService.shared.getLabel(id: "SPAM", accountID: accountID)
+                count = label.messagesTotal ?? 0
+            } catch {
+                count = mailboxViewModel.emails.count
+            }
+            guard count > 0 else { return }
+            onConfirm(count)
+        }
+    }
+
     // MARK: - Bulk actions
 
     func bulkArchive(_ emails: [Email], onClear: () -> Void) {

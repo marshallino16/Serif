@@ -15,6 +15,7 @@ struct EmailListView: View {
     let onDeletePermanently: ((Email) -> Void)?
     let onMarkNotSpam: ((Email) -> Void)?
     let onEmptyTrash: (() -> Void)?
+    let onEmptySpam: (() -> Void)?
     let onBulkArchive: (() -> Void)?
     let onBulkDelete: (() -> Void)?
     let onBulkMarkUnread: (() -> Void)?
@@ -110,6 +111,21 @@ struct EmailListView: View {
                         onEmptyTrash()
                     } label: {
                         Text("Empty Trash")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(theme.destructive)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(theme.destructive.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if selectedFolder == .spam, !emails.isEmpty, let onEmptySpam {
+                    Button {
+                        onEmptySpam()
+                    } label: {
+                        Text("Empty Spam")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(theme.destructive)
                             .padding(.horizontal, 10)

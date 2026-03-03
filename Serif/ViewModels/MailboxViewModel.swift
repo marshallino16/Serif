@@ -246,6 +246,20 @@ final class MailboxViewModel: ObservableObject {
         }
     }
 
+    func emptySpam() async {
+        let backup = messages
+        let cacheBackup = messageCache
+        messages.removeAll()
+        messageCache.removeAll()
+        do {
+            try await GmailMessageService.shared.emptySpam(accountID: accountID)
+        } catch {
+            messages = backup
+            messageCache = cacheBackup
+            self.error = error.localizedDescription
+        }
+    }
+
     func moveToInbox(_ messageID: String) async {
         do {
             try await GmailMessageService.shared.modifyLabels(

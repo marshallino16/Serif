@@ -15,6 +15,7 @@ struct ListPaneView: View {
     let onSelectNext: (Email?) -> Void
     let onLoadCurrentFolder: () async -> Void
     let onEmptyTrashRequested: (Int) -> Void
+    let onEmptySpamRequested: (Int) -> Void
 
     private var selectedEmails: [Email] {
         emails.filter { selectedEmailIDs.contains($0.id.uuidString) }
@@ -54,6 +55,11 @@ struct ListPaneView: View {
             onEmptyTrash: {
                 actionCoordinator.emptyTrash(accountID: mailboxViewModel.accountID) { count in
                     onEmptyTrashRequested(count)
+                }
+            },
+            onEmptySpam: {
+                actionCoordinator.emptySpam(accountID: mailboxViewModel.accountID) { count in
+                    onEmptySpamRequested(count)
                 }
             },
             onBulkArchive:    { actionCoordinator.bulkArchive(selectedEmails, onClear: clearSelection) },
