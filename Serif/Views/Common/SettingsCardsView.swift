@@ -269,6 +269,9 @@ struct StorageSettingsCard: View {
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
         .onAppear { dbSize = AttachmentDatabase.shared.databaseSizeBytes() }
+        .onChange(of: attachmentStore.stats.total) { _ in
+            dbSize = AttachmentDatabase.shared.databaseSizeBytes()
+        }
         .alert("Clear attachment index?", isPresented: $showClearConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Clear", role: .destructive) {

@@ -20,8 +20,8 @@ struct ContentView: View {
     @State private var composeMode: ComposeMode = .new
     @AppStorage("undoDuration")        private var undoDuration:        Int = 5
     @AppStorage("refreshInterval")     private var refreshInterval:     Int = 120
-    @AppStorage("signatureForNew")     private var signatureForNew:     String = ""
-    @AppStorage("signatureForReply")   private var signatureForReply:   String = ""
+    @State private var signatureForNew:     String = ""
+    @State private var signatureForReply:   String = ""
     @State private var lastRefreshedAt: Date?
     @State private var showEmptyTrashConfirm = false
     @State private var trashTotalCount = 0
@@ -245,6 +245,18 @@ struct ContentView: View {
         selectedEmail = nil
     }
 
+    // MARK: - Per-Account Signatures
+
+    private func loadSignatures(for id: String) {
+        signatureForNew = UserDefaults.standard.string(forKey: "signatureForNew.\(id)") ?? ""
+        signatureForReply = UserDefaults.standard.string(forKey: "signatureForReply.\(id)") ?? ""
+    }
+
+    private func saveSignatures(for id: String) {
+        UserDefaults.standard.set(signatureForNew, forKey: "signatureForNew.\(id)")
+        UserDefaults.standard.set(signatureForReply, forKey: "signatureForReply.\(id)")
+    }
+
     // MARK: - Folder Loading
 
     private func loadCurrentFolder() async {
@@ -291,6 +303,8 @@ struct ContentView: View {
             .onChange(of: authViewModel.accounts, perform: handleAccountsChange)
             .onChange(of: mailboxViewModel.messages.count) { _ in }
             .onChange(of: selectedEmail, perform: handleSelectedEmailChange)
+            .onChange(of: signatureForNew) { _ in if !accountID.isEmpty { saveSignatures(for: accountID) } }
+            .onChange(of: signatureForReply) { _ in if !accountID.isEmpty { saveSignatures(for: accountID) } }
             .onChange(of: mailboxViewModel.lastRestoredMessageID) { msgID in
                 guard let msgID else { return }
                 mailboxViewModel.lastRestoredMessageID = nil
@@ -314,6 +328,7 @@ struct ContentView: View {
             selectedAccountID = account.id
             mailboxViewModel.accountID = account.id
             attachmentStore.accountID = account.id
+            loadSignatures(for: account.id)
             let indexer = AttachmentIndexer(
                 database: .shared,
                 messageService: .shared,
@@ -377,6 +392,10 @@ struct ContentView: View {
         guard let id = newID else { return }
         // Skip if handleAppear already set up this account
         guard mailboxViewModel.accountID != id else { return }
+        // Save current account's signatures before switching
+        let oldID = mailboxViewModel.accountID
+        if !oldID.isEmpty { saveSignatures(for: oldID) }
+        loadSignatures(for: id)
         selectedEmailIDs = []
         ThumbnailCache.shared.clearAll()
         SubscriptionsStore.shared.removeAll()
