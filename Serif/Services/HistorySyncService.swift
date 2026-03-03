@@ -4,6 +4,12 @@ import SwiftUI
 @MainActor
 final class HistorySyncService {
 
+    private let api: MessageFetching
+
+    init(api: MessageFetching = GmailMessageService.shared) {
+        self.api = api
+    }
+
     /// Result of a successful history sync operation.
     struct SyncResult {
         var deletedIDs: Set<String> = []
@@ -41,11 +47,12 @@ final class HistorySyncService {
             var pageToken: String? = nil
 
             repeat {
-                let response = try await GmailMessageService.shared.listHistory(
+                let response = try await api.listHistory(
                     accountID: accountID,
                     startHistoryId: startHistoryId,
                     labelId: labelId,
-                    pageToken: pageToken
+                    pageToken: pageToken,
+                    maxResults: 500
                 )
 
                 latestHistoryId = response.historyId
@@ -74,7 +81,7 @@ final class HistorySyncService {
             let newIDs = allAdded.filter { !existingMessageIDs.contains($0) && !allDeleted.contains($0) }
 
             if !newIDs.isEmpty {
-                let fetched = try await GmailMessageService.shared.getMessages(
+                let fetched = try await api.getMessages(
                     ids: newIDs, accountID: accountID, format: "metadata"
                 )
                 result.newMessages = fetched.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
@@ -84,7 +91,7 @@ final class HistorySyncService {
             // Only refresh messages that are currently displayed and weren't just added/deleted
             let toRefetch = labelChanges.subtracting(allDeleted).subtracting(Set(newIDs)).filter { existingMessageIDs.contains($0) }
             if !toRefetch.isEmpty {
-                let refreshed = try await GmailMessageService.shared.getMessages(
+                let refreshed = try await api.getMessages(
                     ids: Array(toRefetch), accountID: accountID, format: "metadata"
                 )
                 result.refreshedMessages = refreshed

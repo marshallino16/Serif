@@ -6,6 +6,11 @@ import SwiftUI
 @MainActor
 final class MessageFetchService {
 
+    // MARK: - Injected dependencies
+
+    private let api: MessageFetching
+    private let cache: CacheStoring
+
     // MARK: - Dependencies (set by MailboxViewModel)
 
     /// Called to convert a GmailMessage into an Email for background analysis.
@@ -24,6 +29,11 @@ final class MessageFetchService {
     /// API page token persisted from disk cache (for resuming API pagination).
     var savedPageToken: String?
     let pageSize = 50
+
+    init(api: MessageFetching = GmailMessageService.shared, cache: CacheStoring = MailCacheStore.shared) {
+        self.api = api
+        self.cache = cache
+    }
 
     /// Tracks the current fetch task so it can be cancelled when a new one starts.
     private var activeFetchTask: Task<Void, Never>?
@@ -64,9 +74,9 @@ final class MessageFetchService {
         accountID: String,
         folderKey: String
     ) -> (firstPage: [GmailMessage], hasCachedMessages: Bool) {
-        let cache = MailCacheStore.shared.loadFolderCache(accountID: accountID, folderKey: folderKey)
-        allCachedMessages = cache.messages
-        savedPageToken    = cache.nextPageToken
+        let diskCache = cache.loadFolderCache(accountID: accountID, folderKey: folderKey)
+        allCachedMessages = diskCache.messages
+        savedPageToken    = diskCache.nextPageToken
         if !allCachedMessages.isEmpty {
             for msg in allCachedMessages { messageCache[msg.id] = msg }
             let firstPage = Array(allCachedMessages.prefix(pageSize))
@@ -86,11 +96,12 @@ final class MessageFetchService {
         currentQuery: String?,
         pageToken: String?
     ) async throws -> GmailMessageListResponse {
-        try await GmailMessageService.shared.listMessages(
+        try await api.listMessages(
             accountID: accountID,
             labelIDs:  currentLabelIDs,
             query:     currentQuery,
-            pageToken: pageToken
+            pageToken: pageToken,
+            maxResults: pageSize
         )
     }
 
@@ -102,7 +113,7 @@ final class MessageFetchService {
     ) async throws -> [GmailMessage] {
         let idsToFetch = refs.map(\.id).filter { messageCache[$0] == nil }
         guard !idsToFetch.isEmpty else { return [] }
-        let fetched = try await GmailMessageService.shared.getMessages(
+        let fetched = try await api.getMessages(
             ids: idsToFetch,
             accountID: accountID,
             format: "metadata"
@@ -147,7 +158,7 @@ final class MessageFetchService {
             messages: allCachedMessages,
             nextPageToken: nextPageToken ?? savedPageToken
         )
-        MailCacheStore.shared.saveFolderCache(cacheToSave, accountID: accountID, folderKey: folderKey)
+        cache.saveFolderCache(cacheToSave, accountID: accountID, folderKey: folderKey)
     }
 
     /// Updates savedPageToken and persists the cache (for loadMore).
@@ -161,7 +172,7 @@ final class MessageFetchService {
             messages: allCachedMessages,
             nextPageToken: nextPageToken
         )
-        MailCacheStore.shared.saveFolderCache(cacheToSave, accountID: accountID, folderKey: folderKey)
+        cache.saveFolderCache(cacheToSave, accountID: accountID, folderKey: folderKey)
     }
 
     // MARK: - Load more (local pagination)
@@ -204,8 +215,8 @@ final class MessageFetchService {
         let remaining = allCachedMessages.filter { !displayedIDs.contains($0.id) }
         allCachedMessages = messages + remaining
         let folderKey = MailCacheStore.folderKey(labelIDs: currentLabelIDs, query: currentQuery)
-        let cache = FolderCache(messages: allCachedMessages, nextPageToken: savedPageToken)
-        MailCacheStore.shared.saveFolderCache(cache, accountID: accountID, folderKey: folderKey)
+        let folderCache = FolderCache(messages: allCachedMessages, nextPageToken: savedPageToken)
+        cache.saveFolderCache(folderCache, accountID: accountID, folderKey: folderKey)
     }
 
     // MARK: - Background analysis (subscriptions + attachments)
@@ -237,10 +248,10 @@ final class MessageFetchService {
         currentQuery: String?
     ) -> [GmailMessage] {
         let folderKey = MailCacheStore.folderKey(labelIDs: currentLabelIDs, query: currentQuery)
-        let cache = MailCacheStore.shared.loadFolderCache(accountID: accountID, folderKey: folderKey)
-        if !cache.messages.isEmpty {
-            allCachedMessages = cache.messages
-            savedPageToken    = cache.nextPageToken
+        let diskCache = cache.loadFolderCache(accountID: accountID, folderKey: folderKey)
+        if !diskCache.messages.isEmpty {
+            allCachedMessages = diskCache.messages
+            savedPageToken    = diskCache.nextPageToken
             for msg in allCachedMessages { messageCache[msg.id] = msg }
             let first = Array(allCachedMessages.prefix(pageSize))
             localOffset = first.count

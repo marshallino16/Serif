@@ -115,11 +115,15 @@
 		B10001010000000000000002 /* EmailModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000002 /* EmailModelTests.swift */; };
 		B10001010000000000000003 /* GmailDataTransformerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000003 /* GmailDataTransformerTests.swift */; };
 		B10001010000000000000004 /* StringExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000004 /* StringExtensionsTests.swift */; };
+		B10001010000000000000005 /* ContentExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000005 /* ContentExtractorTests.swift */; };
+		B10001010000000000000006 /* TrackerBlockerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000006 /* TrackerBlockerTests.swift */; };
 		A100010100000000000000F0 /* SignatureResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F0 /* SignatureResolver.swift */; };
 		A100010100000000000000F1 /* ComposeModeInitializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F1 /* ComposeModeInitializer.swift */; };
 		A100010100000000000000F2 /* MessageFetchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F2 /* MessageFetchService.swift */; };
 		A100010100000000000000F3 /* LabelSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F3 /* LabelSyncService.swift */; };
 		A100010100000000000000F4 /* HistorySyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F4 /* HistorySyncService.swift */; };
+		A100010100000000000000F5 /* MessageFetching.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F5 /* MessageFetching.swift */; };
+		A100010100000000000000F6 /* CacheStoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F6 /* CacheStoring.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -233,12 +237,16 @@
 		B10002010000000000000002 /* EmailModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailModelTests.swift; sourceTree = "<group>"; };
 		B10002010000000000000003 /* GmailDataTransformerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailDataTransformerTests.swift; sourceTree = "<group>"; };
 		B10002010000000000000004 /* StringExtensionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensionsTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000005 /* ContentExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentExtractorTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000006 /* TrackerBlockerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerBlockerTests.swift; sourceTree = "<group>"; };
 		B10002010000000000000099 /* SerifTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SerifTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A100020100000000000000F0 /* SignatureResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignatureResolver.swift; sourceTree = "<group>"; };
 		A100020100000000000000F1 /* ComposeModeInitializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeModeInitializer.swift; sourceTree = "<group>"; };
 		A100020100000000000000F2 /* MessageFetchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageFetchService.swift; sourceTree = "<group>"; };
 		A100020100000000000000F3 /* LabelSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelSyncService.swift; sourceTree = "<group>"; };
 		A100020100000000000000F4 /* HistorySyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySyncService.swift; sourceTree = "<group>"; };
+		A100020100000000000000F5 /* MessageFetching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageFetching.swift; sourceTree = "<group>"; };
+		A100020100000000000000F6 /* CacheStoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheStoring.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -464,6 +472,7 @@
 			children = (
 				A10004010000000000000022 /* Auth */,
 				A10004010000000000000023 /* Gmail */,
+				A100040100000000000000F5 /* Protocols */,
 				A10002010000000000000081 /* APICache.swift */,
 				A1000201000000000000008A /* UndoActionManager.swift */,
 				A1000201000000000000008C /* UnsubscribeService.swift */,
@@ -511,6 +520,15 @@
 			path = Gmail;
 			sourceTree = "<group>";
 		};
+		A100040100000000000000F5 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				A100020100000000000000F5 /* MessageFetching.swift */,
+				A100020100000000000000F6 /* CacheStoring.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
 		A10004010000000000000024 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
@@ -554,6 +572,8 @@
 				B10002010000000000000002 /* EmailModelTests.swift */,
 				B10002010000000000000003 /* GmailDataTransformerTests.swift */,
 				B10002010000000000000004 /* StringExtensionsTests.swift */,
+				B10002010000000000000005 /* ContentExtractorTests.swift */,
+				B10002010000000000000006 /* TrackerBlockerTests.swift */,
 			);
 			path = SerifTests;
 			sourceTree = "<group>";
@@ -762,6 +782,8 @@
 				A100010100000000000000F2 /* MessageFetchService.swift in Sources */,
 				A100010100000000000000F3 /* LabelSyncService.swift in Sources */,
 				A100010100000000000000F4 /* HistorySyncService.swift in Sources */,
+				A100010100000000000000F5 /* MessageFetching.swift in Sources */,
+				A100010100000000000000F6 /* CacheStoring.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -773,6 +795,8 @@
 				B10001010000000000000002 /* EmailModelTests.swift in Sources */,
 				B10001010000000000000003 /* GmailDataTransformerTests.swift in Sources */,
 				B10001010000000000000004 /* StringExtensionsTests.swift in Sources */,
+				B10001010000000000000005 /* ContentExtractorTests.swift in Sources */,
+				B10001010000000000000006 /* TrackerBlockerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

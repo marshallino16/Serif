@@ -23,12 +23,21 @@ final class MailboxViewModel: ObservableObject {
 
     // MARK: - Services
 
-    private let fetchService   = MessageFetchService()
-    private let labelService   = LabelSyncService()
-    private let historyService = HistorySyncService()
+    private let api: MessageFetching
+    private let fetchService: MessageFetchService
+    private let labelService: LabelSyncService
+    private let historyService: HistorySyncService
 
-    init(accountID: String) {
+    init(
+        accountID: String,
+        api: MessageFetching = GmailMessageService.shared,
+        cache: CacheStoring = MailCacheStore.shared
+    ) {
         self.accountID = accountID
+        self.api = api
+        self.fetchService   = MessageFetchService(api: api, cache: cache)
+        self.labelService   = LabelSyncService(cache: cache)
+        self.historyService = HistorySyncService(api: api)
         // Wire up the makeEmail closure for background analysis.
         // Uses unowned since the service cannot outlive the VM that owns it.
         fetchService.makeEmail = { [unowned self] msg in
@@ -165,7 +174,7 @@ final class MailboxViewModel: ObservableObject {
             messages[idx].labelIds?.removeAll { $0 == "UNREAD" }
             fetchService.messageCache[message.id] = messages[idx]
         }
-        try? await GmailMessageService.shared.markAsRead(id: message.id, accountID: accountID)
+        try? await api.markAsRead(id: message.id, accountID: accountID)
     }
 
     func markAsUnread(_ messageID: String) async {
@@ -177,7 +186,7 @@ final class MailboxViewModel: ObservableObject {
         }
         readIDs.remove(messageID)
         do {
-            try await GmailMessageService.shared.markAsUnread(id: messageID, accountID: accountID)
+            try await api.markAsUnread(id: messageID, accountID: accountID)
         } catch { self.error = error.localizedDescription }
     }
 
@@ -191,7 +200,7 @@ final class MailboxViewModel: ObservableObject {
             fetchService.messageCache[messageID] = messages[idx]
         }
         do {
-            try await GmailMessageService.shared.setStarred(!isStarred, id: messageID, accountID: accountID)
+            try await api.setStarred(!isStarred, id: messageID, accountID: accountID)
         } catch {
             // Revert on failure
             if let idx = messages.firstIndex(where: { $0.id == messageID }) {
@@ -208,7 +217,7 @@ final class MailboxViewModel: ObservableObject {
 
     func trash(_ messageID: String) async {
         do {
-            try await GmailMessageService.shared.trashMessage(id: messageID, accountID: accountID)
+            try await api.trashMessage(id: messageID, accountID: accountID)
             messages.removeAll { $0.id == messageID }   // no-op if already removed optimistically
             fetchService.messageCache[messageID] = nil
             fetchService.allCachedMessages.removeAll { $0.id == messageID }
@@ -218,7 +227,7 @@ final class MailboxViewModel: ObservableObject {
 
     func archive(_ messageID: String) async {
         do {
-            try await GmailMessageService.shared.archiveMessage(id: messageID, accountID: accountID)
+            try await api.archiveMessage(id: messageID, accountID: accountID)
             messages.removeAll { $0.id == messageID }   // no-op if already removed optimistically
             fetchService.messageCache[messageID] = nil
             fetchService.allCachedMessages.removeAll { $0.id == messageID }
@@ -264,7 +273,7 @@ final class MailboxViewModel: ObservableObject {
         fetchService.localOffset = 0
         saveCacheToDisk()
         do {
-            try await GmailMessageService.shared.emptyTrash(accountID: accountID)
+            try await api.emptyTrash(accountID: accountID)
         } catch {
             messages = backup
             fetchService.messageCache = cacheBackup
@@ -284,7 +293,7 @@ final class MailboxViewModel: ObservableObject {
         fetchService.localOffset = 0
         saveCacheToDisk()
         do {
-            try await GmailMessageService.shared.emptySpam(accountID: accountID)
+            try await api.emptySpam(accountID: accountID)
         } catch {
             messages = backup
             fetchService.messageCache = cacheBackup
@@ -296,7 +305,7 @@ final class MailboxViewModel: ObservableObject {
 
     func moveToInbox(_ messageID: String) async {
         do {
-            try await GmailMessageService.shared.modifyLabels(
+            try await api.modifyLabels(
                 id: messageID, add: ["INBOX"], remove: [], accountID: accountID
             )
             messages.removeAll { $0.id == messageID }
@@ -306,8 +315,8 @@ final class MailboxViewModel: ObservableObject {
 
     func untrash(_ messageID: String) async {
         do {
-            try await GmailMessageService.shared.untrashMessage(id: messageID, accountID: accountID)
-            try await GmailMessageService.shared.modifyLabels(
+            try await api.untrashMessage(id: messageID, accountID: accountID)
+            try await api.modifyLabels(
                 id: messageID, add: ["INBOX"], remove: [], accountID: accountID
             )
             messages.removeAll { $0.id == messageID }
@@ -317,7 +326,7 @@ final class MailboxViewModel: ObservableObject {
 
     func deletePermanently(_ messageID: String) async {
         do {
-            try await GmailMessageService.shared.deleteMessagePermanently(id: messageID, accountID: accountID)
+            try await api.deleteMessagePermanently(id: messageID, accountID: accountID)
             messages.removeAll { $0.id == messageID }
             fetchService.messageCache[messageID] = nil
         } catch { self.error = error.localizedDescription }
@@ -325,7 +334,7 @@ final class MailboxViewModel: ObservableObject {
 
     func unspam(_ messageID: String) async {
         do {
-            try await GmailMessageService.shared.modifyLabels(
+            try await api.modifyLabels(
                 id: messageID, add: ["INBOX"], remove: ["SPAM"], accountID: accountID
             )
             messages.removeAll { $0.id == messageID }
@@ -335,7 +344,7 @@ final class MailboxViewModel: ObservableObject {
 
     func spam(_ messageID: String) async {
         do {
-            try await GmailMessageService.shared.spamMessage(id: messageID, accountID: accountID)
+            try await api.spamMessage(id: messageID, accountID: accountID)
             messages.removeAll { $0.id == messageID }
             fetchService.messageCache[messageID] = nil
         } catch { self.error = error.localizedDescription }
@@ -343,7 +352,7 @@ final class MailboxViewModel: ObservableObject {
 
     func addLabel(_ labelID: String, to messageID: String) async {
         do {
-            let updated = try await GmailMessageService.shared.modifyLabels(
+            let updated = try await api.modifyLabels(
                 id: messageID, add: [labelID], remove: [], accountID: accountID
             )
             if let idx = messages.firstIndex(where: { $0.id == messageID }) {
@@ -370,7 +379,7 @@ final class MailboxViewModel: ObservableObject {
 
     func removeLabel(_ labelID: String, from messageID: String) async {
         do {
-            let updated = try await GmailMessageService.shared.modifyLabels(
+            let updated = try await api.modifyLabels(
                 id: messageID, add: [], remove: [labelID], accountID: accountID
             )
             if let idx = messages.firstIndex(where: { $0.id == messageID }) {
