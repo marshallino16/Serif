@@ -21,6 +21,13 @@ extension Font {
     static let serifBadge = Font.system(size: 10, weight: .semibold)
 }
 
+// MARK: - Helpers
+
+extension Int {
+    /// Returns self if non-zero, otherwise the given default.
+    func nonZeroOr(_ fallback: Int) -> Int { self != 0 ? self : fallback }
+}
+
 // MARK: - Spacing
 
 enum Spacing {

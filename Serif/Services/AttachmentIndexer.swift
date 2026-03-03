@@ -13,6 +13,10 @@ actor AttachmentIndexer {
     /// Called on @MainActor after each indexing batch so the UI can refresh stats.
     var onProgressUpdate: (@MainActor () -> Void)?
 
+    func setProgressUpdate(_ handler: (@MainActor () -> Void)?) {
+        onProgressUpdate = handler
+    }
+
     init(database: AttachmentDatabase, messageService: GmailMessageService, accountID: String) {
         self.database = database
         self.messageService = messageService

@@ -189,38 +189,21 @@ struct ComposeView: View {
         guard !didApplyMode else { return }
         didApplyMode = true
 
-        switch mode {
-        case .new:
-            let sig = resolveSignature(preferredEmail: signatureForNew)
-            if !sig.isEmpty {
-                currentSignature = sig
-                bodyText = "\n\n\(sig)"
-            }
-        case .reply(let replyTo, let replySubject, let quotedBody, let replyToMessageID, let threadID):
-            to = replyTo
-            subject = replySubject.hasPrefix("Re:") ? replySubject : "Re: \(replySubject)"
-            let sig = resolveSignature(preferredEmail: signatureForReply)
-            currentSignature = sig
-            bodyText = sig.isEmpty ? "\n\n\(quotedBody)" : "\n\n\(sig)\n\n\(quotedBody)"
-            composeVM.threadID = threadID
-            composeVM.replyToMessageID = replyToMessageID
-        case .replyAll(let replyTo, let replyCc, let replySubject, let quotedBody, let replyToMessageID, let threadID):
-            to = replyTo
-            cc = replyCc
-            showCc = !replyCc.isEmpty
-            subject = replySubject.hasPrefix("Re:") ? replySubject : "Re: \(replySubject)"
-            let sig = resolveSignature(preferredEmail: signatureForReply)
-            currentSignature = sig
-            bodyText = sig.isEmpty ? "\n\n\(quotedBody)" : "\n\n\(sig)\n\n\(quotedBody)"
-            composeVM.threadID = threadID
-            composeVM.replyToMessageID = replyToMessageID
-        case .forward(let fwdSubject, let quotedBody):
-            to = ""
-            subject = fwdSubject.hasPrefix("Fwd:") ? fwdSubject : "Fwd: \(fwdSubject)"
-            let sig = resolveSignature(preferredEmail: signatureForReply)
-            currentSignature = sig
-            bodyText = sig.isEmpty ? "\n\n\(quotedBody)" : "\n\n\(sig)\n\n\(quotedBody)"
-        }
+        let fields = ComposeModeInitializer.apply(
+            mode: mode,
+            signatureForNew: signatureForNew,
+            signatureForReply: signatureForReply,
+            aliases: sendAsAliases
+        )
+
+        to               = fields.to.isEmpty ? to : fields.to
+        cc               = fields.cc.isEmpty ? cc : fields.cc
+        showCc           = fields.showCc || showCc
+        subject          = fields.subject.isEmpty ? subject : fields.subject
+        bodyText         = fields.bodyText.isEmpty ? bodyText : fields.bodyText
+        currentSignature = fields.currentSignature
+        if let tid = fields.threadID          { composeVM.threadID = tid }
+        if let mid = fields.replyToMessageID  { composeVM.replyToMessageID = mid }
     }
 
     private func scheduleAutoSave() {
@@ -418,23 +401,6 @@ struct ComposeView: View {
 
     // MARK: - Signature helpers
 
-    /// Resolves the signature text for a given preferred alias email.
-    /// Falls back to the default/primary alias, then first alias with a signature.
-    private func resolveSignature(preferredEmail: String) -> String {
-        let alias: GmailSendAs?
-        if !preferredEmail.isEmpty {
-            alias = sendAsAliases.first(where: { $0.sendAsEmail == preferredEmail })
-        } else {
-            alias = sendAsAliases.first(where: { $0.isPrimary == true })
-                ?? sendAsAliases.first(where: { $0.isDefault == true })
-                ?? sendAsAliases.first
-        }
-        guard let sig = alias?.signature, !sig.isEmpty else { return "" }
-        let plain = sig.strippingHTML.trimmingCharacters(in: .whitespacesAndNewlines)
-        return plain.isEmpty ? "" : plain
-    }
-
-    /// Replaces the current signature in the body with the one from the new alias.
     private func replaceSignature(for aliasEmail: String) {
         let isReplyOrForward: Bool
         switch mode {
@@ -442,23 +408,18 @@ struct ComposeView: View {
         default:   isReplyOrForward = true
         }
         let preferredEmail = isReplyOrForward ? signatureForReply : signatureForNew
-        // Use the selected alias signature, falling back to settings preference
-        let newSig: String
-        if let alias = sendAsAliases.first(where: { $0.sendAsEmail == aliasEmail }),
-           let sig = alias.signature, !sig.isEmpty,
-           !sig.strippingHTML.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            newSig = sig.strippingHTML.trimmingCharacters(in: .whitespacesAndNewlines)
-        } else {
-            newSig = resolveSignature(preferredEmail: preferredEmail)
-        }
-
-        if !currentSignature.isEmpty {
-            bodyText = bodyText.replacingOccurrences(of: currentSignature, with: newSig)
-        } else if !newSig.isEmpty {
-            // No previous signature — prepend before any quoted content
-            bodyText = "\n\n\(newSig)" + bodyText
-        }
-        currentSignature = newSig
+        let newSig = SignatureResolver.signatureForAlias(
+            aliasEmail,
+            aliases: sendAsAliases,
+            fallbackPreferredEmail: preferredEmail
+        )
+        let result = SignatureResolver.replaceSignature(
+            in: bodyText,
+            currentSignature: currentSignature,
+            newSignature: newSig
+        )
+        bodyText = result.body
+        currentSignature = result.signature
     }
 
     // MARK: - Fields
