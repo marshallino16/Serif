@@ -1,7 +1,12 @@
 import SwiftUI
 
 extension Theme {
-    // MARK: - Midnight (GitHub Dark Mode)
+
+    // ──────────────────────────────────────────────
+    // MARK: - Dark Themes
+    // ──────────────────────────────────────────────
+
+    // MARK: Midnight (GitHub Dark)
     static let midnight = Theme(
         id: "midnight",
         name: "Midnight",
@@ -31,37 +36,37 @@ extension Theme {
         tagBackground: Color(hex: "#1F2937")
     )
 
-    // MARK: - Ocean
+    // MARK: Ocean – poussé vers le teal pour se distinguer de Midnight
     static let ocean = Theme(
         id: "ocean",
         name: "Ocean",
         icon: "water.waves",
-        sidebarBackground: Color(hex: "#0A1628"),
-        listBackground: Color(hex: "#0F1D30"),
-        detailBackground: Color(hex: "#132238"),
-        cardBackground: Color(hex: "#1A2D45"),
-        selectedCardBackground: Color(hex: "#203852"),
-        hoverBackground: Color(hex: "#1A2D45"),
-        searchBarBackground: Color(hex: "#1A2D45"),
-        accentPrimary: Color(hex: "#0A84FF"),
-        accentSecondary: Color(hex: "#30D158"),
-        textPrimary: Color(hex: "#FFFFFF"),
-        textSecondary: Color(hex: "#7B8FA0"),
-        textTertiary: Color(hex: "#4A5D6E"),
+        sidebarBackground: Color(hex: "#061A1E"),
+        listBackground: Color(hex: "#0A2229"),
+        detailBackground: Color(hex: "#0E2A32"),
+        cardBackground: Color(hex: "#143640"),
+        selectedCardBackground: Color(hex: "#1A424E"),
+        hoverBackground: Color(hex: "#143640"),
+        searchBarBackground: Color(hex: "#143640"),
+        accentPrimary: Color(hex: "#22D3EE"),
+        accentSecondary: Color(hex: "#34D399"),
+        textPrimary: Color(hex: "#F0FDFA"),
+        textSecondary: Color(hex: "#7DAFB8"),
+        textTertiary: Color(hex: "#4A7A84"),
         textInverse: Color(hex: "#FFFFFF"),
-        border: Color(hex: "#1E3550"),
-        divider: Color(hex: "#1A2D45"),
-        unreadIndicator: Color(hex: "#0A84FF"),
-        attachmentBackground: Color(hex: "#1A2D45"),
-        avatarRing: Color(hex: "#0A84FF"),
+        border: Color(hex: "#1C4D5A"),
+        divider: Color(hex: "#143640"),
+        unreadIndicator: Color(hex: "#22D3EE"),
+        attachmentBackground: Color(hex: "#143640"),
+        avatarRing: Color(hex: "#22D3EE"),
         destructive: Color(hex: "#FF453A"),
-        buttonPrimary: Color(hex: "#0A84FF"),
-        buttonSecondary: Color(hex: "#1E3550"),
-        inputBackground: Color(hex: "#1A2D45"),
-        tagBackground: Color(hex: "#203852")
+        buttonPrimary: Color(hex: "#0891B2"),
+        buttonSecondary: Color(hex: "#1C4D5A"),
+        inputBackground: Color(hex: "#0A2229"),
+        tagBackground: Color(hex: "#1A424E")
     )
 
-    // MARK: - Serif
+    // MARK: Serif
     static let serif = Theme(
         id: "serif",
         name: "Serif",
@@ -91,7 +96,7 @@ extension Theme {
         tagBackground: Color(hex: "#303848")
     )
 
-    // MARK: - Nord
+    // MARK: Nord – textSecondary assombri pour mieux hiérarchiser
     static let nord = Theme(
         id: "nord",
         name: "Nord",
@@ -106,8 +111,8 @@ extension Theme {
         accentPrimary: Color(hex: "#88C0D0"),
         accentSecondary: Color(hex: "#A3BE8C"),
         textPrimary: Color(hex: "#ECEFF4"),
-        textSecondary: Color(hex: "#D8DEE9"),
-        textTertiary: Color(hex: "#9BA3B0"),
+        textSecondary: Color(hex: "#B0B8C8"),
+        textTertiary: Color(hex: "#7B849A"),
         textInverse: Color(hex: "#2E3440"),
         border: Color(hex: "#5E6A82"),
         divider: Color(hex: "#4C566A"),
@@ -121,7 +126,7 @@ extension Theme {
         tagBackground: Color(hex: "#5E6A82")
     )
 
-    // MARK: - Rosé
+    // MARK: Rosé – card légèrement relevé pour le contraste
     static let rose = Theme(
         id: "rose",
         name: "Rosé",
@@ -129,89 +134,29 @@ extension Theme {
         sidebarBackground: Color(hex: "#1A1118"),
         listBackground: Color(hex: "#211620"),
         detailBackground: Color(hex: "#281B26"),
-        cardBackground: Color(hex: "#32222F"),
-        selectedCardBackground: Color(hex: "#3E2C3A"),
-        hoverBackground: Color(hex: "#32222F"),
-        searchBarBackground: Color(hex: "#32222F"),
+        cardBackground: Color(hex: "#352432"),
+        selectedCardBackground: Color(hex: "#42303E"),
+        hoverBackground: Color(hex: "#352432"),
+        searchBarBackground: Color(hex: "#352432"),
         accentPrimary: Color(hex: "#E8A0BF"),
         accentSecondary: Color(hex: "#BA68C8"),
         textPrimary: Color(hex: "#F8E8F0"),
         textSecondary: Color(hex: "#B89AAE"),
         textTertiary: Color(hex: "#7A5A6E"),
         textInverse: Color(hex: "#1A1118"),
-        border: Color(hex: "#3E2C3A"),
-        divider: Color(hex: "#32222F"),
+        border: Color(hex: "#42303E"),
+        divider: Color(hex: "#352432"),
         unreadIndicator: Color(hex: "#E8A0BF"),
-        attachmentBackground: Color(hex: "#32222F"),
+        attachmentBackground: Color(hex: "#352432"),
         avatarRing: Color(hex: "#E8A0BF"),
         destructive: Color(hex: "#FF6B8A"),
         buttonPrimary: Color(hex: "#E8A0BF"),
-        buttonSecondary: Color(hex: "#3E2C3A"),
-        inputBackground: Color(hex: "#32222F"),
-        tagBackground: Color(hex: "#3E2C3A")
+        buttonSecondary: Color(hex: "#42303E"),
+        inputBackground: Color(hex: "#2D1E2B"),
+        tagBackground: Color(hex: "#42303E")
     )
 
-    // MARK: - Xcode Dark
-    static let xcodeDark = Theme(
-        id: "xcode-dark",
-        name: "Xcode Dark",
-        icon: "hammer.fill",
-        sidebarBackground: Color(hex: "#1E1E1E"),
-        listBackground: Color(hex: "#232323"),
-        detailBackground: Color(hex: "#292A30"),
-        cardBackground: Color(hex: "#2F3037"),
-        selectedCardBackground: Color(hex: "#3F4450"),
-        hoverBackground: Color(hex: "#2F3037"),
-        searchBarBackground: Color(hex: "#2F3037"),
-        accentPrimary: Color(hex: "#0A7AFF"),
-        accentSecondary: Color(hex: "#67B7A4"),
-        textPrimary: Color(hex: "#DFDFE0"),
-        textSecondary: Color(hex: "#8E8E93"),
-        textTertiary: Color(hex: "#5A5A5E"),
-        textInverse: Color(hex: "#FFFFFF"),
-        border: Color(hex: "#3C3C3E"),
-        divider: Color(hex: "#38383A"),
-        unreadIndicator: Color(hex: "#0A7AFF"),
-        attachmentBackground: Color(hex: "#2F3037"),
-        avatarRing: Color(hex: "#0A7AFF"),
-        destructive: Color(hex: "#FF6961"),
-        buttonPrimary: Color(hex: "#0A7AFF"),
-        buttonSecondary: Color(hex: "#3C3C3E"),
-        inputBackground: Color(hex: "#1E1E1E"),
-        tagBackground: Color(hex: "#3F4450")
-    )
-
-    // MARK: - Paper
-    static let emerald = Theme(
-        id: "emerald",
-        name: "Paper",
-        icon: "doc.plaintext",
-        sidebarBackground: Color(hex: "#E8DFD0"),
-        listBackground: Color(hex: "#F0E8DA"),
-        detailBackground: Color(hex: "#F5EDE0"),
-        cardBackground: Color(hex: "#EAE1D2"),
-        selectedCardBackground: Color(hex: "#D9CEBB"),
-        hoverBackground: Color(hex: "#E2D8C8"),
-        searchBarBackground: Color(hex: "#E2D8C8"),
-        accentPrimary: Color(hex: "#1B3A4B"),
-        accentSecondary: Color(hex: "#D96A3B"),
-        textPrimary: Color(hex: "#1C1917"),
-        textSecondary: Color(hex: "#57534E"),
-        textTertiary: Color(hex: "#A8A29E"),
-        textInverse: Color(hex: "#F5EDE0"),
-        border: Color(hex: "#D6CDB9"),
-        divider: Color(hex: "#DDD4C4"),
-        unreadIndicator: Color(hex: "#D96A3B"),
-        attachmentBackground: Color(hex: "#E2D8C8"),
-        avatarRing: Color(hex: "#1B3A4B"),
-        destructive: Color(hex: "#C4432B"),
-        buttonPrimary: Color(hex: "#1B3A4B"),
-        buttonSecondary: Color(hex: "#D6CDB9"),
-        inputBackground: Color(hex: "#F0E8DA"),
-        tagBackground: Color(hex: "#D6CDB9")
-    )
-
-    // MARK: - Solarized Dark
+    // MARK: Solarized Dark
     static let solarizedDark = Theme(
         id: "solarized-dark",
         name: "Solarized",
@@ -241,7 +186,7 @@ extension Theme {
         tagBackground: Color(hex: "#114B5C")
     )
 
-    // MARK: - Dracula
+    // MARK: Dracula
     static let dracula = Theme(
         id: "dracula",
         name: "Dracula",
@@ -271,7 +216,7 @@ extension Theme {
         tagBackground: Color(hex: "#44475A")
     )
 
-    // MARK: - One Dark (Atom)
+    // MARK: One Dark (Atom)
     static let oneDark = Theme(
         id: "one-dark",
         name: "One Dark",
@@ -301,37 +246,101 @@ extension Theme {
         tagBackground: Color(hex: "#3E4451")
     )
 
-    // MARK: - Violet
-    static let sunset = Theme(
-        id: "sunset",
-        name: "Violet",
-        icon: "diamond.fill",
-        sidebarBackground: Color(hex: "#5B3D9B"),
-        listBackground: Color(hex: "#FFFFFF"),
-        detailBackground: Color(hex: "#FFFFFF"),
-        cardBackground: Color(hex: "#F7F5FC"),
-        selectedCardBackground: Color(hex: "#EBE3F7"),
-        hoverBackground: Color(hex: "#F0ECF7"),
-        searchBarBackground: Color(hex: "#EDEBF2"),
-        accentPrimary: Color(hex: "#6B4EAF"),
-        accentSecondary: Color(hex: "#9B7ED8"),
-        textPrimary: Color(hex: "#1A1A2E"),
-        textSecondary: Color(hex: "#6B6B80"),
-        textTertiary: Color(hex: "#A8A8B8"),
-        textInverse: Color(hex: "#FFFFFF"),
-        border: Color(hex: "#E0DCE8"),
-        divider: Color(hex: "#E8E5F0"),
-        unreadIndicator: Color(hex: "#6B4EAF"),
-        attachmentBackground: Color(hex: "#F0ECF7"),
-        avatarRing: Color(hex: "#6B4EAF"),
-        destructive: Color(hex: "#EF4444"),
-        buttonPrimary: Color(hex: "#6B4EAF"),
-        buttonSecondary: Color(hex: "#E8E5F0"),
-        inputBackground: Color(hex: "#F2F0F7"),
-        tagBackground: Color(hex: "#EBE3F7")
+    // MARK: Catppuccin (Mocha) ✨ NEW
+    static let catppuccin = Theme(
+        id: "catppuccin",
+        name: "Catppuccin",
+        icon: "cup.and.saucer.fill",
+        sidebarBackground: Color(hex: "#11111B"),
+        listBackground: Color(hex: "#181825"),
+        detailBackground: Color(hex: "#1E1E2E"),
+        cardBackground: Color(hex: "#313244"),
+        selectedCardBackground: Color(hex: "#45475A"),
+        hoverBackground: Color(hex: "#313244"),
+        searchBarBackground: Color(hex: "#313244"),
+        accentPrimary: Color(hex: "#CBA6F7"),
+        accentSecondary: Color(hex: "#A6E3A1"),
+        textPrimary: Color(hex: "#CDD6F4"),
+        textSecondary: Color(hex: "#A6ADC8"),
+        textTertiary: Color(hex: "#6C7086"),
+        textInverse: Color(hex: "#1E1E2E"),
+        border: Color(hex: "#45475A"),
+        divider: Color(hex: "#313244"),
+        unreadIndicator: Color(hex: "#F38BA8"),
+        attachmentBackground: Color(hex: "#313244"),
+        avatarRing: Color(hex: "#CBA6F7"),
+        destructive: Color(hex: "#F38BA8"),
+        buttonPrimary: Color(hex: "#89B4FA"),
+        buttonSecondary: Color(hex: "#45475A"),
+        inputBackground: Color(hex: "#181825"),
+        tagBackground: Color(hex: "#45475A")
     )
 
-    // MARK: - Light
+    // MARK: Tokyo Night ✨ NEW (remplace Xcode Dark)
+    static let tokyoNight = Theme(
+        id: "tokyo-night",
+        name: "Tokyo Night",
+        icon: "building.2.fill",
+        sidebarBackground: Color(hex: "#16161E"),
+        listBackground: Color(hex: "#1A1B26"),
+        detailBackground: Color(hex: "#1A1B26"),
+        cardBackground: Color(hex: "#24283B"),
+        selectedCardBackground: Color(hex: "#292E42"),
+        hoverBackground: Color(hex: "#24283B"),
+        searchBarBackground: Color(hex: "#24283B"),
+        accentPrimary: Color(hex: "#7AA2F7"),
+        accentSecondary: Color(hex: "#9ECE6A"),
+        textPrimary: Color(hex: "#C0CAF5"),
+        textSecondary: Color(hex: "#A9B1D6"),
+        textTertiary: Color(hex: "#565F89"),
+        textInverse: Color(hex: "#1A1B26"),
+        border: Color(hex: "#3B4261"),
+        divider: Color(hex: "#292E42"),
+        unreadIndicator: Color(hex: "#7DCFFF"),
+        attachmentBackground: Color(hex: "#24283B"),
+        avatarRing: Color(hex: "#BB9AF7"),
+        destructive: Color(hex: "#F7768E"),
+        buttonPrimary: Color(hex: "#7AA2F7"),
+        buttonSecondary: Color(hex: "#3B4261"),
+        inputBackground: Color(hex: "#1A1B26"),
+        tagBackground: Color(hex: "#292E42")
+    )
+
+    // MARK: Forest ✨ NEW
+    static let forest = Theme(
+        id: "forest",
+        name: "Forest",
+        icon: "leaf.fill",
+        sidebarBackground: Color(hex: "#0F1A10"),
+        listBackground: Color(hex: "#142216"),
+        detailBackground: Color(hex: "#182A1A"),
+        cardBackground: Color(hex: "#1F3522"),
+        selectedCardBackground: Color(hex: "#28422B"),
+        hoverBackground: Color(hex: "#1F3522"),
+        searchBarBackground: Color(hex: "#1F3522"),
+        accentPrimary: Color(hex: "#7CB342"),
+        accentSecondary: Color(hex: "#FFB74D"),
+        textPrimary: Color(hex: "#E8F0E4"),
+        textSecondary: Color(hex: "#9AAF8E"),
+        textTertiary: Color(hex: "#5E7A52"),
+        textInverse: Color(hex: "#0F1A10"),
+        border: Color(hex: "#2A4A2E"),
+        divider: Color(hex: "#1F3522"),
+        unreadIndicator: Color(hex: "#7CB342"),
+        attachmentBackground: Color(hex: "#1F3522"),
+        avatarRing: Color(hex: "#7CB342"),
+        destructive: Color(hex: "#EF5350"),
+        buttonPrimary: Color(hex: "#558B2F"),
+        buttonSecondary: Color(hex: "#2A4A2E"),
+        inputBackground: Color(hex: "#142216"),
+        tagBackground: Color(hex: "#28422B")
+    )
+
+    // ──────────────────────────────────────────────
+    // MARK: - Light Themes
+    // ──────────────────────────────────────────────
+
+    // MARK: Light
     static let light = Theme(
         id: "light",
         name: "Light",
@@ -359,5 +368,125 @@ extension Theme {
         buttonSecondary: Color(hex: "#E5E5EA"),
         inputBackground: Color(hex: "#F2F2F7"),
         tagBackground: Color(hex: "#E8E5F5")
+    )
+
+    // MARK: Paper (anciennement emerald)
+    static let paper = Theme(
+        id: "paper",
+        name: "Paper",
+        icon: "doc.plaintext",
+        sidebarBackground: Color(hex: "#E8DFD0"),
+        listBackground: Color(hex: "#F0E8DA"),
+        detailBackground: Color(hex: "#F5EDE0"),
+        cardBackground: Color(hex: "#EAE1D2"),
+        selectedCardBackground: Color(hex: "#D9CEBB"),
+        hoverBackground: Color(hex: "#E2D8C8"),
+        searchBarBackground: Color(hex: "#E2D8C8"),
+        accentPrimary: Color(hex: "#1B3A4B"),
+        accentSecondary: Color(hex: "#D96A3B"),
+        textPrimary: Color(hex: "#1C1917"),
+        textSecondary: Color(hex: "#57534E"),
+        textTertiary: Color(hex: "#A8A29E"),
+        textInverse: Color(hex: "#F5EDE0"),
+        border: Color(hex: "#D6CDB9"),
+        divider: Color(hex: "#DDD4C4"),
+        unreadIndicator: Color(hex: "#D96A3B"),
+        attachmentBackground: Color(hex: "#E2D8C8"),
+        avatarRing: Color(hex: "#1B3A4B"),
+        destructive: Color(hex: "#C4432B"),
+        buttonPrimary: Color(hex: "#1B3A4B"),
+        buttonSecondary: Color(hex: "#D6CDB9"),
+        inputBackground: Color(hex: "#F0E8DA"),
+        tagBackground: Color(hex: "#D6CDB9")
+    )
+
+    // MARK: Violet (anciennement sunset)
+    static let violet = Theme(
+        id: "violet",
+        name: "Violet",
+        icon: "diamond.fill",
+        sidebarBackground: Color(hex: "#5B3D9B"),
+        listBackground: Color(hex: "#FFFFFF"),
+        detailBackground: Color(hex: "#FFFFFF"),
+        cardBackground: Color(hex: "#F7F5FC"),
+        selectedCardBackground: Color(hex: "#EBE3F7"),
+        hoverBackground: Color(hex: "#F0ECF7"),
+        searchBarBackground: Color(hex: "#EDEBF2"),
+        accentPrimary: Color(hex: "#6B4EAF"),
+        accentSecondary: Color(hex: "#9B7ED8"),
+        textPrimary: Color(hex: "#1A1A2E"),
+        textSecondary: Color(hex: "#6B6B80"),
+        textTertiary: Color(hex: "#A8A8B8"),
+        textInverse: Color(hex: "#FFFFFF"),
+        border: Color(hex: "#E0DCE8"),
+        divider: Color(hex: "#E8E5F0"),
+        unreadIndicator: Color(hex: "#6B4EAF"),
+        attachmentBackground: Color(hex: "#F0ECF7"),
+        avatarRing: Color(hex: "#6B4EAF"),
+        destructive: Color(hex: "#EF4444"),
+        buttonPrimary: Color(hex: "#6B4EAF"),
+        buttonSecondary: Color(hex: "#E8E5F0"),
+        inputBackground: Color(hex: "#F2F0F7"),
+        tagBackground: Color(hex: "#EBE3F7")
+    )
+
+    // MARK: Mono
+    static let mono = Theme(
+        id: "mono",
+        name: "Mono",
+        icon: "circle.lefthalf.filled",
+        sidebarBackground: Color(hex: "#1A1A1A"),
+        listBackground: Color(hex: "#FFFFFF"),
+        detailBackground: Color(hex: "#FAFAFA"),
+        cardBackground: Color(hex: "#FFFFFF"),
+        selectedCardBackground: Color(hex: "#F0F0F0"),
+        hoverBackground: Color(hex: "#F5F5F5"),
+        searchBarBackground: Color(hex: "#F0F0F0"),
+        accentPrimary: Color(hex: "#1A1A1A"),
+        accentSecondary: Color(hex: "#555555"),
+        textPrimary: Color(hex: "#111111"),
+        textSecondary: Color(hex: "#666666"),
+        textTertiary: Color(hex: "#AAAAAA"),
+        textInverse: Color(hex: "#FFFFFF"),
+        border: Color(hex: "#E0E0E0"),
+        divider: Color(hex: "#EBEBEB"),
+        unreadIndicator: Color(hex: "#111111"),
+        attachmentBackground: Color(hex: "#F5F5F5"),
+        avatarRing: Color(hex: "#333333"),
+        destructive: Color(hex: "#DC2626"),
+        buttonPrimary: Color(hex: "#111111"),
+        buttonSecondary: Color(hex: "#E5E5E5"),
+        inputBackground: Color(hex: "#F5F5F5"),
+        tagBackground: Color(hex: "#F0F0F0")
+    )
+
+    // MARK: Ivory ✨ NEW – light chaud, crème doré
+    static let ivory = Theme(
+        id: "ivory",
+        name: "Ivory",
+        icon: "sun.and.horizon.fill",
+        sidebarBackground: Color(hex: "#F5EDE0"),
+        listBackground: Color(hex: "#FFFBF5"),
+        detailBackground: Color(hex: "#FFF9F0"),
+        cardBackground: Color(hex: "#FFF5E8"),
+        selectedCardBackground: Color(hex: "#F0E0C8"),
+        hoverBackground: Color(hex: "#F7EDDB"),
+        searchBarBackground: Color(hex: "#F0E5D4"),
+        accentPrimary: Color(hex: "#B8621B"),
+        accentSecondary: Color(hex: "#2E7D6F"),
+        textPrimary: Color(hex: "#2C2416"),
+        textSecondary: Color(hex: "#6B5D4E"),
+        textTertiary: Color(hex: "#B0A494"),
+        textInverse: Color(hex: "#FFFBF5"),
+        border: Color(hex: "#E5D9C8"),
+        divider: Color(hex: "#EDE2D2"),
+        unreadIndicator: Color(hex: "#B8621B"),
+        attachmentBackground: Color(hex: "#F7EDDB"),
+        avatarRing: Color(hex: "#B8621B"),
+        destructive: Color(hex: "#C0392B"),
+        buttonPrimary: Color(hex: "#B8621B"),
+        buttonSecondary: Color(hex: "#E5D9C8"),
+        inputBackground: Color(hex: "#FFF8F0"),
+        tagBackground: Color(hex: "#F0E0C8")
     )
 }

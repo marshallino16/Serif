@@ -15,7 +15,7 @@ struct AccountAvatarBubble: View {
         Button(action: action) {
             ZStack {
                 // Base circle
-                Circle().fill(isSelected ? theme.accentPrimary : theme.hoverBackground)
+                Circle().fill(isSelected ? theme.sidebarTextMuted : theme.hoverBackground)
                 if !isSelected && account.profilePictureURL == nil {
                     Circle().strokeBorder(theme.divider, lineWidth: 1)
                 }
@@ -38,7 +38,7 @@ struct AccountAvatarBubble: View {
 
                 // Selection ring (photo case only)
                 if isSelected && account.profilePictureURL != nil {
-                    Circle().strokeBorder(theme.accentPrimary, lineWidth: 2)
+                    Circle().strokeBorder(theme.sidebarTextMuted, lineWidth: 2)
                 }
             }
             .frame(width: size, height: size)

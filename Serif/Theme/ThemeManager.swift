@@ -5,19 +5,25 @@ final class ThemeManager: ObservableObject {
 
     @Published var currentTheme: Theme
 
-    let availableThemes: [Theme] = [
+    var availableThemes: [Theme] = [
+        // Dark
         .midnight,
         .ocean,
         .serif,
         .nord,
         .rose,
-        .xcodeDark,
-        .emerald,
         .solarizedDark,
         .dracula,
         .oneDark,
-        .sunset,
+        .catppuccin,
+        .tokyoNight,
+        .forest,
+        // Light
         .light,
+        .paper,
+        .violet,
+        .mono,
+        .ivory,
     ]
 
     /// The currently selected base theme ID.
@@ -28,7 +34,7 @@ final class ThemeManager: ObservableObject {
 
     private init() {
         let savedId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "midnight"
-        let base = Self.theme(byId: savedId)
+        let base = availableThemes.first { $0.id == savedId } ?? .midnight
         self.selectedBaseID = savedId
 
         // Load overrides
@@ -61,7 +67,7 @@ final class ThemeManager: ObservableObject {
         overrides[key] = hex
         allOverrides[selectedBaseID] = overrides
         persistOverrides()
-        let base = Self.theme(byId: selectedBaseID)
+        let base = theme(byId: selectedBaseID)
         currentTheme = base.applying(overrides: overrides)
     }
 
@@ -70,14 +76,14 @@ final class ThemeManager: ObservableObject {
         overrides.removeValue(forKey: key)
         allOverrides[selectedBaseID] = overrides.isEmpty ? nil : overrides
         persistOverrides()
-        let base = Self.theme(byId: selectedBaseID)
+        let base = theme(byId: selectedBaseID)
         currentTheme = overrides.isEmpty ? base : base.applying(overrides: overrides)
     }
 
     func resetOverrides() {
         allOverrides[selectedBaseID] = nil
         persistOverrides()
-        currentTheme = Self.theme(byId: selectedBaseID)
+        currentTheme = theme(byId: selectedBaseID)
     }
 
     var hasOverrides: Bool {
@@ -89,9 +95,8 @@ final class ThemeManager: ObservableObject {
         UserDefaults.standard.set(data, forKey: "themeOverrides")
     }
 
-    private static func theme(byId id: String) -> Theme {
-        let all: [Theme] = [.midnight, .ocean, .serif, .nord, .rose, .xcodeDark, .emerald, .solarizedDark, .dracula, .oneDark, .sunset, .light]
-        return all.first { $0.id == id } ?? .midnight
+    private func theme(byId id: String) -> Theme {
+        availableThemes.first { $0.id == id } ?? .midnight
     }
 }
 
