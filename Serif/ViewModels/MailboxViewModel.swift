@@ -84,6 +84,7 @@ final class MailboxViewModel: ObservableObject {
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
                     messages.append(contentsOf: newOnes)
                 }
+                analyzeInBackground(newOnes)
                 return
             }
             // All duplicates — continue to next chunk or fall through to API
@@ -426,6 +427,20 @@ final class MailboxViewModel: ObservableObject {
         .sorted { $0.date > $1.date }
     }
 
+    // MARK: - Background analysis (subscriptions + attachments)
+
+    /// Fire-and-forget: analyze messages for unsubscribe links and register attachments.
+    private func analyzeInBackground(_ msgs: [GmailMessage]) {
+        guard !msgs.isEmpty else { return }
+        SubscriptionsStore.shared.analyze(msgs.map { makeEmail(from: $0) })
+        if let indexer = attachmentIndexer {
+            let withAttachments = msgs.filter { !$0.attachmentParts.isEmpty }
+            if !withAttachments.isEmpty {
+                Task { await indexer.registerFromMetadata(messages: withAttachments) }
+            }
+        }
+    }
+
     // MARK: - Disk Cache Sync
 
     private func saveCacheToDisk() {
@@ -465,6 +480,7 @@ final class MailboxViewModel: ObservableObject {
                     let currentIDs  = Set(messages.map(\.id))
                     if cachedIDs != currentIDs { messages = firstPage }
                 }
+                analyzeInBackground(firstPage)
             } else {
                 localOffset = 0
                 if clearFirst { messages = [] }
@@ -501,13 +517,8 @@ final class MailboxViewModel: ObservableObject {
                 guard !Task.isCancelled, generation == fetchGeneration else { return }
                 for msg in fetched { messageCache[msg.id] = msg }
 
-                // Passive attachment registration
-                if let indexer = attachmentIndexer {
-                    let withAttachments = fetched.filter { !$0.attachmentParts.isEmpty }
-                    if !withAttachments.isEmpty {
-                        Task { await indexer.registerFromMetadata(messages: withAttachments) }
-                    }
-                }
+                // Passive background analysis (attachments + subscriptions)
+                analyzeInBackground(fetched)
             }
 
             // Final guard before mutating published state
@@ -528,7 +539,7 @@ final class MailboxViewModel: ObservableObject {
                         messages.insert(contentsOf: newMessages, at: 0)
                     }
                     localOffset += newMessages.count
-                    SubscriptionsStore.shared.analyze(newMessages.map { makeEmail(from: $0) })
+                    analyzeInBackground(newMessages)
                 }
                 // Save updated cache with pagination token
                 let cacheToSave = FolderCache(
@@ -549,7 +560,7 @@ final class MailboxViewModel: ObservableObject {
                     let trulyNew = newOnes.filter { !cachedIDs.contains($0.id) }
                     allCachedMessages.append(contentsOf: trulyNew)
                     localOffset = allCachedMessages.count
-                    SubscriptionsStore.shared.analyze(newOnes.map { makeEmail(from: $0) })
+                    analyzeInBackground(newOnes)
                 }
                 // Update savedPageToken and persist
                 savedPageToken = nextPageToken
