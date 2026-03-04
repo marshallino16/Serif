@@ -141,7 +141,8 @@ struct DetailPaneView: View {
             },
             extractBodyUnsubscribeURL: { html in
                 UnsubscribeService.extractBodyUnsubscribeURL(from: html)
-            }
+            },
+            fromAddress: fromAddress
         )
         .id(email.id)
     }

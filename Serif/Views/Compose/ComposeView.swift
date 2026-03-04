@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct ComposeView: View {
     @ObservedObject var mailStore: MailStore
@@ -17,18 +16,17 @@ struct ComposeView: View {
     @State private var cc = ""
     @State private var bcc = ""
     @State private var subject = ""
-    @State private var bodyText = ""
+    @State private var bodyHTML = ""
     @State private var showCc = false
     @State private var showBcc = false
     @State private var isSending = false
     @State private var sendError: String?
     @State private var saveTask: Task<Void, Never>?
     @State private var attachments: [URL] = []
-    @State private var isDragTargeted = false
     @State private var didApplyMode = false
     @State private var selectedAliasEmail: String
-    @State private var currentSignature: String = ""
-    @StateObject private var richTextState = RichTextState()
+    @State private var currentSignatureHTML: String = ""
+    @StateObject private var editorState = WebRichTextEditorState()
     @StateObject private var composeVM: ComposeViewModel
     @Environment(\.theme) private var theme
 
@@ -98,12 +96,12 @@ struct ComposeView: View {
             }
             .zIndex(10)
 
-            RichTextEditor(
-                state: richTextState,
-                text: $bodyText,
-                textColorValue: NSColor(theme.textPrimary),
+            WebRichTextEditor(
+                state: editorState,
+                htmlContent: $bodyHTML,
                 placeholder: "Write your message...",
-                autoFocus: true
+                autoFocus: true,
+                onFileDrop: { url in handleFileDrop(url) }
             )
             .padding(.horizontal, 20)
             .padding(.top, 4)
@@ -136,7 +134,7 @@ struct ComposeView: View {
             Divider()
                 .background(theme.divider)
 
-            FormattingToolbar(state: richTextState)
+            FormattingToolbar(state: editorState)
                 .background(theme.detailBackground)
 
             Divider()
@@ -145,31 +143,12 @@ struct ComposeView: View {
             composeActions
         }
         .background(theme.detailBackground)
-        .overlay(
-            Group {
-                if isDragTargeted {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(theme.accentPrimary, lineWidth: 2)
-                        .padding(4)
-                }
-            }
-        )
-        .onDrop(of: [.fileURL], isTargeted: $isDragTargeted) { providers in
-            providers.forEach { provider in
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url {
-                        DispatchQueue.main.async { attachments.append(url) }
-                    }
-                }
-            }
-            return true
-        }
         .onAppear { loadDraft() }
         .onChange(of: to)       { _ in scheduleAutoSave() }
         .onChange(of: cc)       { _ in scheduleAutoSave() }
         .onChange(of: bcc)      { _ in scheduleAutoSave() }
         .onChange(of: subject)  { _ in scheduleAutoSave() }
-        .onChange(of: bodyText) { _ in scheduleAutoSave() }
+        .onChange(of: bodyHTML) { _ in scheduleAutoSave() }
         .onChange(of: selectedAliasEmail) { newEmail in
             composeVM.fromAddress = newEmail
             replaceSignature(for: newEmail)
@@ -180,10 +159,10 @@ struct ComposeView: View {
 
     private func loadDraft() {
         if let draft = draft {
-            to       = draft.recipients.map(\.email).joined(separator: ", ")
-            cc       = draft.cc.map(\.email).joined(separator: ", ")
-            subject  = draft.subject == "(No subject)" ? "" : draft.subject
-            bodyText = draft.body
+            to      = draft.recipients.map(\.email).joined(separator: ", ")
+            cc      = draft.cc.map(\.email).joined(separator: ", ")
+            subject = draft.subject == "(No subject)" ? "" : draft.subject
+            bodyHTML = draft.body
         }
 
         guard !didApplyMode else { return }
@@ -196,18 +175,18 @@ struct ComposeView: View {
             aliases: sendAsAliases
         )
 
-        to               = fields.to.isEmpty ? to : fields.to
-        cc               = fields.cc.isEmpty ? cc : fields.cc
-        showCc           = fields.showCc || showCc
-        subject          = fields.subject.isEmpty ? subject : fields.subject
-        bodyText         = fields.bodyText.isEmpty ? bodyText : fields.bodyText
-        currentSignature = fields.currentSignature
+        to                   = fields.to.isEmpty ? to : fields.to
+        cc                   = fields.cc.isEmpty ? cc : fields.cc
+        showCc               = fields.showCc || showCc
+        subject              = fields.subject.isEmpty ? subject : fields.subject
+        bodyHTML              = fields.bodyHTML.isEmpty ? bodyHTML : fields.bodyHTML
+        currentSignatureHTML = fields.currentSignatureHTML
         if let tid = fields.threadID          { composeVM.threadID = tid }
         if let mid = fields.replyToMessageID  { composeVM.replyToMessageID = mid }
     }
 
     private func scheduleAutoSave() {
-        mailStore.updateDraft(id: draftId, subject: subject, body: bodyText, to: to, cc: cc)
+        mailStore.updateDraft(id: draftId, subject: subject, body: bodyHTML, to: to, cc: cc)
         saveTask?.cancel()
         saveTask = Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -216,7 +195,8 @@ struct ComposeView: View {
             composeVM.cc      = cc
             composeVM.bcc     = bcc
             composeVM.subject = subject
-            composeVM.body    = bodyText
+            composeVM.body    = bodyHTML
+            composeVM.isHTML  = true
             await composeVM.saveDraft()
         }
     }
@@ -225,13 +205,18 @@ struct ComposeView: View {
 
     private func sendEmail() async {
         guard !to.isEmpty, !subject.isEmpty else { return }
-        isSending      = true
-        sendError      = nil
+        isSending = true
+        sendError = nil
+
+        // Extract inline images from HTML (data: → cid:)
+        let (processedHTML, images) = InlineImageProcessor.extractInlineImages(from: bodyHTML)
         composeVM.to             = to
         composeVM.cc             = cc
         composeVM.bcc            = bcc
         composeVM.subject        = subject
-        composeVM.body           = bodyText
+        composeVM.body           = processedHTML
+        composeVM.isHTML         = true
+        composeVM.inlineImages   = images + editorState.pendingInlineImages
         composeVM.attachmentURLs = attachments
         await composeVM.send()
         isSending = false
@@ -240,6 +225,18 @@ struct ComposeView: View {
             onDiscard()
         } else {
             sendError = composeVM.error
+        }
+    }
+
+    // MARK: - File Drop
+
+    private func handleFileDrop(_ url: URL) {
+        if !url.isEmailCompatible {
+            ToastManager.shared.show(message: "Format non support\u{00E9}: .\(url.pathExtension)", type: .error)
+        } else if url.isImage {
+            editorState.insertImage(from: url)
+        } else {
+            attachments.append(url)
         }
     }
 
@@ -408,18 +405,20 @@ struct ComposeView: View {
         default:   isReplyOrForward = true
         }
         let preferredEmail = isReplyOrForward ? signatureForReply : signatureForNew
-        let newSig = SignatureResolver.signatureForAlias(
+        let newSig = SignatureResolver.signatureHTMLForAlias(
             aliasEmail,
             aliases: sendAsAliases,
             fallbackPreferredEmail: preferredEmail
         )
-        let result = SignatureResolver.replaceSignature(
-            in: bodyText,
-            currentSignature: currentSignature,
+        let result = SignatureResolver.replaceHTMLSignature(
+            in: bodyHTML,
+            currentSignature: currentSignatureHTML,
             newSignature: newSig
         )
-        bodyText = result.body
-        currentSignature = result.signature
+        bodyHTML = result.body
+        currentSignatureHTML = result.signature
+        // Update the editor content
+        editorState.setHTML(bodyHTML)
     }
 
     // MARK: - Fields

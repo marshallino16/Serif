@@ -6,8 +6,8 @@ struct ComposeModeFields {
     var cc: String = ""
     var showCc: Bool = false
     var subject: String = ""
-    var bodyText: String = ""
-    var currentSignature: String = ""
+    var bodyHTML: String = ""
+    var currentSignatureHTML: String = ""
     var threadID: String? = nil
     var replyToMessageID: String? = nil
 }
@@ -26,18 +26,18 @@ struct ComposeModeInitializer {
 
         switch mode {
         case .new:
-            let sig = SignatureResolver.resolve(preferredEmail: signatureForNew, aliases: aliases)
+            let sig = SignatureResolver.resolveHTML(preferredEmail: signatureForNew, aliases: aliases)
             if !sig.isEmpty {
-                fields.currentSignature = sig
-                fields.bodyText = "\n\n\(sig)"
+                fields.currentSignatureHTML = sig
+                fields.bodyHTML = "<br><br>\(sig)"
             }
 
         case .reply(let replyTo, let replySubject, let quotedBody, let replyToMessageID, let threadID):
             fields.to = replyTo
             fields.subject = replySubject.hasPrefix("Re:") ? replySubject : "Re: \(replySubject)"
-            let sig = SignatureResolver.resolve(preferredEmail: signatureForReply, aliases: aliases)
-            fields.currentSignature = sig
-            fields.bodyText = sig.isEmpty ? "\n\n\(quotedBody)" : "\n\n\(sig)\n\n\(quotedBody)"
+            let sig = SignatureResolver.resolveHTML(preferredEmail: signatureForReply, aliases: aliases)
+            fields.currentSignatureHTML = sig
+            fields.bodyHTML = sig.isEmpty ? "<br><br>\(quotedBody)" : "<br><br>\(sig)<br>\(quotedBody)"
             fields.threadID = threadID
             fields.replyToMessageID = replyToMessageID
 
@@ -46,18 +46,18 @@ struct ComposeModeInitializer {
             fields.cc = replyCc
             fields.showCc = !replyCc.isEmpty
             fields.subject = replySubject.hasPrefix("Re:") ? replySubject : "Re: \(replySubject)"
-            let sig = SignatureResolver.resolve(preferredEmail: signatureForReply, aliases: aliases)
-            fields.currentSignature = sig
-            fields.bodyText = sig.isEmpty ? "\n\n\(quotedBody)" : "\n\n\(sig)\n\n\(quotedBody)"
+            let sig = SignatureResolver.resolveHTML(preferredEmail: signatureForReply, aliases: aliases)
+            fields.currentSignatureHTML = sig
+            fields.bodyHTML = sig.isEmpty ? "<br><br>\(quotedBody)" : "<br><br>\(sig)<br>\(quotedBody)"
             fields.threadID = threadID
             fields.replyToMessageID = replyToMessageID
 
         case .forward(let fwdSubject, let quotedBody):
             fields.to = ""
             fields.subject = fwdSubject.hasPrefix("Fwd:") ? fwdSubject : "Fwd: \(fwdSubject)"
-            let sig = SignatureResolver.resolve(preferredEmail: signatureForReply, aliases: aliases)
-            fields.currentSignature = sig
-            fields.bodyText = sig.isEmpty ? "\n\n\(quotedBody)" : "\n\n\(sig)\n\n\(quotedBody)"
+            let sig = SignatureResolver.resolveHTML(preferredEmail: signatureForReply, aliases: aliases)
+            fields.currentSignatureHTML = sig
+            fields.bodyHTML = sig.isEmpty ? "<br><br>\(quotedBody)" : "<br><br>\(sig)<br>\(quotedBody)"
         }
 
         return fields

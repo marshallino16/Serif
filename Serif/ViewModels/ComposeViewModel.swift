@@ -8,6 +8,8 @@ final class ComposeViewModel: ObservableObject {
     @Published var bcc:       String = ""
     @Published var subject:   String = ""
     @Published var body:      String = ""
+    var isHTML = false
+    var inlineImages: [InlineImageAttachment] = []
     @Published var isSending  = false
     @Published var isSent     = false
     @Published var error:     String?
@@ -39,8 +41,10 @@ final class ComposeViewModel: ObservableObject {
                 bcc:                splitAddresses(bcc),
                 subject:            subject,
                 body:               body,
+                isHTML:             isHTML,
                 threadID:           threadID,
                 referencesHeader:   replyToMessageID,
+                inlineImages:       inlineImages,
                 attachments:        attachmentURLs.isEmpty ? nil : attachmentURLs,
                 accountID:          accountID
             )

@@ -10,6 +10,7 @@ final class EmailDetailViewModel: ObservableObject {
     @Published var isLoadingRaw     = false
     @Published var trackerResult:   TrackerResult?
     @Published var allowTrackers    = false
+    @Published var resolvedHTML:    String?
 
     /// HTML to render: sanitized (trackers stripped) or original when user allows.
     var displayHTML: String? {
@@ -35,6 +36,8 @@ final class EmailDetailViewModel: ObservableObject {
         allowTrackers = false
         defer { isLoading = false }
 
+        resolvedHTML = nil
+
         // Load from disk cache first (instant + offline)
         if let cached = MailCacheStore.shared.loadThread(accountID: accountID, threadID: id) {
             thread = cached
@@ -46,6 +49,9 @@ final class EmailDetailViewModel: ObservableObject {
             let fresh = try await GmailMessageService.shared.getThread(id: id, accountID: accountID)
             thread = fresh
             analyzeTrackers()
+            if let latest = fresh.messages?.last {
+                await resolveInlineImages(for: latest)
+            }
             MailCacheStore.shared.saveThread(fresh, accountID: accountID)
             // Passive attachment registration from full-format messages
             if let indexer = attachmentIndexer, let messages = fresh.messages {
@@ -76,6 +82,40 @@ final class EmailDetailViewModel: ObservableObject {
             return
         }
         trackerResult = TrackerBlockerService.shared.sanitize(html: html)
+    }
+
+    // MARK: - Inline Image Resolution
+
+    /// Downloads inline CID images and replaces cid: references with data: URIs in the HTML.
+    private func resolveInlineImages(for message: GmailMessage) async {
+        let inlineParts = message.inlineParts
+        guard !inlineParts.isEmpty else { resolvedHTML = nil; return }
+
+        let baseHTML = displayHTML ?? message.htmlBody ?? ""
+        guard !baseHTML.isEmpty else { resolvedHTML = nil; return }
+
+        var html = baseHTML
+        await withTaskGroup(of: (String, String, Data?).self) { group in
+            for part in inlineParts {
+                guard let cid = part.contentID,
+                      let attachmentID = part.body?.attachmentId,
+                      let mime = part.mimeType else { continue }
+                group.addTask { [accountID] in
+                    let data = try? await GmailMessageService.shared.getAttachment(
+                        messageID: message.id,
+                        attachmentID: attachmentID,
+                        accountID: accountID
+                    )
+                    return (cid, mime, data)
+                }
+            }
+            for await (cid, mime, data) in group {
+                guard let data = data else { continue }
+                let dataURI = "data:\(mime);base64,\(data.base64EncodedString())"
+                html = html.replacingOccurrences(of: "cid:\(cid)", with: dataURI)
+            }
+        }
+        resolvedHTML = html
     }
 
     // MARK: - Attachments

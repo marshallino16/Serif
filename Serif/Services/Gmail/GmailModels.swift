@@ -382,13 +382,38 @@ extension GmailMessage {
         return String(data: data, encoding: .utf8)
     }
 
+    /// Parts that are inline images (have Content-ID + attachmentId + image MIME type).
+    var inlineParts: [GmailMessagePart] { collectInlineParts(from: payload) }
+
+    private func collectInlineParts(from part: GmailMessagePart?) -> [GmailMessagePart] {
+        guard let part = part else { return [] }
+        var result: [GmailMessagePart] = []
+        if part.contentID != nil, part.body?.attachmentId != nil,
+           part.mimeType?.hasPrefix("image/") == true {
+            result.append(part)
+        }
+        for sub in part.parts ?? [] { result += collectInlineParts(from: sub) }
+        return result
+    }
+
     private func collectAttachments(from part: GmailMessagePart?) -> [GmailMessagePart] {
         guard let part = part else { return [] }
         var result: [GmailMessagePart] = []
-        if let filename = part.filename, !filename.isEmpty, part.body?.attachmentId != nil {
+        if let filename = part.filename, !filename.isEmpty, part.body?.attachmentId != nil,
+           part.contentID == nil {
             result.append(part)
         }
         for sub in part.parts ?? [] { result += collectAttachments(from: sub) }
         return result
+    }
+}
+
+// MARK: - GmailMessagePart Helpers
+
+extension GmailMessagePart {
+    /// Extracts Content-ID header value, stripping angle brackets.
+    var contentID: String? {
+        headers?.first(where: { $0.name.lowercased() == "content-id" })?.value
+            .trimmingCharacters(in: CharacterSet(charactersIn: "<>"))
     }
 }

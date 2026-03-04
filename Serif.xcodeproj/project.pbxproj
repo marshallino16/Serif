@@ -32,7 +32,13 @@
 		A10001010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf */; };
 		A10001010000000000000030 /* MailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000030 /* MailStore.swift */; };
 		A10001010000000000000040 /* AttachmentsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000040 /* AttachmentsListView.swift */; };
-		A10001010000000000000050 /* RichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000050 /* RichTextEditor.swift */; };
+		A100010100000000000000FB /* editor.js in Resources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FB /* editor.js */; };
+		A100010100000000000000FC /* HTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FC /* HTMLTemplate.swift */; };
+		A100010100000000000000FD /* WebRichTextEditorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FD /* WebRichTextEditorState.swift */; };
+		A100010100000000000000FE /* WebRichTextEditorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */; };
+		A10001010000000000000FF /* WebRichTextEditorRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */; };
+		A1000101000000000000100 /* WebRichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000100 /* WebRichTextEditor.swift */; };
+		A1000101000000000000101 /* InlineImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000101 /* InlineImageProcessor.swift */; };
 		A10001010000000000000051 /* FormattingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000051 /* FormattingToolbar.swift */; };
 		A10001010000000000000052 /* ShortcutsHelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000052 /* ShortcutsHelpView.swift */; };
 		A10001010000000000000053 /* DebugMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000053 /* DebugMenuView.swift */; };
@@ -127,7 +133,11 @@
 		A100010100000000000000F5 /* MessageFetching.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F5 /* MessageFetching.swift */; };
 		A100010100000000000000F6 /* CacheStoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F6 /* CacheStoring.swift */; };
 		A100010100000000000000F7 /* CPUMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F7 /* CPUMonitor.swift */; };
+		A100010100000000000000F8 /* ToastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F8 /* ToastManager.swift */; };
+		A100010100000000000000F9 /* ToastOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F9 /* ToastOverlayView.swift */; };
+/* RichTextHTMLExporter removed */
 		B10001010000000000000009 /* CPUMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000009 /* CPUMonitorTests.swift */; };
+		B1000101000000000000000A /* EmailActionCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000201000000000000000A /* EmailActionCoordinatorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -158,7 +168,7 @@
 		A10002010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPLocomotiveNew-Light-Italic.ttf"; sourceTree = "<group>"; };
 		A10002010000000000000030 /* MailStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailStore.swift; sourceTree = "<group>"; };
 		A10002010000000000000040 /* AttachmentsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentsListView.swift; sourceTree = "<group>"; };
-		A10002010000000000000050 /* RichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RichTextEditor.swift; sourceTree = "<group>"; };
+/* RichTextEditor.swift removed */
 		A10002010000000000000051 /* FormattingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingToolbar.swift; sourceTree = "<group>"; };
 		A10002010000000000000052 /* ShortcutsHelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsHelpView.swift; sourceTree = "<group>"; };
 		A10002010000000000000053 /* DebugMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugMenuView.swift; sourceTree = "<group>"; };
@@ -232,6 +242,15 @@
 		A100020100000000000000E0 /* BadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeView.swift; sourceTree = "<group>"; };
 		A100020100000000000000E1 /* CardContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardContainer.swift; sourceTree = "<group>"; };
 		A100020100000000000000E2 /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
+		A100020100000000000000F8 /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
+		A100020100000000000000F9 /* ToastOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastOverlayView.swift; sourceTree = "<group>"; };
+		A100020100000000000000FB /* editor.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = editor.js; sourceTree = "<group>"; };
+		A100020100000000000000FC /* HTMLTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLTemplate.swift; sourceTree = "<group>"; };
+		A100020100000000000000FD /* WebRichTextEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorState.swift; sourceTree = "<group>"; };
+		A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorCoordinator.swift; sourceTree = "<group>"; };
+		A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorRepresentable.swift; sourceTree = "<group>"; };
+		A1000201000000000000100 /* WebRichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditor.swift; sourceTree = "<group>"; };
+		A1000201000000000000101 /* InlineImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineImageProcessor.swift; sourceTree = "<group>"; };
 		A100020100000000000000E4 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsModifier.swift; sourceTree = "<group>"; };
 		A100020100000000000000E3 /* EmailContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailContextMenu.swift; sourceTree = "<group>"; };
@@ -255,6 +274,7 @@
 		A100020100000000000000F6 /* CacheStoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheStoring.swift; sourceTree = "<group>"; };
 		A100020100000000000000F7 /* CPUMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUMonitor.swift; sourceTree = "<group>"; };
 		B10002010000000000000009 /* CPUMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUMonitorTests.swift; sourceTree = "<group>"; };
+		B1000201000000000000000A /* EmailActionCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailActionCoordinatorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -393,13 +413,17 @@
 				A1000201000000000000000E /* AvatarView.swift */,
 				A1000201000000000000000F /* SearchBarView.swift */,
 				A10002010000000000000010 /* ThemePickerView.swift */,
-				A10002010000000000000050 /* RichTextEditor.swift */,
+				A100020100000000000000FD /* WebRichTextEditorState.swift */,
+				A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */,
+				A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */,
+				A1000201000000000000100 /* WebRichTextEditor.swift */,
 				A10002010000000000000051 /* FormattingToolbar.swift */,
 				A10002010000000000000052 /* ShortcutsHelpView.swift */,
 				A10002010000000000000053 /* DebugMenuView.swift */,
 				A10002010000000000000054 /* SlidePanel.swift */,
 				A10002010000000000000080 /* AccountsSettingsView.swift */,
 				A1000201000000000000008B /* UndoToastView.swift */,
+				A100020100000000000000F9 /* ToastOverlayView.swift */,
 				A10002010000000000000083 /* LabelChipView.swift */,
 				A100020100000000000000C6 /* SettingsCardsView.swift */,
 				A100020100000000000000D0 /* AccountAvatarBubble.swift */,
@@ -451,6 +475,7 @@
 			children = (
 				A10002010000000000000012 /* Assets.xcassets */,
 				A100020100000000000000B0 /* AppIcon.icns */,
+				A100020100000000000000FB /* editor.js */,
 				A10004010000000000000011 /* Fonts */,
 			);
 			path = Resources;
@@ -483,6 +508,7 @@
 				A100040100000000000000F5 /* Protocols */,
 				A10002010000000000000081 /* APICache.swift */,
 				A1000201000000000000008A /* UndoActionManager.swift */,
+				A100020100000000000000F8 /* ToastManager.swift */,
 				A1000201000000000000008C /* UnsubscribeService.swift */,
 				A1000201000000000000008D /* SubscriptionsStore.swift */,
 				A1000201000000000000008F /* EmailPrintService.swift */,
@@ -560,6 +586,8 @@
 				A10002010000000000000086 /* GmailDataTransformer.swift */,
 				A10002010000000000000087 /* DateFormatting.swift */,
 				A10002010000000000000088 /* FileUtils.swift */,
+				A100020100000000000000FC /* HTMLTemplate.swift */,
+				A1000201000000000000101 /* InlineImageProcessor.swift */,
 				A100020100000000000000C4 /* StringExtensions.swift */,
 			);
 			path = Utilities;
@@ -586,6 +614,7 @@
 				B10002010000000000000007 /* AppCoordinatorTests.swift */,
 				B10002010000000000000008 /* LabelManagementTests.swift */,
 				B10002010000000000000009 /* CPUMonitorTests.swift */,
+				B1000201000000000000000A /* EmailActionCoordinatorTests.swift */,
 			);
 			path = SerifTests;
 			sourceTree = "<group>";
@@ -682,6 +711,7 @@
 				A10001010000000000000021 /* PPEditorialNew-Italic.otf in Resources */,
 				A10001010000000000000022 /* PPLocomotiveNew-Light.ttf in Resources */,
 				A10001010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf in Resources */,
+				A100010100000000000000FB /* editor.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -713,7 +743,10 @@
 				A10001010000000000000090 /* AutocompleteTextField.swift in Sources */,
 				A10001010000000000000030 /* MailStore.swift in Sources */,
 				A10001010000000000000040 /* AttachmentsListView.swift in Sources */,
-				A10001010000000000000050 /* RichTextEditor.swift in Sources */,
+				A100010100000000000000FD /* WebRichTextEditorState.swift in Sources */,
+				A100010100000000000000FE /* WebRichTextEditorCoordinator.swift in Sources */,
+				A10001010000000000000FF /* WebRichTextEditorRepresentable.swift in Sources */,
+				A1000101000000000000100 /* WebRichTextEditor.swift in Sources */,
 				A10001010000000000000051 /* FormattingToolbar.swift in Sources */,
 				A10001010000000000000052 /* ShortcutsHelpView.swift in Sources */,
 				A10001010000000000000053 /* DebugMenuView.swift in Sources */,
@@ -797,6 +830,10 @@
 				A100010100000000000000F5 /* MessageFetching.swift in Sources */,
 				A100010100000000000000F6 /* CacheStoring.swift in Sources */,
 				A100010100000000000000F7 /* CPUMonitor.swift in Sources */,
+				A100010100000000000000F8 /* ToastManager.swift in Sources */,
+				A100010100000000000000F9 /* ToastOverlayView.swift in Sources */,
+				A100010100000000000000FC /* HTMLTemplate.swift in Sources */,
+				A1000101000000000000101 /* InlineImageProcessor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -813,6 +850,7 @@
 				B10001010000000000000007 /* AppCoordinatorTests.swift in Sources */,
 				B10001010000000000000008 /* LabelManagementTests.swift in Sources */,
 				B10001010000000000000009 /* CPUMonitorTests.swift in Sources */,
+				B1000101000000000000000A /* EmailActionCoordinatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

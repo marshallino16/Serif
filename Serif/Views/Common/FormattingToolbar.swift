@@ -1,14 +1,10 @@
 import SwiftUI
 
 struct FormattingToolbar: View {
-    @ObservedObject var state: RichTextState
+    @ObservedObject var state: WebRichTextEditorState
     @Environment(\.theme) private var theme
     @State private var showColorPopover = false
 
-    private let fontFamilies = [
-        "System Font", "Helvetica Neue", "Arial", "Georgia",
-        "Times New Roman", "Courier New", "Menlo", "Verdana",
-    ]
     private let fontSizes: [CGFloat] = [9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36]
 
     private let colorGrid: [[NSColor]] = [
@@ -31,36 +27,10 @@ struct FormattingToolbar: View {
 
             separator
 
-            // Font family
-            Menu {
-                ForEach(fontFamilies, id: \.self) { family in
-                    Button {
-                        state.setFontFamily(family == "System Font" ? ".AppleSystemUIFont" : family)
-                    } label: {
-                        HStack {
-                            Text(family)
-                            if state.fontFamily == family || (family == "System Font" && state.fontFamily.hasPrefix(".")) {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 3) {
-                    Text(displayFontName)
-                        .font(.system(size: 11))
-                        .lineLimit(1)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 7))
-                }
-                .foregroundColor(theme.textSecondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(theme.cardBackground)
-                .cornerRadius(4)
+            // Remove formatting
+            toolbarButton(icon: "textformat", tooltip: "Remove formatting") {
+                state.removeFormat()
             }
-            .buttonStyle(.plain)
-            .frame(maxWidth: 100)
 
             separator
 
@@ -175,11 +145,6 @@ struct FormattingToolbar: View {
 
     // MARK: - Helpers
 
-    private var displayFontName: String {
-        if state.fontFamily.hasPrefix(".") { return "Sans Serif" }
-        return state.fontFamily
-    }
-
     private var separator: some View {
         Divider()
             .frame(height: 16)
@@ -237,7 +202,7 @@ struct FormattingToolbar: View {
 // MARK: - Color Grid Popover
 
 struct ColorGridPopover: View {
-    @ObservedObject var state: RichTextState
+    @ObservedObject var state: WebRichTextEditorState
     @Binding var showPopover: Bool
     let colorGrid: [[NSColor]]
     @State private var customColor: Color = .white

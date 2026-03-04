@@ -90,6 +90,10 @@ struct ContentView: View {
                 .environment(\.theme, themeManager.currentTheme)
                 .zIndex(5)
 
+            ToastOverlayView()
+                .environment(\.theme, themeManager.currentTheme)
+                .zIndex(6)
+
             SlidePanelsOverlay(
                 panels: coordinator.panelCoordinator,
                 themeManager: themeManager,

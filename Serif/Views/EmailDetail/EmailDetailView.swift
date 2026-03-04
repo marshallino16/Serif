@@ -26,6 +26,7 @@ struct EmailDetailView: View {
     var onPrint: ((GmailMessage, Email) -> Void)?
     var checkUnsubscribed: ((String) -> Bool)?
     var extractBodyUnsubscribeURL: ((String) -> URL?)?
+    var fromAddress: String = ""
 
     @StateObject private var detailVM: EmailDetailViewModel
     @State private var emailBodyHeight: CGFloat = 100
@@ -79,7 +80,8 @@ struct EmailDetailView: View {
         onUnsubscribe:         ((URL, Bool, String?) async -> Bool)? = nil,
         onPrint:               ((GmailMessage, Email) -> Void)? = nil,
         checkUnsubscribed:     ((String) -> Bool)? = nil,
-        extractBodyUnsubscribeURL: ((String) -> URL?)? = nil
+        extractBodyUnsubscribeURL: ((String) -> URL?)? = nil,
+        fromAddress:           String = ""
     ) {
         self.email              = email
         self.accountID          = accountID
@@ -105,6 +107,7 @@ struct EmailDetailView: View {
         self.onPrint               = onPrint
         self.checkUnsubscribed     = checkUnsubscribed
         self.extractBodyUnsubscribeURL = extractBodyUnsubscribeURL
+        self.fromAddress           = fromAddress
         self._detailVM             = StateObject(wrappedValue: EmailDetailViewModel(accountID: accountID))
     }
 
@@ -197,7 +200,7 @@ struct EmailDetailView: View {
                                 .padding(.bottom, 12)
                             }
 
-                            let rawHTML = detailVM.displayHTML ?? detailVM.latestMessage?.htmlBody ?? ""
+                            let rawHTML = detailVM.resolvedHTML ?? detailVM.displayHTML ?? detailVM.latestMessage?.htmlBody ?? ""
                             let htmlToRender = rawHTML.isEmpty
                                 ? "<p>\(detailVM.latestMessage?.plainBody ?? email.body)</p>"
                                 : rawHTML
@@ -222,7 +225,7 @@ struct EmailDetailView: View {
                 }
 
                 // Floating reply bar
-                ReplyBarView()
+                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }
