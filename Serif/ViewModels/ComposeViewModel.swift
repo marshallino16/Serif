@@ -17,7 +17,8 @@ final class ComposeViewModel: ObservableObject {
     let accountID:   String
     var fromAddress: String
     var gmailDraftID:     String?   // set once we've created a remote draft
-    private var isSaving = false     // guard against concurrent saves
+    private(set) var isSaving = false     // guard against concurrent saves
+    private(set) var needsResave = false  // queued save while one was in flight
     var threadID:         String?   // for replies
     var replyToMessageID: String?   // for In-Reply-To / References headers
     var attachmentURLs:   [URL] = []
@@ -61,9 +62,18 @@ final class ComposeViewModel: ObservableObject {
     // MARK: - Draft
 
     func saveDraft() async {
-        guard !isSaving else { return }
+        guard !isSaving else {
+            needsResave = true
+            return
+        }
         isSaving = true
-        defer { isSaving = false }
+        defer {
+            isSaving = false
+            if needsResave {
+                needsResave = false
+                Task { await saveDraft() }
+            }
+        }
         do {
             // Extract inline data: URLs → cid: + MIME parts for proper Gmail storage
             let (processedBody, extractedImages) = InlineImageProcessor.extractInlineImages(from: body)

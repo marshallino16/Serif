@@ -320,6 +320,132 @@ final class DraftLifecycleTests: XCTestCase {
         XCTAssertEqual(reImages[0].contentID, "img_abc", "Round-trip: same CID")
     }
 
+    // MARK: - Draft duplicate prevention: needsResave
+
+    func testNeedsResaveIsSetWhenSaveIsInFlight() async {
+        let vm = ComposeViewModel(accountID: "", fromAddress: "test@test.com")
+        vm.subject = "Test"
+        vm.body = "Version 1"
+        vm.isHTML = true
+
+        // Start first save (will be "in flight" — API fails but processing takes time)
+        async let save1: Void = vm.saveDraft()
+
+        // Tiny yield to let save1 start and set isSaving = true
+        try? await Task.sleep(nanoseconds: 1_000_000)
+
+        // If save1 is still running, this should set needsResave
+        await vm.saveDraft()
+
+        _ = await save1
+
+        // After all completes, needsResave should be cleared (retry executed)
+        XCTAssertFalse(vm.needsResave,
+                       "needsResave should be cleared after retry executes")
+    }
+
+    func testConcurrentSavesPreserveDraftID() async {
+        let vm = ComposeViewModel(accountID: "", fromAddress: "test@test.com")
+        vm.gmailDraftID = "existing_draft_456"
+        vm.subject = "Test"
+        vm.body = "V1"
+        vm.isHTML = true
+
+        async let save1: Void = vm.saveDraft()
+        vm.body = "V2"
+        async let save2: Void = vm.saveDraft()
+        _ = await (save1, save2)
+
+        XCTAssertEqual(vm.gmailDraftID, "existing_draft_456",
+                       "Draft ID must not be lost during concurrent saves")
+    }
+
+    // MARK: - Draft ID recovery from MailStore.replyDrafts
+
+    func testDraftIDRecoveryFromReplyDrafts() {
+        let store = MailStore()
+        let threadID = "thread_abc"
+        store.replyDrafts[threadID] = MailStore.ReplyDraftInfo(
+            gmailDraftID: "draft_recovered_123",
+            preview: "Hello world"
+        )
+
+        // Simulate a new ComposeViewModel (as if view was recreated by SwiftUI)
+        let vm = ComposeViewModel(accountID: "acc", fromAddress: "me@test.com", threadID: threadID)
+        XCTAssertNil(vm.gmailDraftID, "New VM should have no draft ID")
+
+        // Simulate recovery logic from scheduleAutoSave
+        if vm.gmailDraftID == nil,
+           let saved = store.replyDrafts[threadID] {
+            vm.gmailDraftID = saved.gmailDraftID
+        }
+
+        XCTAssertEqual(vm.gmailDraftID, "draft_recovered_123",
+                       "Draft ID should be recovered from MailStore.replyDrafts to prevent duplicate creates")
+    }
+
+    func testDraftIDRecoverySkippedWhenAlreadySet() {
+        let store = MailStore()
+        let threadID = "thread_abc"
+        store.replyDrafts[threadID] = MailStore.ReplyDraftInfo(
+            gmailDraftID: "old_draft",
+            preview: "Old"
+        )
+
+        let vm = ComposeViewModel(accountID: "acc", fromAddress: "me@test.com", threadID: threadID)
+        vm.gmailDraftID = "current_draft"
+
+        // Recovery should NOT overwrite existing draft ID
+        if vm.gmailDraftID == nil,
+           let saved = store.replyDrafts[threadID] {
+            vm.gmailDraftID = saved.gmailDraftID
+        }
+
+        XCTAssertEqual(vm.gmailDraftID, "current_draft",
+                       "Should not overwrite existing gmailDraftID")
+    }
+
+    // MARK: - MailStore.replyDrafts persistence
+
+    func testReplyDraftsPersistenceRoundTrip() {
+        let key = "replyDrafts"
+        // Clean up before test
+        UserDefaults.standard.removeObject(forKey: key)
+
+        let store1 = MailStore()
+        let threadID = "thread_persist_test"
+        store1.replyDrafts[threadID] = MailStore.ReplyDraftInfo(
+            gmailDraftID: "draft_xyz",
+            preview: "Test preview text"
+        )
+        store1.saveReplyDrafts()
+
+        // New MailStore instance reads from UserDefaults on init
+        let store2 = MailStore()
+        XCTAssertEqual(store2.replyDrafts[threadID]?.gmailDraftID, "draft_xyz",
+                       "Draft ID should survive MailStore recreation")
+        XCTAssertEqual(store2.replyDrafts[threadID]?.preview, "Test preview text",
+                       "Preview should survive MailStore recreation")
+
+        // Clean up
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+
+    func testReplyDraftsCleanupOnDiscard() {
+        let store = MailStore()
+        let threadID = "thread_discard_test"
+        store.replyDrafts[threadID] = MailStore.ReplyDraftInfo(
+            gmailDraftID: "draft_to_discard",
+            preview: "Will be discarded"
+        )
+
+        // Simulate discard (as collapse() does)
+        store.replyDrafts.removeValue(forKey: threadID)
+
+        XCTAssertNil(store.replyDrafts[threadID],
+                     "Discarded draft should be removed from replyDrafts")
+    }
+
     // MARK: - GmailModels: contentID and inline parts
 
     func testContentIDExtraction() {

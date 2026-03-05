@@ -310,6 +310,12 @@ struct ReplyBarView: View {
         saveTask = Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             guard !Task.isCancelled else { return }
+            // Recover draft ID if view was recreated but draft exists on Gmail
+            if composeVM.gmailDraftID == nil,
+               let threadID = email.gmailThreadID,
+               let saved = mailStore.replyDrafts[threadID] {
+                composeVM.gmailDraftID = saved.gmailDraftID
+            }
             let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
             composeVM.to = email.sender.email
             composeVM.subject = sub
