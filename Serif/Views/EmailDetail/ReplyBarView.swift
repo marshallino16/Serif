@@ -47,6 +47,7 @@ struct ReplyBarView: View {
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(theme.border, lineWidth: 1)
         )
+        .background(ClickOutsideDetector(isExpanded: isExpanded, onClickOutside: { minimize() }))
         .onChange(of: replyHTML) { _ in scheduleAutoSave() }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -80,7 +81,7 @@ struct ReplyBarView: View {
     private var collapsedContent: some View {
         Button {
             loadExistingDraft()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 isExpanded = true
             }
         } label: {
@@ -149,6 +150,15 @@ struct ReplyBarView: View {
             Divider().background(theme.divider)
 
             HStack(spacing: 12) {
+                Button { minimize() } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(theme.textSecondary)
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+                .help("Minimize")
+
                 Button { attachFiles() } label: {
                     Image(systemName: "paperclip")
                         .font(.system(size: 12))
@@ -316,6 +326,12 @@ struct ReplyBarView: View {
         }
     }
 
+    private func minimize() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            isExpanded = false
+        }
+    }
+
     private func collapse() {
         saveTask?.cancel()
         if let threadID = email.gmailThreadID {
@@ -325,11 +341,63 @@ struct ReplyBarView: View {
         if composeVM.gmailDraftID != nil {
             Task { await composeVM.discardDraft() }
         }
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             isExpanded = false
             replyHTML = ""
             attachments = []
             sendError = nil
+        }
+    }
+}
+
+// MARK: - Click Outside Detector
+
+/// NSViewRepresentable that monitors mouse clicks and fires a callback
+/// when the click lands outside of its own parent view hierarchy.
+private struct ClickOutsideDetector: NSViewRepresentable {
+    let isExpanded: Bool
+    let onClickOutside: () -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.anchorView = view
+        context.coordinator.onClickOutside = onClickOutside
+        context.coordinator.install()
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.isExpanded = isExpanded
+        context.coordinator.onClickOutside = onClickOutside
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    class Coordinator {
+        weak var anchorView: NSView?
+        var isExpanded = false
+        var onClickOutside: (() -> Void)?
+        private var monitor: Any?
+
+        func install() {
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+                self?.handleClick(event)
+                return event
+            }
+        }
+
+        private func handleClick(_ event: NSEvent) {
+            guard isExpanded, let anchor = anchorView, anchor.window != nil else { return }
+            let clickInAnchor = anchor.convert(event.locationInWindow, from: nil)
+            if !anchor.bounds.contains(clickInAnchor) {
+                DispatchQueue.main.async { [weak self] in
+                    self?.onClickOutside?()
+                }
+            }
+        }
+
+        deinit {
+            if let monitor { NSEvent.removeMonitor(monitor) }
         }
     }
 }
