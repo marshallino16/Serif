@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  SCHEME: Serif
+  PROJECT: Serif.xcodeproj
+  APP_NAME: Serif
+
+jobs:
+  build-and-release:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Resolve SPM dependencies
+        run: xcodebuild -project $PROJECT -scheme $SCHEME -resolvePackageDependencies
+
+      - name: Build archive
+        run: |
+          xcodebuild archive \
+            -project $PROJECT \
+            -scheme $SCHEME \
+            -configuration Release \
+            -archivePath build/Serif.xcarchive \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Export app
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/Serif.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist
+
+      # Uncomment when you have a Developer ID certificate:
+      # - name: Notarize
+      #   run: |
+      #     xcrun notarytool submit build/export/Serif.app.zip \
+      #       --apple-id "${{ secrets.APPLE_ID }}" \
+      #       --password "${{ secrets.NOTARY_PASSWORD }}" \
+      #       --team-id "${{ secrets.TEAM_ID }}" \
+      #       --wait
+      #     xcrun stapler staple "build/export/$APP_NAME.app"
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        run: |
+          create-dmg \
+            --volname "$APP_NAME" \
+            --volicon "build/export/$APP_NAME.app/Contents/Resources/AppIcon.icns" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "$APP_NAME.app" 150 185 \
+            --app-drop-link 450 185 \
+            "build/$APP_NAME-${GITHUB_REF_NAME}.dmg" \
+            "build/export/$APP_NAME.app"
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "build/$APP_NAME-${GITHUB_REF_NAME}.dmg" \
+            --title "$APP_NAME ${{ steps.version.outputs.VERSION }}" \
+            --generate-notes
+
+      - name: Generate appcast.xml
+        run: |
+          DMG_FILE="build/$APP_NAME-${GITHUB_REF_NAME}.dmg"
+          DMG_SIZE=$(stat -f%z "$DMG_FILE")
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          DMG_URL="https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/${APP_NAME}-${GITHUB_REF_NAME}.dmg"
+          PUB_DATE=$(date -R)
+
+          cat > docs/appcast.xml << APPCAST_EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <channel>
+              <title>Serif Updates</title>
+              <language>en</language>
+              <item>
+                <title>Version ${VERSION}</title>
+                <pubDate>${PUB_DATE}</pubDate>
+                <sparkle:version>${VERSION}</sparkle:version>
+                <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
+                <enclosure url="${DMG_URL}" length="${DMG_SIZE}" type="application/octet-stream" />
+              </item>
+            </channel>
+          </rss>
+          APPCAST_EOF
+
+      - name: Deploy appcast to GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/appcast.xml
+          git commit -m "Update appcast for ${GITHUB_REF_NAME}" || true
+          git push origin HEAD:master

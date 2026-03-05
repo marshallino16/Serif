@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct SerifApp: App {
     @AppStorage("isSignedIn") private var isSignedIn: Bool = false
+    @StateObject private var updaterVM = UpdaterViewModel()
 
     var body: some Scene {
         WindowGroup {
@@ -23,6 +24,12 @@ struct SerifApp: App {
             // Remove system Edit menu handlers so our hidden buttons can intercept ⌘Z and ⌘A
             CommandGroup(replacing: .undoRedo) {}
             CommandGroup(replacing: .textEditing) {}
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates...") {
+                    updaterVM.checkForUpdates()
+                }
+                .disabled(!updaterVM.canCheckForUpdates)
+            }
         }
     }
 }
