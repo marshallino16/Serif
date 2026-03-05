@@ -89,7 +89,7 @@ struct DetailPaneView: View {
     // MARK: - Email Detail
 
     private func emailDetailView(email: Email) -> some View {
-        EmailDetailView(
+        var view = EmailDetailView(
             email: email,
             accountID: accountID,
             attachmentIndexer: attachmentIndexer,
@@ -144,21 +144,48 @@ struct DetailPaneView: View {
             },
             fromAddress: fromAddress
         )
-        .id(email.id)
+        view.mailStore = mailStore
+        return view.id(email.id)
     }
 
     // MARK: - Empty State
 
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: "envelope.open")
+            Image(systemName: emptyStateIcon)
                 .font(.system(size: 40))
                 .foregroundColor(theme.textTertiary)
-            Text("Select an email to read")
+            Text(emptyStateMessage)
                 .font(.system(size: 14))
                 .foregroundColor(theme.textTertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.detailBackground)
+    }
+
+    private var emptyStateIcon: String {
+        switch selectedFolder {
+        case .drafts:        return "doc.text"
+        case .sent:          return "paperplane"
+        case .trash:         return "trash"
+        case .spam:          return "exclamationmark.shield"
+        case .starred:       return "star"
+        case .archive:       return "archivebox"
+        case .attachments:   return "paperclip"
+        case .subscriptions: return "newspaper"
+        default:             return "envelope.open"
+        }
+    }
+
+    private var emptyStateMessage: String {
+        switch selectedFolder {
+        case .drafts:        return "Select a draft to edit"
+        case .sent:          return "Select a sent email to view"
+        case .starred:       return "Select a starred email to read"
+        case .archive:       return "Select an archived email to read"
+        case .attachments:   return "Select an email to view attachments"
+        case .subscriptions: return "Select a subscription to view"
+        default:             return "Select an email to read"
+        }
     }
 }

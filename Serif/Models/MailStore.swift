@@ -5,8 +5,30 @@ final class MailStore: ObservableObject {
     @Published var gmailDrafts: [Email] = []
     @Published var isLoadingGmailDrafts = false
 
+    /// In-progress quick reply drafts, keyed by Gmail thread ID.
+    /// Only stores the link — content is always fetched fresh from Gmail.
+    struct ReplyDraftInfo: Codable {
+        let gmailDraftID: String
+        let preview: String  // short plain text for collapsed placeholder
+    }
+    var replyDrafts: [String: ReplyDraftInfo] = [:]
+
+    private static let replyDraftsKey = "replyDrafts"
+
     init(emails: [Email] = []) {
         self.emails = emails
+        loadReplyDrafts()
+    }
+
+    func saveReplyDrafts() {
+        guard let data = try? JSONEncoder().encode(replyDrafts) else { return }
+        UserDefaults.standard.set(data, forKey: Self.replyDraftsKey)
+    }
+
+    private func loadReplyDrafts() {
+        guard let data = UserDefaults.standard.data(forKey: Self.replyDraftsKey),
+              let decoded = try? JSONDecoder().decode([String: ReplyDraftInfo].self, from: data) else { return }
+        replyDrafts = decoded
     }
 
     func emails(for folder: Folder) -> [Email] {

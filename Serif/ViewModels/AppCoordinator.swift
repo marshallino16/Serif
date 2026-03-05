@@ -15,6 +15,7 @@ class AppCoordinator: ObservableObject {
     let subscriptionsStore = SubscriptionsStore.shared
 
     private var cancellables: Set<AnyCancellable> = []
+    private var pendingDraftSelection: Email?
 
     // MARK: - Selection State
 
@@ -143,15 +144,23 @@ class AppCoordinator: ObservableObject {
     func composeNewEmail() {
         composeMode = .new
         let draft = mailStore.createDraft()
-        selectedFolder = .drafts
-        selectedEmail = draft
+        if selectedFolder == .drafts {
+            selectedEmail = draft
+        } else {
+            pendingDraftSelection = draft
+            selectedFolder = .drafts
+        }
     }
 
     func startCompose(mode: ComposeMode) {
         composeMode = mode
         let draft = mailStore.createDraft()
-        selectedFolder = .drafts
-        selectedEmail = draft
+        if selectedFolder == .drafts {
+            selectedEmail = draft
+        } else {
+            pendingDraftSelection = draft
+            selectedFolder = .drafts
+        }
     }
 
     func discardDraft(id: UUID) {
@@ -241,7 +250,12 @@ class AppCoordinator: ObservableObject {
     }
 
     func handleFolderChange(_ folder: Folder) {
-        selectedEmail = nil
+        if let pending = pendingDraftSelection {
+            pendingDraftSelection = nil
+            selectedEmail = pending
+        } else {
+            selectedEmail = nil
+        }
         selectedEmailIDs = []
         searchResetTrigger += 1
         if folder != .labels { selectedLabel = nil }

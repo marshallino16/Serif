@@ -538,6 +538,41 @@ final class MailboxViewModel: ObservableObject {
                     }
                     fetchService.analyzeInBackground(newMessages)
                 }
+
+                // Prune stale messages: locally cached but absent from the API's first page.
+                // Verify each suspect with a lightweight API call to distinguish
+                // "deleted/moved" from "pushed to next page".
+                if !refs.isEmpty {
+                    let serverIDs = Set(refs.map(\.id))
+                    let suspectIDs = messages.filter { !serverIDs.contains($0.id) }.map(\.id)
+                    if !suspectIDs.isEmpty {
+                        var staleIDs: [String] = []
+                        let folderLabels = Set(currentLabelIDs)
+                        for id in suspectIDs {
+                            guard !fetchService.isStale(generation: generation) else { break }
+                            do {
+                                let msg = try await api.getMessage(id: id, accountID: accountID, format: "minimal")
+                                // Exists but moved to a different folder
+                                if !folderLabels.isEmpty,
+                                   let msgLabels = msg.labelIds,
+                                   folderLabels.isDisjoint(with: Set(msgLabels)) {
+                                    staleIDs.append(id)
+                                }
+                            } catch {
+                                staleIDs.append(id) // 404 → deleted on Gmail
+                            }
+                        }
+                        if !staleIDs.isEmpty {
+                            let staleSet = Set(staleIDs)
+                            withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+                                messages.removeAll { staleSet.contains($0.id) }
+                            }
+                            fetchService.allCachedMessages.removeAll { staleSet.contains($0.id) }
+                            for id in staleIDs { fetchService.messageCache[id] = nil }
+                        }
+                    }
+                }
+
                 fetchService.persistCache(accountID: accountID, folderKey: folderKey, nextPageToken: nextPageToken)
 
                 if let latestHistoryId = page.compactMap(\.historyId).first {
@@ -598,11 +633,20 @@ final class MailboxViewModel: ObservableObject {
         // Apply label changes to existing messages
         for msg in result.refreshedMessages {
             fetchService.messageCache[msg.id] = msg
-            if let idx = messages.firstIndex(where: { $0.id == msg.id }) {
-                messages[idx] = msg
-            }
-            if let idx = fetchService.allCachedMessages.firstIndex(where: { $0.id == msg.id }) {
-                fetchService.allCachedMessages[idx] = msg
+            // If the message lost the current folder's label, remove it
+            if let labelId, let msgLabels = msg.labelIds, !msgLabels.contains(labelId) {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+                    messages.removeAll { $0.id == msg.id }
+                }
+                fetchService.allCachedMessages.removeAll { $0.id == msg.id }
+                fetchService.messageCache[msg.id] = nil
+            } else {
+                if let idx = messages.firstIndex(where: { $0.id == msg.id }) {
+                    messages[idx] = msg
+                }
+                if let idx = fetchService.allCachedMessages.firstIndex(where: { $0.id == msg.id }) {
+                    fetchService.allCachedMessages[idx] = msg
+                }
             }
         }
 

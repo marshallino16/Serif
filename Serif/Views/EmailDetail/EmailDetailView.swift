@@ -27,6 +27,7 @@ struct EmailDetailView: View {
     var checkUnsubscribed: ((String) -> Bool)?
     var extractBodyUnsubscribeURL: ((String) -> URL?)?
     var fromAddress: String = ""
+    var mailStore: MailStore?
 
     @StateObject private var detailVM: EmailDetailViewModel
     @State private var emailBodyHeight: CGFloat = 100
@@ -225,7 +226,7 @@ struct EmailDetailView: View {
                 }
 
                 // Floating reply bar
-                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress)
+                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress, mailStore: mailStore ?? MailStore())
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }

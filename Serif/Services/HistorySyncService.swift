@@ -84,7 +84,15 @@ final class HistorySyncService {
                 let fetched = try await api.getMessages(
                     ids: newIDs, accountID: accountID, format: "metadata"
                 )
-                result.newMessages = fetched.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+                // Only include messages that still belong to the current folder.
+                // A message may appear in messagesAdded but then get moved/trashed
+                // before we sync, so its labels no longer match.
+                result.newMessages = fetched
+                    .filter { msg in
+                        guard let labelId else { return true }
+                        return msg.labelIds?.contains(labelId) == true
+                    }
+                    .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
             }
 
             // Re-fetch messages with label changes to update their labelIds

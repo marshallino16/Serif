@@ -25,6 +25,16 @@ class EmailActionCoordinator: ObservableObject {
     }
 
     func deleteEmail(_ email: Email, selectNext: (Email?) -> Void) {
+        // Draft-specific path: delete from mailStore directly
+        if email.isDraft {
+            if let gid = email.gmailDraftID {
+                let accountID = mailboxViewModel.accountID
+                Task { try? await GmailSendService.shared.deleteDraft(draftID: gid, accountID: accountID) }
+            }
+            mailStore.deleteDraft(id: email.id)
+            selectNext(nil)
+            return
+        }
         guard let msgID = email.gmailMessageID else { return }
         let vm = mailboxViewModel
         let removed = vm.removeOptimistically(msgID)

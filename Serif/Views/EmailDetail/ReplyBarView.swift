@@ -4,20 +4,26 @@ struct ReplyBarView: View {
     let email: Email
     let accountID: String
     let fromAddress: String
+    let mailStore: MailStore
 
     @State private var replyHTML = ""
     @State private var isExpanded = false
     @State private var isSending = false
     @State private var sendError: String?
     @State private var attachments: [URL] = []
+    @State private var saveTask: Task<Void, Never>?
+    @State private var isInitialLoad = true
+    @State private var isLoadingDraft = false
+    @State private var showDiscardAlert = false
     @StateObject private var editorState = WebRichTextEditorState()
     @StateObject private var composeVM: ComposeViewModel
     @Environment(\.theme) private var theme
 
-    init(email: Email, accountID: String, fromAddress: String) {
+    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore) {
         self.email = email
         self.accountID = accountID
         self.fromAddress = fromAddress
+        self.mailStore = mailStore
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
             fromAddress: fromAddress,
@@ -41,22 +47,50 @@ struct ReplyBarView: View {
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(theme.border, lineWidth: 1)
         )
+        .onChange(of: replyHTML) { _ in scheduleAutoSave() }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                isInitialLoad = false
+            }
+        }
+        .alert("Discard reply?", isPresented: $showDiscardAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Discard", role: .destructive) { collapse() }
+        } message: {
+            Text("Your reply draft will be permanently deleted.")
+        }
+    }
+
+    private var hasSavedDraft: Bool {
+        guard let threadID = email.gmailThreadID else { return false }
+        return mailStore.replyDrafts[threadID] != nil
+    }
+
+    private var collapsedPlaceholder: String {
+        guard let threadID = email.gmailThreadID,
+              let saved = mailStore.replyDrafts[threadID] else {
+            return "Write a reply..."
+        }
+        let preview = saved.preview
+        return "Continue: \(preview)\(preview.count >= 50 ? "…" : "")"
     }
 
     // MARK: - Collapsed
 
     private var collapsedContent: some View {
         Button {
+            loadExistingDraft()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 isExpanded = true
             }
         } label: {
             HStack(spacing: 10) {
-                Text("Write a reply...")
+                Text(collapsedPlaceholder)
                     .font(.system(size: 13))
                     .foregroundColor(theme.textTertiary)
+                    .lineLimit(1)
                 Spacer()
-                Image(systemName: "square.and.pencil")
+                Image(systemName: hasSavedDraft ? "arrow.uturn.forward" : "square.and.pencil")
                     .font(.system(size: 13))
                     .foregroundColor(theme.textTertiary)
             }
@@ -133,7 +167,7 @@ struct ReplyBarView: View {
 
                 Spacer()
 
-                Button { collapse() } label: {
+                Button { showDiscardAlert = true } label: {
                     Text("Discard")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(theme.textSecondary)
@@ -192,6 +226,10 @@ struct ReplyBarView: View {
         isSending = false
 
         if composeVM.isSent {
+            if let threadID = email.gmailThreadID {
+                mailStore.replyDrafts.removeValue(forKey: threadID)
+                mailStore.saveReplyDrafts()
+            }
             ToastManager.shared.show(message: "Reply sent", type: .success)
             collapse()
         } else {
@@ -220,7 +258,73 @@ struct ReplyBarView: View {
         }
     }
 
+    private func loadExistingDraft() {
+        guard let threadID = email.gmailThreadID,
+              let saved = mailStore.replyDrafts[threadID] else { return }
+        // Block all auto-saves until the draft content is loaded
+        isLoadingDraft = true
+        Task {
+            do {
+                let draft = try await GmailDraftService.shared.getDraft(
+                    id: saved.gmailDraftID, accountID: accountID, format: "full"
+                )
+                if let body = draft.message?.body, !body.isEmpty {
+                    composeVM.gmailDraftID = saved.gmailDraftID
+                    isInitialLoad = true
+                    replyHTML = body
+                    editorState.setHTML(body)
+                    isLoadingDraft = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        isInitialLoad = false
+                    }
+                } else {
+                    // Draft exists but body is empty — treat as valid, let user type
+                    composeVM.gmailDraftID = saved.gmailDraftID
+                    isLoadingDraft = false
+                }
+            } catch {
+                // Draft no longer exists on Gmail — clean up the link
+                mailStore.replyDrafts.removeValue(forKey: threadID)
+                mailStore.saveReplyDrafts()
+                isLoadingDraft = false
+            }
+        }
+    }
+
+    private func scheduleAutoSave() {
+        guard !isInitialLoad, !isLoadingDraft, !replyHTML.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
+            composeVM.to = email.sender.email
+            composeVM.subject = sub
+            composeVM.body = replyHTML
+            composeVM.isHTML = true
+            composeVM.replyToMessageID = email.gmailMessageID
+            await composeVM.saveDraft()
+            // Store the link so the draft can be restored when coming back
+            if let threadID = email.gmailThreadID, let draftID = composeVM.gmailDraftID {
+                let plain = replyHTML.strippingHTML.trimmingCharacters(in: .whitespacesAndNewlines)
+                mailStore.replyDrafts[threadID] = .init(
+                    gmailDraftID: draftID,
+                    preview: String(plain.prefix(50))
+                )
+                mailStore.saveReplyDrafts()
+            }
+        }
+    }
+
     private func collapse() {
+        saveTask?.cancel()
+        if let threadID = email.gmailThreadID {
+            mailStore.replyDrafts.removeValue(forKey: threadID)
+            mailStore.saveReplyDrafts()
+        }
+        if composeVM.gmailDraftID != nil {
+            Task { await composeVM.discardDraft() }
+        }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
             isExpanded = false
             replyHTML = ""

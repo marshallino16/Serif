@@ -27,6 +27,7 @@ struct ComposeView: View {
     @State private var isInitialLoad = true
     @State private var selectedAliasEmail: String
     @State private var currentSignatureHTML: String = ""
+    @State private var showDiscardAlert = false
     @StateObject private var editorState = WebRichTextEditorState()
     @StateObject private var composeVM: ComposeViewModel
     @Environment(\.theme) private var theme
@@ -155,6 +156,16 @@ struct ComposeView: View {
             composeVM.fromAddress = newEmail
             replaceSignature(for: newEmail)
         }
+        .alert("Discard draft?", isPresented: $showDiscardAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Discard", role: .destructive) {
+                saveTask?.cancel()
+                Task { await composeVM.discardDraft() }
+                onDiscard()
+            }
+        } message: {
+            Text("This draft will be permanently deleted.")
+        }
     }
 
     // MARK: - Draft
@@ -220,6 +231,16 @@ struct ComposeView: View {
             // Persist gmailDraftID back to the Email in mailStore so it survives view destruction
             if let gid = composeVM.gmailDraftID {
                 mailStore.setGmailDraftID(gid, for: draftId)
+                // Update reply draft preview if this draft is linked to a quick reply
+                if let threadID = composeVM.threadID,
+                   mailStore.replyDrafts[threadID] != nil {
+                    let plain = bodyHTML.strippingHTML.trimmingCharacters(in: .whitespacesAndNewlines)
+                    mailStore.replyDrafts[threadID] = .init(
+                        gmailDraftID: gid,
+                        preview: String(plain.prefix(50))
+                    )
+                    mailStore.saveReplyDrafts()
+                }
             }
         }
     }
@@ -311,9 +332,7 @@ struct ComposeView: View {
             Divider().frame(height: 16)
 
             toolbarButton(icon: "trash", label: "Discard") {
-                saveTask?.cancel()
-                Task { await composeVM.discardDraft() }
-                onDiscard()
+                showDiscardAlert = true
             }
         }
         .padding(.horizontal, 20)
@@ -337,9 +356,7 @@ struct ComposeView: View {
     private var composeActions: some View {
         HStack(spacing: 12) {
             Button {
-                saveTask?.cancel()
-                Task { await composeVM.discardDraft() }
-                onDiscard()
+                showDiscardAlert = true
             } label: {
                 Text("Discard")
                     .font(.system(size: 12, weight: .medium))

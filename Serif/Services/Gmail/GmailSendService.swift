@@ -131,7 +131,7 @@ final class GmailSendService {
                 "MIME-Version: 1.0",
                 "From: \(from)",
                 "To: \(to.joined(separator: ", "))",
-                "Subject: \(subject)",
+                "Subject: \(mimeEncodeHeader(subject))",
                 "Content-Type: multipart/alternative; boundary=\"\(boundary)\""
             ]
             if !cc.isEmpty  { lines.append("Cc: \(cc.joined(separator: ", "))") }
@@ -155,7 +155,7 @@ final class GmailSendService {
                 "MIME-Version: 1.0",
                 "From: \(from)",
                 "To: \(to.joined(separator: ", "))",
-                "Subject: \(subject)",
+                "Subject: \(mimeEncodeHeader(subject))",
                 "Content-Type: text/plain; charset=UTF-8"
             ]
             if !cc.isEmpty  { lines.append("Cc: \(cc.joined(separator: ", "))") }
@@ -206,7 +206,7 @@ final class GmailSendService {
             "MIME-Version: 1.0",
             "From: \(from)",
             "To: \(to.joined(separator: ", "))",
-            "Subject: \(subject)",
+            "Subject: \(mimeEncodeHeader(subject))",
             "Content-Type: \(topType); boundary=\"\(topBoundary)\""
         ]
         if !cc.isEmpty  { lines.append("Cc: \(cc.joined(separator: ", "))") }
@@ -299,6 +299,14 @@ final class GmailSendService {
     }
 
     // MARK: - Helpers
+
+    /// RFC 2047 encode a header value when it contains non-ASCII characters (e.g. emojis).
+    private func mimeEncodeHeader(_ value: String) -> String {
+        let needsEncoding = value.unicodeScalars.contains { !$0.isASCII }
+        guard needsEncoding, let data = value.data(using: .utf8) else { return value }
+        let encoded = data.base64EncodedString()
+        return "=?UTF-8?B?\(encoded)?="
+    }
 
     private func base64URLEncode(_ string: String) -> String {
         guard let data = string.data(using: .utf8) else { return "" }
