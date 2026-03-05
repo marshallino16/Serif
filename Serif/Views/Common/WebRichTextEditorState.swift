@@ -12,6 +12,7 @@ final class WebRichTextEditorState: ObservableObject {
     @Published var fontSize: CGFloat = 13
     @Published var textColor: NSColor = .labelColor
     @Published var alignment: NSTextAlignment = .left
+    @Published var selectedText: String = ""
 
     // WKWebView reference (set by Coordinator)
     weak var webView: WKWebView?
@@ -55,6 +56,18 @@ final class WebRichTextEditorState: ObservableObject {
     func insertBulletList()    { eval("execInsertUnorderedList()") }
     func increaseIndent()      { eval("execIndent()") }
     func decreaseIndent()      { eval("execOutdent()") }
+
+    func insertLink(url: String, text: String? = nil) {
+        let escapedURL = url.replacingOccurrences(of: "'", with: "\\'")
+        if let text = text {
+            let escapedText = text.replacingOccurrences(of: "'", with: "\\'")
+            eval("execInsertLink('\(escapedURL)', '\(escapedText)')")
+        } else {
+            eval("execInsertLink('\(escapedURL)', null)")
+        }
+    }
+
+    func removeLink() { eval("execUnlink()") }
 
     func undo() { webView?.undoManager?.undo() }
     func redo() { webView?.undoManager?.redo() }
@@ -144,6 +157,7 @@ final class WebRichTextEditorState: ObservableObject {
         isItalic = info["italic"] as? Bool ?? false
         isUnderline = info["underline"] as? Bool ?? false
         isStrikethrough = info["strikethrough"] as? Bool ?? false
+        selectedText = info["selectedText"] as? String ?? ""
         if let fs = info["fontSize"] as? Int { fontSize = CGFloat(fs) }
         if let hex = info["textColor"] as? String { textColor = nsColorFromHex(hex) }
         if let align = info["alignment"] as? String {

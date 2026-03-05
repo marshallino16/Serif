@@ -8,6 +8,7 @@ struct WebRichTextEditorRepresentable: NSViewRepresentable {
     var placeholder: String
     var autoFocus: Bool
     var onFileDrop: ((URL) -> Void)?
+    var onOpenLink: ((URL) -> Void)?
 
     func makeCoordinator() -> WebRichTextEditorCoordinator {
         WebRichTextEditorCoordinator(self)

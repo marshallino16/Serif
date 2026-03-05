@@ -32,6 +32,163 @@
     window.execIndent = function() { document.execCommand('indent', false, null); };
     window.execOutdent = function() { document.execCommand('outdent', false, null); };
 
+    // ── Links ──
+
+    window.execInsertLink = function(url, text) {
+        editor.focus();
+        var sel = window.getSelection();
+        if (sel.toString().length > 0) {
+            // Wrap selection in link
+            document.execCommand('createLink', false, url);
+        } else if (text) {
+            var linkHTML = '<a href="' + url + '">' + text + '</a>&nbsp;';
+            document.execCommand('insertHTML', false, linkHTML);
+        } else {
+            var linkHTML = '<a href="' + url + '">' + url + '</a>&nbsp;';
+            document.execCommand('insertHTML', false, linkHTML);
+        }
+    };
+
+    window.execEditLink = function(oldHref, newHref, newText) {
+        var links = editor.querySelectorAll('a[href="' + oldHref + '"]');
+        for (var i = 0; i < links.length; i++) {
+            var link = links[i];
+            // Check if this is the link near the cursor
+            if (activeLinkElement && link === activeLinkElement) {
+                link.href = newHref;
+                if (newText !== undefined && newText !== null) {
+                    link.textContent = newText;
+                }
+                break;
+            }
+        }
+        hideLinkPopover();
+        notifyContentChanged();
+    };
+
+    window.execUnlink = function() {
+        if (activeLinkElement) {
+            var text = activeLinkElement.textContent;
+            var textNode = document.createTextNode(text);
+            activeLinkElement.parentNode.replaceChild(textNode, activeLinkElement);
+            activeLinkElement = null;
+            hideLinkPopover();
+            notifyContentChanged();
+        } else {
+            document.execCommand('unlink', false, null);
+        }
+    };
+
+    // ── Link Popover ──
+
+    var activeLinkElement = null;
+    var linkPopover = null;
+
+    function createLinkPopover() {
+        if (linkPopover) return;
+        linkPopover = document.createElement('div');
+        linkPopover.id = 'link-popover';
+        linkPopover.style.cssText = 'display:none;position:absolute;z-index:999;' +
+            'background:var(--bg-color);border:1px solid rgba(128,128,128,0.3);' +
+            'border-radius:8px;padding:8px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);' +
+            'font-size:12px;min-width:200px;max-width:320px;';
+        document.body.appendChild(linkPopover);
+    }
+
+    function showLinkPopover(linkEl) {
+        createLinkPopover();
+        activeLinkElement = linkEl;
+        var href = linkEl.getAttribute('href') || '';
+        var text = linkEl.textContent || '';
+
+        linkPopover.innerHTML =
+            '<div style="display:flex;flex-direction:column;gap:6px;">' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                    '<label style="font-size:11px;color:var(--placeholder-color);min-width:30px;">URL</label>' +
+                    '<input id="lp-url" type="text" value="' + href.replace(/"/g, '&quot;') + '" ' +
+                        'style="flex:1;background:rgba(128,128,128,0.1);border:1px solid rgba(128,128,128,0.2);' +
+                        'border-radius:4px;padding:3px 6px;font-size:12px;color:var(--text-color);outline:none;min-width:0;" />' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                    '<label style="font-size:11px;color:var(--placeholder-color);min-width:30px;">Text</label>' +
+                    '<input id="lp-text" type="text" value="' + text.replace(/"/g, '&quot;') + '" ' +
+                        'style="flex:1;background:rgba(128,128,128,0.1);border:1px solid rgba(128,128,128,0.2);' +
+                        'border-radius:4px;padding:3px 6px;font-size:12px;color:var(--text-color);outline:none;min-width:0;" />' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:2px;">' +
+                    '<button id="lp-remove" style="background:none;border:1px solid rgba(128,128,128,0.3);border-radius:4px;' +
+                        'padding:3px 8px;font-size:11px;color:var(--text-color);cursor:pointer;">Remove</button>' +
+                    '<button id="lp-open" style="background:none;border:1px solid rgba(128,128,128,0.3);border-radius:4px;' +
+                        'padding:3px 8px;font-size:11px;color:var(--text-color);cursor:pointer;">Open</button>' +
+                    '<button id="lp-save" style="background:var(--accent-color);border:none;border-radius:4px;' +
+                        'padding:3px 10px;font-size:11px;color:#fff;cursor:pointer;font-weight:500;">Save</button>' +
+                '</div>' +
+            '</div>';
+
+        // Position below the link
+        var rect = linkEl.getBoundingClientRect();
+        linkPopover.style.display = 'block';
+        linkPopover.style.left = Math.max(4, rect.left) + 'px';
+        linkPopover.style.top = (rect.bottom + 6) + 'px';
+
+        // Wire buttons
+        document.getElementById('lp-save').onclick = function(e) {
+            e.preventDefault(); e.stopPropagation();
+            var newUrl = document.getElementById('lp-url').value;
+            var newText = document.getElementById('lp-text').value;
+            if (activeLinkElement) {
+                activeLinkElement.href = newUrl;
+                activeLinkElement.textContent = newText;
+                notifyContentChanged();
+            }
+            hideLinkPopover();
+        };
+        document.getElementById('lp-remove').onclick = function(e) {
+            e.preventDefault(); e.stopPropagation();
+            execUnlink();
+        };
+        document.getElementById('lp-open').onclick = function(e) {
+            e.preventDefault(); e.stopPropagation();
+            var url = document.getElementById('lp-url').value;
+            if (url) post({ type: 'openLink', url: url });
+        };
+
+        // Prevent popover inputs from triggering editor events
+        var inputs = linkPopover.querySelectorAll('input');
+        for (var i = 0; i < inputs.length; i++) {
+            inputs[i].addEventListener('keydown', function(e) { e.stopPropagation(); });
+        }
+    }
+
+    function hideLinkPopover() {
+        if (linkPopover) {
+            linkPopover.style.display = 'none';
+            activeLinkElement = null;
+        }
+    }
+
+    window.hideLinkPopover = hideLinkPopover;
+
+    // Click on link → show popover
+    editor.addEventListener('click', function(e) {
+        var target = e.target;
+        if (target.tagName === 'A') {
+            e.preventDefault();
+            showLinkPopover(target);
+        } else if (linkPopover && linkPopover.style.display !== 'none' && !linkPopover.contains(target)) {
+            hideLinkPopover();
+        }
+    });
+
+    // Hide popover when clicking outside
+    document.addEventListener('mousedown', function(e) {
+        if (linkPopover && linkPopover.style.display !== 'none'
+            && !linkPopover.contains(e.target)
+            && e.target.tagName !== 'A') {
+            hideLinkPopover();
+        }
+    });
+
     // ── Insertion ──
 
     window.insertHTML = function(html) {
@@ -112,11 +269,14 @@
             }
         }
 
+        var selectedText = sel.toString();
+
         post({
             type: 'selectionChanged',
             bold: bold, italic: italic, underline: underline,
             strikethrough: strikethrough, fontSize: fontSize,
-            textColor: textColor, alignment: alignment
+            textColor: textColor, alignment: alignment,
+            selectedText: selectedText
         });
     }
 

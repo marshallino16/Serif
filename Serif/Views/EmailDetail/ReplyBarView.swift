@@ -5,6 +5,7 @@ struct ReplyBarView: View {
     let accountID: String
     let fromAddress: String
     let mailStore: MailStore
+    var onOpenLink: ((URL) -> Void)?
 
     @State private var replyHTML = ""
     @State private var isExpanded = false
@@ -19,11 +20,12 @@ struct ReplyBarView: View {
     @StateObject private var composeVM: ComposeViewModel
     @Environment(\.theme) private var theme
 
-    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore) {
+    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, onOpenLink: ((URL) -> Void)? = nil) {
         self.email = email
         self.accountID = accountID
         self.fromAddress = fromAddress
         self.mailStore = mailStore
+        self.onOpenLink = onOpenLink
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
             fromAddress: fromAddress,
@@ -111,7 +113,8 @@ struct ReplyBarView: View {
                 htmlContent: $replyHTML,
                 placeholder: "Write a reply...",
                 autoFocus: true,
-                onFileDrop: { url in handleFileDrop(url) }
+                onFileDrop: { url in handleFileDrop(url) },
+                onOpenLink: onOpenLink
             )
             .frame(minHeight: 120, maxHeight: 200)
             .padding(.horizontal, 16)
@@ -387,7 +390,11 @@ private struct ClickOutsideDetector: NSViewRepresentable {
         }
 
         private func handleClick(_ event: NSEvent) {
-            guard isExpanded, let anchor = anchorView, anchor.window != nil else { return }
+            guard isExpanded, let anchor = anchorView, let anchorWindow = anchor.window else { return }
+            // Ignore clicks in popover windows (color picker, link popover, alerts, etc.)
+            if let eventWindow = event.window, eventWindow !== anchorWindow {
+                return
+            }
             let clickInAnchor = anchor.convert(event.locationInWindow, from: nil)
             if !anchor.bounds.contains(clickInAnchor) {
                 DispatchQueue.main.async { [weak self] in

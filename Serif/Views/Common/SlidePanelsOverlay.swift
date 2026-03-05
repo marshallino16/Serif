@@ -24,6 +24,7 @@ struct SlidePanelsOverlay: View {
         #endif
         originalPanel
         attachmentPanel
+        webBrowserOverlay
     }
 
     // MARK: - Settings
@@ -122,6 +123,23 @@ struct SlidePanelsOverlay: View {
         }
         .environment(\.theme, theme)
         .zIndex(10)
+    }
+
+    // MARK: - Web Browser
+
+    private var webBrowserOverlay: some View {
+        Group {
+            if panels.showWebBrowser, let url = panels.webBrowserURL {
+                InAppBrowserView(url: url) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                        panels.showWebBrowser = false
+                    }
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .zIndex(20)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: panels.showWebBrowser)
     }
 
     private func saveAttachment(data: Data, name: String) {

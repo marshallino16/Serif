@@ -12,6 +12,7 @@ private class PassthroughWebView: WKWebView {
 struct HTMLEmailView: NSViewRepresentable {
     let html: String
     @Binding var contentHeight: CGFloat
+    var onOpenLink: ((URL) -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -229,7 +230,11 @@ struct HTMLEmailView: NSViewRepresentable {
         ) {
             if navigationAction.navigationType == .linkActivated,
                let url = navigationAction.request.url {
-                NSWorkspace.shared.open(url)
+                if let onOpenLink = parent.onOpenLink {
+                    onOpenLink(url)
+                } else {
+                    NSWorkspace.shared.open(url)
+                }
                 decisionHandler(.cancel)
             } else {
                 decisionHandler(.allow)

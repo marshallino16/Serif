@@ -9,6 +9,11 @@ class PanelCoordinator: ObservableObject {
     @Published var showDebug = false
     @Published var showOriginal = false
     @Published var showAttachmentPreview = false
+    @Published var showWebBrowser = false
+
+    // MARK: - Web browser data
+
+    @Published var webBrowserURL: URL?
 
     // MARK: - Original message data
 
@@ -23,7 +28,7 @@ class PanelCoordinator: ObservableObject {
     @Published var attachmentPreviewFileType: Attachment.FileType = .document
 
     var isAnyOpen: Bool {
-        showSettings || showHelp || showDebug || showAttachmentPreview || showOriginal
+        showSettings || showHelp || showDebug || showAttachmentPreview || showOriginal || showWebBrowser
     }
 
     func closeAll() {
@@ -32,6 +37,7 @@ class PanelCoordinator: ObservableObject {
         showDebug = false
         showAttachmentPreview = false
         showOriginal = false
+        showWebBrowser = false
     }
 
     func openSettings() {
@@ -65,6 +71,13 @@ class PanelCoordinator: ObservableObject {
                 self.originalRawSource = nil
             }
             self.isLoadingOriginal = false
+        }
+    }
+
+    func openInAppBrowser(url: URL) {
+        webBrowserURL = url
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            showWebBrowser = true
         }
     }
 

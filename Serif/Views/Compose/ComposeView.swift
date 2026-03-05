@@ -11,6 +11,7 @@ struct ComposeView: View {
     let signatureForReply: String
     let contacts: [StoredContact]
     let onDiscard: () -> Void
+    var onOpenLink: ((URL) -> Void)?
 
     @State private var to = ""
     @State private var cc = ""
@@ -42,7 +43,8 @@ struct ComposeView: View {
         signatureForNew: String = "",
         signatureForReply: String = "",
         contacts: [StoredContact] = [],
-        onDiscard: @escaping () -> Void
+        onDiscard: @escaping () -> Void,
+        onOpenLink: ((URL) -> Void)? = nil
     ) {
         self._mailStore        = ObservedObject(wrappedValue: mailStore)
         self.draftId           = draftId
@@ -54,6 +56,7 @@ struct ComposeView: View {
         self.signatureForReply = signatureForReply
         self.contacts          = contacts
         self.onDiscard         = onDiscard
+        self.onOpenLink        = onOpenLink
         self._selectedAliasEmail = State(initialValue: fromAddress)
         self._composeVM        = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
@@ -104,7 +107,8 @@ struct ComposeView: View {
                 htmlContent: $bodyHTML,
                 placeholder: "Write your message...",
                 autoFocus: true,
-                onFileDrop: { url in handleFileDrop(url) }
+                onFileDrop: { url in handleFileDrop(url) },
+                onOpenLink: onOpenLink
             )
             .padding(.horizontal, 20)
             .padding(.top, 4)

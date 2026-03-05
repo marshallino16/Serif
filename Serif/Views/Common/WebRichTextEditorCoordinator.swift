@@ -31,9 +31,12 @@ class WebRichTextEditorCoordinator: NSObject, WKScriptMessageHandler, WKNavigati
 
             case "fileDropped":
                 if let filename = dict["filename"] as? String {
-                    // Non-image files dropped in editor — notify via onFileDrop with a temp path
-                    // For now, just post a toast since we can't get the actual file URL from JS
                     _ = filename
+                }
+
+            case "openLink":
+                if let urlString = dict["url"] as? String, let url = URL(string: urlString) {
+                    parent.onOpenLink?(url)
                 }
 
             default:
@@ -45,8 +48,8 @@ class WebRichTextEditorCoordinator: NSObject, WKScriptMessageHandler, WKNavigati
     // MARK: - WKNavigationDelegate
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        if navigationAction.navigationType == .linkActivated, let url = navigationAction.request.url {
-            NSWorkspace.shared.open(url)
+        if navigationAction.navigationType == .linkActivated {
+            // Links are handled by the JS popover in editor mode — don't open externally
             decisionHandler(.cancel)
         } else {
             decisionHandler(.allow)

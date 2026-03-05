@@ -26,6 +26,7 @@ struct EmailDetailView: View {
     var onPrint: ((GmailMessage, Email) -> Void)?
     var checkUnsubscribed: ((String) -> Bool)?
     var extractBodyUnsubscribeURL: ((String) -> URL?)?
+    var onOpenLink: ((URL) -> Void)?
     var fromAddress: String = ""
     var mailStore: MailStore?
 
@@ -205,7 +206,7 @@ struct EmailDetailView: View {
                             let htmlToRender = rawHTML.isEmpty
                                 ? "<p>\(detailVM.latestMessage?.plainBody ?? email.body)</p>"
                                 : rawHTML
-                            HTMLEmailView(html: htmlToRender, contentHeight: $emailBodyHeight)
+                            HTMLEmailView(html: htmlToRender, contentHeight: $emailBodyHeight, onOpenLink: onOpenLink)
                                 .frame(height: emailBodyHeight)
                                 .padding(.horizontal, 24)
                                 .padding(.bottom, 20)
@@ -226,7 +227,7 @@ struct EmailDetailView: View {
                 }
 
                 // Floating reply bar
-                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress, mailStore: mailStore ?? MailStore())
+                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress, mailStore: mailStore ?? MailStore(), onOpenLink: onOpenLink)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }

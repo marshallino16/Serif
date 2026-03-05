@@ -81,7 +81,8 @@ struct DetailPaneView: View {
             signatureForNew: signatureForNew,
             signatureForReply: signatureForReply,
             contacts: ContactStore.shared.contacts(for: accountID),
-            onDiscard: { coordinator.discardDraft(id: draftId) }
+            onDiscard: { coordinator.discardDraft(id: draftId) },
+            onOpenLink: { url in panelCoordinator.openInAppBrowser(url: url) }
         )
         .id(draftId)
     }
@@ -145,6 +146,7 @@ struct DetailPaneView: View {
             fromAddress: fromAddress
         )
         view.mailStore = mailStore
+        view.onOpenLink = { url in panelCoordinator.openInAppBrowser(url: url) }
         return view.id(email.id)
     }
 

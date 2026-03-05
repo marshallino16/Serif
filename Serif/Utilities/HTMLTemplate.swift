@@ -57,6 +57,20 @@ enum HTMLTemplate {
         }
         #editor a {
             color: var(--accent-color);
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-color: var(--accent-color);
+            text-underline-offset: 2px;
+        }
+        #editor a:hover {
+            text-decoration-thickness: 2px;
+        }
+        #link-popover input:focus {
+            border-color: var(--accent-color) !important;
+            outline: none;
+        }
+        #link-popover button:hover {
+            opacity: 0.85;
         }
         #editor blockquote {
             border-left: 3px solid var(--placeholder-color);

@@ -6,6 +6,7 @@ struct WebRichTextEditor: View {
     var placeholder: String = ""
     var autoFocus: Bool = false
     var onFileDrop: ((URL) -> Void)? = nil
+    var onOpenLink: ((URL) -> Void)? = nil
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -15,7 +16,8 @@ struct WebRichTextEditor: View {
             theme: theme,
             placeholder: placeholder,
             autoFocus: autoFocus,
-            onFileDrop: onFileDrop
+            onFileDrop: onFileDrop,
+            onOpenLink: onOpenLink
         )
     }
 }

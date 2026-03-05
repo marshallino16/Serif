@@ -4,6 +4,9 @@ struct FormattingToolbar: View {
     @ObservedObject var state: WebRichTextEditorState
     @Environment(\.theme) private var theme
     @State private var showColorPopover = false
+    @State private var showLinkPopover = false
+    @State private var linkURL = ""
+    @State private var linkText = ""
 
     private let fontSizes: [CGFloat] = [9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36]
 
@@ -135,6 +138,66 @@ struct FormattingToolbar: View {
                 toolbarButton(icon: "increase.indent", tooltip: "Increase indent") {
                     state.increaseIndent()
                 }
+            }
+
+            separator
+
+            // Link
+            Button {
+                linkURL = "https://"
+                linkText = state.selectedText
+                showLinkPopover.toggle()
+            } label: {
+                Image(systemName: "link")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.textSecondary)
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Insert link (Cmd+K)")
+            .popover(isPresented: $showLinkPopover, arrowEdge: .bottom) {
+                VStack(spacing: 10) {
+                    HStack(spacing: 6) {
+                        Text("URL")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .frame(width: 30, alignment: .leading)
+                        TextField("https://", text: $linkURL)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12))
+                    }
+                    HStack(spacing: 6) {
+                        Text("Text")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .frame(width: 30, alignment: .leading)
+                        TextField("Display text (optional)", text: $linkText)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12))
+                    }
+                    HStack {
+                        Spacer()
+                        Button("Cancel") {
+                            showLinkPopover = false
+                        }
+                        .font(.system(size: 11))
+                        .buttonStyle(.plain)
+
+                        Button("Insert") {
+                            let text = linkText.isEmpty ? nil : linkText
+                            state.insertLink(url: linkURL, text: text)
+                            showLinkPopover = false
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(linkURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                                  linkURL == "https://")
+                    }
+                }
+                .padding(12)
+                .frame(width: 280)
             }
 
             Spacer()
