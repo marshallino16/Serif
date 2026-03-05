@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import WebKit
 
 /// Invisible view that captures global keyboard shortcuts.
 /// Cmd+A, Cmd+Z, and Cmd+F are handled via NSEvent monitor to respect the responder chain
@@ -61,7 +62,15 @@ private struct KeyboardEventMonitor: NSViewRepresentable {
 
         private var isTextInputFocused: Bool {
             guard let responder = NSApp.keyWindow?.firstResponder else { return false }
-            return responder is NSTextView || responder is NSTextField
+            if responder is NSTextView || responder is NSTextField { return true }
+            // WKWebView uses an internal NSView subclass as first responder;
+            // walk up the view hierarchy to detect it.
+            var view = responder as? NSView
+            while let v = view {
+                if v is WKWebView { return true }
+                view = v.superview
+            }
+            return false
         }
 
         private func handleKeyDown(_ event: NSEvent) -> NSEvent? {
