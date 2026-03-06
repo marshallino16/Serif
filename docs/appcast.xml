@@ -3,6 +3,12 @@
   <channel>
     <title>Serif Updates</title>
     <language>en</language>
-    <!-- Items will be added automatically by the release GitHub Action -->
+    <item>
+      <title>Version 1.0.0</title>
+      <pubDate>Fri, 06 Mar 2026 06:28:50 +0000</pubDate>
+      <sparkle:version>1.0.0</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <enclosure url="https://github.com/marshallino16/Serif/releases/download/v1.0.0/Serif-v1.0.0.dmg" length="2607460" type="application/octet-stream" />
+    </item>
   </channel>
 </rss>
