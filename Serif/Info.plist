@@ -3,7 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIconFile</key>
-	<string>AppIcon</string>
+	<string>serif_icon</string>
+	<key>CFBundleIconName</key>
+	<string>serif_icon</string>
 	<key>ATSApplicationFontsPath</key>
 	<string>.</string>
 	<key>SUFeedURL</key>
