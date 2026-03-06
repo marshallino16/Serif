@@ -89,13 +89,11 @@ struct SidebarView: View {
 
             // Bottom actions
             VStack(spacing: 2) {
-                #if DEBUG
                 if showDebugMenu {
                     sidebarButton(icon: "ladybug.fill", label: "Debug") {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { showDebug = true }
                     }
                 }
-                #endif
                 sidebarButton(icon: "gearshape.fill", label: "Settings") {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { showSettings = true }
                 }

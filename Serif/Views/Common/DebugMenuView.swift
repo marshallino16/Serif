@@ -1,6 +1,5 @@
 import SwiftUI
 
-#if DEBUG
 struct DebugMenuView: View {
     let accountID: String
     @AppStorage("isSignedIn") private var isSignedIn: Bool = false
@@ -369,4 +368,3 @@ struct DebugMenuView: View {
         .buttonStyle(.plain)
     }
 }
-#endif

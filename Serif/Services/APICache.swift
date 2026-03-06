@@ -1,4 +1,3 @@
-#if DEBUG
 import Foundation
 import Combine
 
@@ -137,4 +136,3 @@ final class APICache {
         return cacheDir.appendingPathComponent(String(key.prefix(200)) + ".json")
     }
 }
-#endif

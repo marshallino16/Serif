@@ -20,9 +20,7 @@ struct SlidePanelsOverlay: View {
     var body: some View {
         settingsPanel
         helpPanel
-        #if DEBUG
         debugPanel
-        #endif
         originalPanel
         attachmentPanel
         webBrowserOverlay
@@ -51,9 +49,7 @@ struct SlidePanelsOverlay: View {
                     onAliasesUpdated: { onAliasesUpdated?() }
                 )
                 StorageSettingsCard(attachmentStore: attachmentStore)
-                #if DEBUG
                 DeveloperSettingsCard()
-                #endif
             }
             .padding(20)
         }
@@ -73,7 +69,6 @@ struct SlidePanelsOverlay: View {
 
     // MARK: - Debug
 
-    #if DEBUG
     private var debugPanel: some View {
         SlidePanel(isPresented: $panels.showDebug, title: "Debug") {
             DebugMenuView(accountID: selectedAccountID ?? authViewModel.primaryAccount?.id ?? "")
@@ -81,7 +76,6 @@ struct SlidePanelsOverlay: View {
         .environment(\.theme, theme)
         .zIndex(10)
     }
-    #endif
 
     // MARK: - Original Message
 
