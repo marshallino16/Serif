@@ -51,6 +51,9 @@ struct SlidePanelsOverlay: View {
                     onAliasesUpdated: { onAliasesUpdated?() }
                 )
                 StorageSettingsCard(attachmentStore: attachmentStore)
+                #if DEBUG
+                DeveloperSettingsCard()
+                #endif
             }
             .padding(20)
         }

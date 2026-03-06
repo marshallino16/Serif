@@ -309,6 +309,30 @@ struct StorageSettingsCard: View {
     }
 }
 
+// MARK: - Developer Settings
+
+struct DeveloperSettingsCard: View {
+    @AppStorage("showDebugMenu") private var showDebugMenu = false
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Developer")
+                .font(.serifTitle)
+                .foregroundColor(theme.textPrimary)
+
+            Toggle(isOn: $showDebugMenu) {
+                Text("Show Debug menu")
+                    .font(.serifCaption)
+                    .foregroundColor(theme.textSecondary)
+            }
+            .toggleStyle(.switch)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
+    }
+}
+
 // MARK: - Refresh Status
 
 struct RefreshStatusView: View {

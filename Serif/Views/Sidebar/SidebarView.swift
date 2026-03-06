@@ -15,6 +15,7 @@ struct SidebarView: View {
     var onRenameLabel: ((GmailLabel, String) -> Void)?
     var onDeleteLabel: ((GmailLabel) -> Void)?
     @Environment(\.theme) private var theme
+    @AppStorage("showDebugMenu") private var showDebugMenu = false
 
     @State private var inboxExpanded = true
     @State private var labelsExpanded = false
@@ -89,8 +90,10 @@ struct SidebarView: View {
             // Bottom actions
             VStack(spacing: 2) {
                 #if DEBUG
-                sidebarButton(icon: "ladybug.fill", label: "Debug") {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { showDebug = true }
+                if showDebugMenu {
+                    sidebarButton(icon: "ladybug.fill", label: "Debug") {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { showDebug = true }
+                    }
                 }
                 #endif
                 sidebarButton(icon: "gearshape.fill", label: "Settings") {
