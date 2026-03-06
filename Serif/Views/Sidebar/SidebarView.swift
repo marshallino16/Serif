@@ -22,6 +22,8 @@ struct SidebarView: View {
     @State private var labelToRename: GmailLabel?
     @State private var labelToDelete: GmailLabel?
     @State private var renameText = ""
+    @State private var contentHeight: CGFloat = 0
+    @State private var frameHeight: CGFloat = 0
 
     private var sidebarWidth: CGFloat { isExpanded ? 200 : 60 }
 
@@ -65,27 +67,7 @@ struct SidebarView: View {
             }
 
             // Folder navigation
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 2) {
-                    ForEach(Folder.allCases) { folder in
-                        if folder == .inbox {
-                            inboxSection
-                        } else if folder == .labels {
-                            labelsSection
-                        } else {
-                            SidebarItemView(
-                                folder: folder,
-                                isSelected: selectedFolder == folder,
-                                isExpanded: isExpanded
-                            ) {
-                                selectedFolder = folder
-                                selectedInboxCategory = nil
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, isExpanded ? 8 : 0)
-            }
+            folderList
 
             // Bottom actions
             VStack(spacing: 2) {
@@ -136,6 +118,47 @@ struct SidebarView: View {
             }
         } message: {
             Text("Are you sure? This will remove the label from all messages.")
+        }
+    }
+
+    // MARK: - Folder list
+
+    private var folderList: some View {
+        ZStack(alignment: .bottom) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 2) {
+                    ForEach(Folder.allCases) { folder in
+                        if folder == .inbox {
+                            inboxSection
+                        } else if folder == .labels {
+                            labelsSection
+                        } else {
+                            SidebarItemView(
+                                folder: folder,
+                                isSelected: selectedFolder == folder,
+                                isExpanded: isExpanded
+                            ) {
+                                selectedFolder = folder
+                                selectedInboxCategory = nil
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, isExpanded ? 8 : 0)
+                .padding(.bottom, 24)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+            }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { frameHeight = $0 }
+
+            if contentHeight > frameHeight + 1 {
+                LinearGradient(
+                    colors: [theme.sidebarBackground.opacity(0), theme.sidebarBackground],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 32)
+                .allowsHitTesting(false)
+            }
         }
     }
 
