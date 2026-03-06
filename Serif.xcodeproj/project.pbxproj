@@ -108,6 +108,7 @@
 		A100010100000000000000E3 /* EmailContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E3 /* EmailContextMenu.swift */; };
 		A100010100000000000000E4 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E4 /* AppCoordinator.swift */; };
 		A100010100000000000000E5 /* KeyboardShortcutsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */; };
+		A10001010000000000000201 /* SerifCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000201 /* SerifCommands.swift */; };
 		A100010100000000000000E6 /* EmailSelectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E6 /* EmailSelectionManager.swift */; };
 		A100010100000000000000E7 /* PullToRefreshView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E7 /* PullToRefreshView.swift */; };
 		A100010100000000000000E8 /* InAppBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E8 /* InAppBrowserView.swift */; };
@@ -259,6 +260,7 @@
 		A100020100000000000000E3 /* EmailContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailContextMenu.swift; sourceTree = "<group>"; };
 		A100020100000000000000E4 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsModifier.swift; sourceTree = "<group>"; };
+		A10002010000000000000201 /* SerifCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerifCommands.swift; sourceTree = "<group>"; };
 		A100020100000000000000E6 /* EmailSelectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSelectionManager.swift; sourceTree = "<group>"; };
 		A100020100000000000000E7 /* PullToRefreshView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullToRefreshView.swift; sourceTree = "<group>"; };
 		A100020100000000000000E8 /* InAppBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserView.swift; sourceTree = "<group>"; };
@@ -451,6 +453,7 @@
 				A100020100000000000000D0 /* AccountAvatarBubble.swift */,
 				A100020100000000000000D1 /* SlidePanelsOverlay.swift */,
 				A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */,
+				A10002010000000000000201 /* SerifCommands.swift */,
 				A100020100000000000000E8 /* InAppBrowserView.swift */,
 			);
 			path = Common;
@@ -855,6 +858,7 @@
 				A100010100000000000000E2 /* IconButton.swift in Sources */,
 				A100010100000000000000E4 /* AppCoordinator.swift in Sources */,
 				A100010100000000000000E5 /* KeyboardShortcutsModifier.swift in Sources */,
+				A10001010000000000000201 /* SerifCommands.swift in Sources */,
 				A100010100000000000000E3 /* EmailContextMenu.swift in Sources */,
 				A100010100000000000000E6 /* EmailSelectionManager.swift in Sources */,
 				A100010100000000000000E7 /* PullToRefreshView.swift in Sources */,

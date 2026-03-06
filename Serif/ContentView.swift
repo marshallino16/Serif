@@ -13,6 +13,7 @@ struct ContentView: View {
                 .preferredColorScheme(themeManager.currentTheme.isLight ? .light : .dark)
                 .background(themeManager.currentTheme.detailBackground)
                 .frame(minWidth: 900, minHeight: 600)
+                .focusedSceneObject(coordinator)
                 .toolbar { toolbarContent }
                 .alert("Empty Trash", isPresented: $coordinator.showEmptyTrashConfirm) {
                     Button("Cancel", role: .cancel) {}

@@ -30,6 +30,7 @@ struct SerifApp: App {
                 }
                 .disabled(!updaterVM.canCheckForUpdates)
             }
+            SerifCommands()
         }
     }
 }
