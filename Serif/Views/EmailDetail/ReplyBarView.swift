@@ -367,8 +367,13 @@ private struct ClickOutsideDetector: NSViewRepresentable {
     let isExpanded: Bool
     let onClickOutside: () -> Void
 
+    private class PassthroughView: NSView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        override func cursorUpdate(with event: NSEvent) {}
+    }
+
     func makeNSView(context: Context) -> NSView {
-        let view = NSView()
+        let view = PassthroughView()
         context.coordinator.anchorView = view
         context.coordinator.onClickOutside = onClickOutside
         context.coordinator.install()

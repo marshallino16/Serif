@@ -153,21 +153,32 @@ final class WebRichTextEditorState: ObservableObject {
     // MARK: - Selection state update (called by Coordinator)
 
     func handleSelectionChanged(_ info: [String: Any]) {
-        isBold = info["bold"] as? Bool ?? false
-        isItalic = info["italic"] as? Bool ?? false
-        isUnderline = info["underline"] as? Bool ?? false
-        isStrikethrough = info["strikethrough"] as? Bool ?? false
-        selectedText = info["selectedText"] as? String ?? ""
-        if let fs = info["fontSize"] as? Int { fontSize = CGFloat(fs) }
-        if let hex = info["textColor"] as? String { textColor = nsColorFromHex(hex) }
+        let newBold = info["bold"] as? Bool ?? false
+        let newItalic = info["italic"] as? Bool ?? false
+        let newUnderline = info["underline"] as? Bool ?? false
+        let newStrikethrough = info["strikethrough"] as? Bool ?? false
+        let newSelectedText = info["selectedText"] as? String ?? ""
+        let newFontSize = (info["fontSize"] as? Int).map { CGFloat($0) }
+        let newTextColor = (info["textColor"] as? String).flatMap { nsColorFromHex($0) }
+        var newAlignment: NSTextAlignment?
         if let align = info["alignment"] as? String {
             switch align {
-            case "center":  alignment = .center
-            case "right":   alignment = .right
-            case "justify": alignment = .justified
-            default:        alignment = .left
+            case "center":  newAlignment = .center
+            case "right":   newAlignment = .right
+            case "justify": newAlignment = .justified
+            default:        newAlignment = .left
             }
         }
+
+        // Only publish changes to avoid unnecessary SwiftUI re-renders
+        if isBold != newBold { isBold = newBold }
+        if isItalic != newItalic { isItalic = newItalic }
+        if isUnderline != newUnderline { isUnderline = newUnderline }
+        if isStrikethrough != newStrikethrough { isStrikethrough = newStrikethrough }
+        if selectedText != newSelectedText { selectedText = newSelectedText }
+        if let fs = newFontSize, fontSize != fs { fontSize = fs }
+        if let tc = newTextColor, textColor != tc { textColor = tc }
+        if let a = newAlignment, alignment != a { alignment = a }
     }
 
     // MARK: - Private

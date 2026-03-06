@@ -203,6 +203,7 @@ struct EmailListView: View {
                             onArchive: selectedFolder == .archive ? nil : onArchive.map { action in { action(email) } },
                             onDelete:  selectedFolder == .trash   ? nil : onDelete.map  { action in { action(email) } }
                         )
+                        .id(email.id)
                         .contextMenu {
                             EmailContextMenu(
                                 email: email,

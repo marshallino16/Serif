@@ -7,6 +7,12 @@ private class PassthroughWebView: WKWebView {
     override func scrollWheel(with event: NSEvent) {
         nextResponder?.scrollWheel(with: event)
     }
+
+    // Prevent this read-only WebView from setting a text cursor,
+    // which causes flickering when overlapping with the reply editor.
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.arrow.set()
+    }
 }
 
 struct HTMLEmailView: NSViewRepresentable {
@@ -58,7 +64,7 @@ struct HTMLEmailView: NSViewRepresentable {
         blockquote { border-left: 3px solid #dadce0; margin: 8px 0; padding: 4px 12px; color: #5f6368; }
         pre, code { font-family: 'SF Mono', 'Menlo', monospace; font-size: 12px; background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 3px; }
         table { border-collapse: collapse; }
-        * { box-sizing: border-box; max-width: 100% !important; }
+        * { box-sizing: border-box; max-width: 100% !important; cursor: default !important; }
 
         @media (prefers-color-scheme: dark) {
             body {

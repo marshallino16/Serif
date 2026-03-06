@@ -297,7 +297,7 @@
 
     document.addEventListener('selectionchange', function() {
         clearTimeout(selectionTimer);
-        selectionTimer = setTimeout(notifySelectionChanged, 50);
+        selectionTimer = setTimeout(notifySelectionChanged, 200);
     });
 
     // Paste handler — strip Office/Word junk
