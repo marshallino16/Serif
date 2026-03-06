@@ -11,10 +11,10 @@ struct BadgeView: View {
 
     var body: some View {
         Text(count < 100 ? "\(count)" : "99+")
-            .font(.serifBadge)
-            .foregroundColor(isSelected ? theme.sidebarBadgeText : theme.sidebarTextMuted)
-            .padding(.horizontal, 5)
+            .font(.system(size: 10, weight: .semibold, design: .rounded))
+            .foregroundColor(isSelected ? theme.sidebarBadgeText : theme.sidebarText.opacity(0.7))
+            .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(Capsule().fill(theme.sidebarBadge))
+            .background(Capsule().fill(theme.sidebarText.opacity(isSelected ? 0.2 : 0.12)))
     }
 }
