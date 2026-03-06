@@ -23,6 +23,7 @@ struct SlidePanelsOverlay: View {
         debugPanel
         originalPanel
         attachmentPanel
+        emailPreviewPanel
         webBrowserOverlay
     }
 
@@ -119,6 +120,24 @@ struct SlidePanelsOverlay: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .environment(\.theme, theme)
+        .zIndex(10)
+    }
+
+    // MARK: - Email Preview
+
+    private var emailPreviewPanel: some View {
+        SlidePanel(isPresented: $panels.showEmailPreview, title: panels.previewEmail?.subject ?? "Email", scrollable: false) {
+            if let email = panels.previewEmail {
+                EmailDetailView(
+                    email: email,
+                    accountID: panels.previewAccountID,
+                    onPreviewAttachment: { data, name, fileType in
+                        panels.previewAttachment(data: data, name: name, fileType: fileType)
+                    }
+                )
             }
         }
         .environment(\.theme, theme)

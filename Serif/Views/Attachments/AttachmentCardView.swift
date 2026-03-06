@@ -6,6 +6,7 @@ struct AttachmentCardView: View {
     let accountID: String
     var onTap: (() -> Void)?
     var onAddExclusionRule: ((String) -> Void)?
+    var onViewMessage: (() -> Void)?
     @State private var isHovered = false
     @ObservedObject private var thumbCache = ThumbnailCache.shared
     @Environment(\.theme) private var theme
@@ -83,6 +84,12 @@ struct AttachmentCardView: View {
             thumbCache.cancelIfNeeded(id: result.attachment.id)
         }
         .contextMenu {
+            Button {
+                onViewMessage?()
+            } label: {
+                Label("View message", systemImage: "envelope")
+            }
+
             Button {
                 onAddExclusionRule?(suggestedPattern)
             } label: {

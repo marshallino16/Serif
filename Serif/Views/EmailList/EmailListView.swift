@@ -239,7 +239,6 @@ struct EmailListView: View {
                     }
                 }
                 .padding(.vertical, 4)
-                .animation(.easeInOut(duration: 0.25), value: sortedEmails.map(\.id))
             }
             .background(PullToRefreshDetector(isRefreshing: $isRefreshing, onRefresh: onRefresh))
         }

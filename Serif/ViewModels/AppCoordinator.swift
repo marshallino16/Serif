@@ -145,6 +145,16 @@ class AppCoordinator: ObservableObject {
         selectedEmail = nil
     }
 
+    func navigateToMessage(gmailMessageID: String) {
+        Task {
+            guard let msg = try? await GmailMessageService.shared.getMessage(
+                id: gmailMessageID, accountID: accountID, format: "full"
+            ) else { return }
+            let email = mailboxViewModel.makeEmail(from: msg)
+            panelCoordinator.showEmail(email, accountID: accountID)
+        }
+    }
+
     func composeNewEmail() {
         composeMode = .new
         let draft = mailStore.createDraft()

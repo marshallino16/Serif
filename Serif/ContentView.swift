@@ -57,7 +57,14 @@ struct ContentView: View {
                 )
 
                 if coordinator.selectedFolder == .attachments {
-                    AttachmentExplorerView(store: coordinator.attachmentStore, panelCoordinator: coordinator.panelCoordinator, accountID: coordinator.accountID)
+                    AttachmentExplorerView(
+                        store: coordinator.attachmentStore,
+                        panelCoordinator: coordinator.panelCoordinator,
+                        accountID: coordinator.accountID,
+                        onViewMessage: { messageId in
+                            coordinator.navigateToMessage(gmailMessageID: messageId)
+                        }
+                    )
                 } else {
                     ListPaneView(
                         emails: coordinator.displayedEmails,

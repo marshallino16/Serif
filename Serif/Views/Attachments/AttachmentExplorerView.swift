@@ -4,6 +4,7 @@ struct AttachmentExplorerView: View {
     @ObservedObject var store: AttachmentStore
     @ObservedObject var panelCoordinator: PanelCoordinator
     let accountID: String
+    var onViewMessage: ((String) -> Void)?
     @State private var downloadingAttachmentID: String?
     @State private var showExclusionRuleAlert = false
     @State private var exclusionRulePattern = ""
@@ -124,6 +125,9 @@ struct AttachmentExplorerView: View {
                                 onAddExclusionRule: { pattern in
                                     exclusionRulePattern = pattern
                                     showExclusionRuleAlert = true
+                                },
+                                onViewMessage: {
+                                    onViewMessage?(result.attachment.messageId)
                                 }
                             )
                         }

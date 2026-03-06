@@ -21,6 +21,12 @@ class PanelCoordinator: ObservableObject {
     @Published var originalRawSource: String?
     @Published var isLoadingOriginal = false
 
+    // MARK: - Email preview data
+
+    @Published var showEmailPreview = false
+    @Published var previewEmail: Email?
+    @Published var previewAccountID = ""
+
     // MARK: - Attachment preview data
 
     @Published var attachmentPreviewData: Data?
@@ -28,7 +34,7 @@ class PanelCoordinator: ObservableObject {
     @Published var attachmentPreviewFileType: Attachment.FileType = .document
 
     var isAnyOpen: Bool {
-        showSettings || showHelp || showDebug || showAttachmentPreview || showOriginal || showWebBrowser
+        showSettings || showHelp || showDebug || showAttachmentPreview || showOriginal || showWebBrowser || showEmailPreview
     }
 
     func closeAll() {
@@ -38,6 +44,7 @@ class PanelCoordinator: ObservableObject {
         showAttachmentPreview = false
         showOriginal = false
         showWebBrowser = false
+        showEmailPreview = false
     }
 
     func openSettings() {
@@ -73,6 +80,14 @@ class PanelCoordinator: ObservableObject {
                 self.originalRawSource = nil
             }
             self.isLoadingOriginal = false
+        }
+    }
+
+    func showEmail(_ email: Email, accountID: String) {
+        previewEmail = email
+        previewAccountID = accountID
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            showEmailPreview = true
         }
     }
 
