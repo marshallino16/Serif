@@ -114,12 +114,16 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
             ToolbarItem(placement: .navigation) { sidebarToggleButton }
                 .sharedBackgroundVisibility(.hidden)
         } else {
             ToolbarItem(placement: .navigation) { sidebarToggleButton }
         }
+        #else
+        ToolbarItem(placement: .navigation) { sidebarToggleButton }
+        #endif
 
         if !coordinator.panelCoordinator.isAnyOpen {
             ToolbarItem(placement: .primaryAction) {
