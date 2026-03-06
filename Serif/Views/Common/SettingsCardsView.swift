@@ -57,18 +57,19 @@ struct BehaviorSettingsCard: View {
 struct ContactsSettingsCard: View {
     let accountID: String
     @State private var isRefreshingContacts = false
+    @State private var contactCount = 0
     @Environment(\.theme) private var theme
 
-    var body: some View {
-        let count = ContactStore.shared.contacts(for: accountID).count
+    private let refreshTimer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Contacts")
                 .font(.serifTitle)
                 .foregroundColor(theme.textPrimary)
 
             HStack {
-                Text("\(count) contacts cached")
+                Text("\(contactCount) contacts cached")
                     .font(.serifCaption)
                     .foregroundColor(theme.textSecondary)
 
@@ -80,6 +81,7 @@ struct ContactsSettingsCard: View {
                     Task {
                         await GmailProfileService.shared.refreshContacts(accountID: accountID)
                         isRefreshingContacts = false
+                        contactCount = ContactStore.shared.contacts(for: accountID).count
                     }
                 } label: {
                     HStack(spacing: 5) {
@@ -101,6 +103,15 @@ struct ContactsSettingsCard: View {
             }
         }
         .cardStyle()
+        .onAppear {
+            contactCount = ContactStore.shared.contacts(for: accountID).count
+        }
+        .onReceive(refreshTimer) { _ in
+            let current = ContactStore.shared.contacts(for: accountID).count
+            if current != contactCount {
+                contactCount = current
+            }
+        }
     }
 }
 

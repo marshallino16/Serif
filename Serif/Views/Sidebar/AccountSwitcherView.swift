@@ -63,6 +63,7 @@ struct AccountSwitcherView: View {
                     .foregroundColor(theme.sidebarTextMuted)
             }
             .frame(width: size, height: size)
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .opacity(isSigningIn ? 0.5 : 1)
