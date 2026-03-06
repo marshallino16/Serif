@@ -44,16 +44,15 @@ struct AttachmentExplorerView: View {
 
                 Spacer()
 
-                if store.isIndexing {
-                    HStack(spacing: 6) {
-                        ProgressView()
-                            .scaleEffect(0.6)
-                            .tint(theme.textTertiary)
-                        Text("\(store.stats.indexed)/\(store.stats.total) indexed")
-                            .font(.system(size: 11))
-                            .foregroundColor(theme.textTertiary)
-                    }
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(theme.textTertiary)
+                    Text("\(store.stats.indexed)/\(store.stats.total) indexed")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.textTertiary)
                 }
+                .opacity(store.isIndexing ? 1 : 0)
             }
 
             SearchBarView(text: $store.searchQuery)
