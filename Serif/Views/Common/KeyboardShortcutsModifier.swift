@@ -74,6 +74,15 @@ private struct KeyboardEventMonitor: NSViewRepresentable {
         }
 
         private func handleKeyDown(_ event: NSEvent) -> NSEvent? {
+            // Escape — close any open panel (takes priority over everything)
+            if event.keyCode == 53 {
+                let panels = coordinator.panelCoordinator
+                if MainActor.assumeIsolated({ panels.isAnyOpen }) {
+                    DispatchQueue.main.async { panels.closeAll() }
+                    return nil
+                }
+            }
+
             guard event.modifierFlags.contains(.command),
                   !event.modifierFlags.contains(.shift) else { return event }
 

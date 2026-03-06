@@ -38,9 +38,9 @@ struct AccountAvatarBubble: View {
                         .foregroundColor(isSelected ? .white : theme.textSecondary)
                 }
 
-                // Selection ring (photo case only)
-                if isSelected && account.profilePictureURL != nil {
-                    Circle().strokeBorder(theme.sidebarTextMuted, lineWidth: 2)
+                // Accent color ring when selected
+                if isSelected, let hex = account.accentColor {
+                    Circle().strokeBorder(Color(hex: hex), lineWidth: 2.5)
                 }
             }
             .frame(width: size, height: size)

@@ -1,5 +1,5 @@
 {
-  "originHash" : "1206c3f65f7b46bcb024a884d325d98983b162fb9a1a4e82ffb08b50e015917f",
+  "originHash" : "c8e99f76e03eeb0ad59e3ced67cb616b8d664adf4d739454a58acbdd8c4ea275",
   "pins" : [
     {
       "identity" : "appauth-ios",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "2781038865a80e2c425a1da12cc1327bcd56501f",
         "version" : "1.7.6"
+      }
+    },
+    {
+      "identity" : "blossomcolorpicker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/BlossomColorPicker",
+      "state" : {
+        "revision" : "51be6fa6f6edca84b5f48c6a97566b9456c6e052",
+        "version" : "1.0.0"
       }
     },
     {

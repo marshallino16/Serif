@@ -296,6 +296,7 @@ class AppCoordinator: ObservableObject {
         let oldID = mailboxViewModel.accountID
         if !oldID.isEmpty { saveSignatures(for: oldID) }
         loadSignatures(for: id)
+        selectedEmail = nil
         selectedEmailIDs = []
         ThumbnailCache.shared.clearAll()
         SubscriptionsStore.shared.accountID = id

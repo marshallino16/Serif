@@ -63,6 +63,7 @@
 		A10001010000000000000081 /* APICache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000081 /* APICache.swift */; };
 		A10001010000000000000082 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000001 /* AppAuth */; };
 		A10001010000000000000102 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000002 /* Sparkle */; };
+		A10001010000000000000200 /* BlossomColorPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000003 /* BlossomColorPicker */; };
 		A10001010000000000000103 /* UpdaterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FA /* UpdaterViewModel.swift */; };
 		A10001010000000000000083 /* LabelChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000083 /* LabelChipView.swift */; };
 		A10001010000000000000084 /* HTMLEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000084 /* HTMLEmailView.swift */; };
@@ -293,6 +294,7 @@
 			files = (
 				A10001010000000000000082 /* AppAuth in Frameworks */,
 				A10001010000000000000102 /* Sparkle in Frameworks */,
+				A10001010000000000000200 /* BlossomColorPicker in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -660,6 +662,7 @@
 			packageProductDependencies = (
 				A10090010000000000000001 /* AppAuth */,
 				A10090010000000000000002 /* Sparkle */,
+				A10090010000000000000003 /* BlossomColorPicker */,
 			);
 			productName = Serif;
 			productReference = A10002010000000000000099 /* Serif.app */;
@@ -713,6 +716,7 @@
 			packageReferences = (
 				A10091010000000000000001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
 				A10091010000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				A10091010000000000000003 /* XCRemoteSwiftPackageReference "BlossomColorPicker" */,
 			);
 			productRefGroup = A10004010000000000000099 /* Products */;
 			projectDirPath = "";
@@ -1158,6 +1162,14 @@
 				minimumVersion = 2.6.4;
 			};
 		};
+		A10091010000000000000003 /* XCRemoteSwiftPackageReference "BlossomColorPicker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Lakr233/BlossomColorPicker";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1170,6 +1182,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10091010000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		A10090010000000000000003 /* BlossomColorPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10091010000000000000003 /* XCRemoteSwiftPackageReference "BlossomColorPicker" */;
+			productName = BlossomColorPicker;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
