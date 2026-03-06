@@ -7,12 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9EBEBCE92F5B21B400145F71 /* serif_icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 9EBEBCE82F5B21B400145F71 /* serif_icon.icon */; };
 		A10001010000000000000001 /* SerifApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000001 /* SerifApp.swift */; };
 		A10001010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000002 /* ContentView.swift */; };
 		A10001010000000000000003 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000003 /* Theme.swift */; };
 		A10001010000000000000004 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000004 /* ThemeManager.swift */; };
 		A10001010000000000000005 /* DefaultThemes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000005 /* DefaultThemes.swift */; };
-		A100010100000000000000DE /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000DE /* DesignSystem.swift */; };
 		A10001010000000000000006 /* Email.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000006 /* Email.swift */; };
 		A10001010000000000000008 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000008 /* SidebarView.swift */; };
 		A10001010000000000000009 /* EmailListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000009 /* EmailListView.swift */; };
@@ -25,20 +25,12 @@
 		A10001010000000000000010 /* ThemePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000010 /* ThemePickerView.swift */; };
 		A10001010000000000000011 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000011 /* ComposeView.swift */; };
 		A10001010000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000012 /* Assets.xcassets */; };
-		A100010100000000000000B0 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000B0 /* AppIcon.icns */; };
 		A10001010000000000000020 /* PPEditorialNew-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000020 /* PPEditorialNew-Regular.otf */; };
 		A10001010000000000000021 /* PPEditorialNew-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000021 /* PPEditorialNew-Italic.otf */; };
 		A10001010000000000000022 /* PPLocomotiveNew-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000022 /* PPLocomotiveNew-Light.ttf */; };
 		A10001010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf */; };
 		A10001010000000000000030 /* MailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000030 /* MailStore.swift */; };
 		A10001010000000000000040 /* AttachmentsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000040 /* AttachmentsListView.swift */; };
-		A100010100000000000000FB /* editor.js in Resources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FB /* editor.js */; };
-		A100010100000000000000FC /* HTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FC /* HTMLTemplate.swift */; };
-		A100010100000000000000FD /* WebRichTextEditorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FD /* WebRichTextEditorState.swift */; };
-		A100010100000000000000FE /* WebRichTextEditorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */; };
-		A10001010000000000000FF /* WebRichTextEditorRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */; };
-		A1000101000000000000100 /* WebRichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000100 /* WebRichTextEditor.swift */; };
-		A1000101000000000000101 /* InlineImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000101 /* InlineImageProcessor.swift */; };
 		A10001010000000000000051 /* FormattingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000051 /* FormattingToolbar.swift */; };
 		A10001010000000000000052 /* ShortcutsHelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000052 /* ShortcutsHelpView.swift */; };
 		A10001010000000000000053 /* DebugMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000053 /* DebugMenuView.swift */; };
@@ -62,9 +54,6 @@
 		A10001010000000000000080 /* AccountsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000080 /* AccountsSettingsView.swift */; };
 		A10001010000000000000081 /* APICache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000081 /* APICache.swift */; };
 		A10001010000000000000082 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000001 /* AppAuth */; };
-		A10001010000000000000102 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000002 /* Sparkle */; };
-		A10001010000000000000200 /* BlossomColorPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000003 /* BlossomColorPicker */; };
-		A10001010000000000000103 /* UpdaterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FA /* UpdaterViewModel.swift */; };
 		A10001010000000000000083 /* LabelChipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000083 /* LabelChipView.swift */; };
 		A10001010000000000000084 /* HTMLEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000084 /* HTMLEmailView.swift */; };
 		A10001010000000000000085 /* AttachmentPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000085 /* AttachmentPreviewView.swift */; };
@@ -112,24 +101,17 @@
 		A100010100000000000000DB /* AttachmentCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000DB /* AttachmentCardView.swift */; };
 		A100010100000000000000DC /* AttachmentExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000DC /* AttachmentExplorerView.swift */; };
 		A100010100000000000000DD /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000DD /* ThumbnailCache.swift */; };
+		A100010100000000000000DE /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000DE /* DesignSystem.swift */; };
 		A100010100000000000000E0 /* BadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E0 /* BadgeView.swift */; };
 		A100010100000000000000E1 /* CardContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E1 /* CardContainer.swift */; };
 		A100010100000000000000E2 /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E2 /* IconButton.swift */; };
+		A100010100000000000000E3 /* EmailContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E3 /* EmailContextMenu.swift */; };
 		A100010100000000000000E4 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E4 /* AppCoordinator.swift */; };
 		A100010100000000000000E5 /* KeyboardShortcutsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */; };
-		A100010100000000000000E3 /* EmailContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E3 /* EmailContextMenu.swift */; };
 		A100010100000000000000E6 /* EmailSelectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E6 /* EmailSelectionManager.swift */; };
 		A100010100000000000000E7 /* PullToRefreshView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E7 /* PullToRefreshView.swift */; };
 		A100010100000000000000E8 /* InAppBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E8 /* InAppBrowserView.swift */; };
 		A100010100000000000000E9 /* SignatureEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E9 /* SignatureEditorView.swift */; };
-		B10001010000000000000001 /* GmailModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000001 /* GmailModelsTests.swift */; };
-		B10001010000000000000002 /* EmailModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000002 /* EmailModelTests.swift */; };
-		B10001010000000000000003 /* GmailDataTransformerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000003 /* GmailDataTransformerTests.swift */; };
-		B10001010000000000000004 /* StringExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000004 /* StringExtensionsTests.swift */; };
-		B10001010000000000000005 /* ContentExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000005 /* ContentExtractorTests.swift */; };
-		B10001010000000000000006 /* TrackerBlockerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000006 /* TrackerBlockerTests.swift */; };
-		B10001010000000000000007 /* AppCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000007 /* AppCoordinatorTests.swift */; };
-		B10001010000000000000008 /* LabelManagementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000008 /* LabelManagementTests.swift */; };
 		A100010100000000000000F0 /* SignatureResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F0 /* SignatureResolver.swift */; };
 		A100010100000000000000F1 /* ComposeModeInitializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F1 /* ComposeModeInitializer.swift */; };
 		A100010100000000000000F2 /* MessageFetchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F2 /* MessageFetchService.swift */; };
@@ -140,19 +122,46 @@
 		A100010100000000000000F7 /* CPUMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F7 /* CPUMonitor.swift */; };
 		A100010100000000000000F8 /* ToastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F8 /* ToastManager.swift */; };
 		A100010100000000000000F9 /* ToastOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000F9 /* ToastOverlayView.swift */; };
-/* RichTextHTMLExporter removed */
+		A100010100000000000000FB /* editor.js in Resources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FB /* editor.js */; };
+		A100010100000000000000FC /* HTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FC /* HTMLTemplate.swift */; };
+		A100010100000000000000FD /* WebRichTextEditorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FD /* WebRichTextEditorState.swift */; };
+		A100010100000000000000FE /* WebRichTextEditorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */; };
+		A10001010000000000000102 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000002 /* Sparkle */; };
+		A10001010000000000000103 /* UpdaterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FA /* UpdaterViewModel.swift */; };
+		A10001010000000000000200 /* BlossomColorPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000003 /* BlossomColorPicker */; };
+		A10001010000000000000FF /* WebRichTextEditorRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */; };
+		A1000101000000000000100 /* WebRichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000100 /* WebRichTextEditor.swift */; };
+		A1000101000000000000101 /* InlineImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000101 /* InlineImageProcessor.swift */; };
+		B10001010000000000000001 /* GmailModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000001 /* GmailModelsTests.swift */; };
+		B10001010000000000000002 /* EmailModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000002 /* EmailModelTests.swift */; };
+		B10001010000000000000003 /* GmailDataTransformerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000003 /* GmailDataTransformerTests.swift */; };
+		B10001010000000000000004 /* StringExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000004 /* StringExtensionsTests.swift */; };
+		B10001010000000000000005 /* ContentExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000005 /* ContentExtractorTests.swift */; };
+		B10001010000000000000006 /* TrackerBlockerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000006 /* TrackerBlockerTests.swift */; };
+		B10001010000000000000007 /* AppCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000007 /* AppCoordinatorTests.swift */; };
+		B10001010000000000000008 /* LabelManagementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000008 /* LabelManagementTests.swift */; };
 		B10001010000000000000009 /* CPUMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000009 /* CPUMonitorTests.swift */; };
 		B1000101000000000000000A /* EmailActionCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000201000000000000000A /* EmailActionCoordinatorTests.swift */; };
 		B1000101000000000000000B /* DraftLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000201000000000000000B /* DraftLifecycleTests.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		B10005010000000000000003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10008010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10005010000000000000001;
+			remoteInfo = Serif;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		9EBEBCE82F5B21B400145F71 /* serif_icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = serif_icon.icon; sourceTree = "<group>"; };
 		A10002010000000000000001 /* SerifApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerifApp.swift; sourceTree = "<group>"; };
 		A10002010000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A10002010000000000000003 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		A10002010000000000000004 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		A10002010000000000000005 /* DefaultThemes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultThemes.swift; sourceTree = "<group>"; };
-		A100020100000000000000DE /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A10002010000000000000006 /* Email.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Email.swift; sourceTree = "<group>"; };
 		A10002010000000000000008 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		A10002010000000000000009 /* EmailListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailListView.swift; sourceTree = "<group>"; };
@@ -165,7 +174,6 @@
 		A10002010000000000000010 /* ThemePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemePickerView.swift; sourceTree = "<group>"; };
 		A10002010000000000000011 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
 		A10002010000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A100020100000000000000B0 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		A10002010000000000000013 /* Serif.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Serif.entitlements; sourceTree = "<group>"; };
 		A10002010000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A10002010000000000000020 /* PPEditorialNew-Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPEditorialNew-Regular.otf"; sourceTree = "<group>"; };
@@ -174,7 +182,6 @@
 		A10002010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPLocomotiveNew-Light-Italic.ttf"; sourceTree = "<group>"; };
 		A10002010000000000000030 /* MailStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailStore.swift; sourceTree = "<group>"; };
 		A10002010000000000000040 /* AttachmentsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentsListView.swift; sourceTree = "<group>"; };
-/* RichTextEditor.swift removed */
 		A10002010000000000000051 /* FormattingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingToolbar.swift; sourceTree = "<group>"; };
 		A10002010000000000000052 /* ShortcutsHelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsHelpView.swift; sourceTree = "<group>"; };
 		A10002010000000000000053 /* DebugMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugMenuView.swift; sourceTree = "<group>"; };
@@ -245,34 +252,17 @@
 		A100020100000000000000DB /* AttachmentCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentCardView.swift; sourceTree = "<group>"; };
 		A100020100000000000000DC /* AttachmentExplorerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentExplorerView.swift; sourceTree = "<group>"; };
 		A100020100000000000000DD /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
+		A100020100000000000000DE /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A100020100000000000000E0 /* BadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeView.swift; sourceTree = "<group>"; };
 		A100020100000000000000E1 /* CardContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardContainer.swift; sourceTree = "<group>"; };
 		A100020100000000000000E2 /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
-		A100020100000000000000F8 /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
-		A100020100000000000000F9 /* ToastOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastOverlayView.swift; sourceTree = "<group>"; };
-		A100020100000000000000FB /* editor.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = editor.js; sourceTree = "<group>"; };
-		A100020100000000000000FC /* HTMLTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLTemplate.swift; sourceTree = "<group>"; };
-		A100020100000000000000FD /* WebRichTextEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorState.swift; sourceTree = "<group>"; };
-		A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorCoordinator.swift; sourceTree = "<group>"; };
-		A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorRepresentable.swift; sourceTree = "<group>"; };
-		A1000201000000000000100 /* WebRichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditor.swift; sourceTree = "<group>"; };
-		A1000201000000000000101 /* InlineImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineImageProcessor.swift; sourceTree = "<group>"; };
+		A100020100000000000000E3 /* EmailContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailContextMenu.swift; sourceTree = "<group>"; };
 		A100020100000000000000E4 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsModifier.swift; sourceTree = "<group>"; };
-		A100020100000000000000E3 /* EmailContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailContextMenu.swift; sourceTree = "<group>"; };
 		A100020100000000000000E6 /* EmailSelectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSelectionManager.swift; sourceTree = "<group>"; };
 		A100020100000000000000E7 /* PullToRefreshView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullToRefreshView.swift; sourceTree = "<group>"; };
 		A100020100000000000000E8 /* InAppBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserView.swift; sourceTree = "<group>"; };
 		A100020100000000000000E9 /* SignatureEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignatureEditorView.swift; sourceTree = "<group>"; };
-		B10002010000000000000001 /* GmailModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailModelsTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000002 /* EmailModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailModelTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000003 /* GmailDataTransformerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailDataTransformerTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000004 /* StringExtensionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensionsTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000005 /* ContentExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentExtractorTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000006 /* TrackerBlockerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerBlockerTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000007 /* AppCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinatorTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000008 /* LabelManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelManagementTests.swift; sourceTree = "<group>"; };
-		B10002010000000000000099 /* SerifTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SerifTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A100020100000000000000F0 /* SignatureResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignatureResolver.swift; sourceTree = "<group>"; };
 		A100020100000000000000F1 /* ComposeModeInitializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeModeInitializer.swift; sourceTree = "<group>"; };
 		A100020100000000000000F2 /* MessageFetchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageFetchService.swift; sourceTree = "<group>"; };
@@ -281,10 +271,28 @@
 		A100020100000000000000F5 /* MessageFetching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageFetching.swift; sourceTree = "<group>"; };
 		A100020100000000000000F6 /* CacheStoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheStoring.swift; sourceTree = "<group>"; };
 		A100020100000000000000F7 /* CPUMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUMonitor.swift; sourceTree = "<group>"; };
+		A100020100000000000000F8 /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
+		A100020100000000000000F9 /* ToastOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastOverlayView.swift; sourceTree = "<group>"; };
+		A100020100000000000000FA /* UpdaterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterViewModel.swift; sourceTree = "<group>"; };
+		A100020100000000000000FB /* editor.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = editor.js; sourceTree = "<group>"; };
+		A100020100000000000000FC /* HTMLTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLTemplate.swift; sourceTree = "<group>"; };
+		A100020100000000000000FD /* WebRichTextEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorState.swift; sourceTree = "<group>"; };
+		A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorCoordinator.swift; sourceTree = "<group>"; };
+		A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorRepresentable.swift; sourceTree = "<group>"; };
+		A1000201000000000000100 /* WebRichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditor.swift; sourceTree = "<group>"; };
+		A1000201000000000000101 /* InlineImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineImageProcessor.swift; sourceTree = "<group>"; };
+		B10002010000000000000001 /* GmailModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailModelsTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000002 /* EmailModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailModelTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000003 /* GmailDataTransformerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailDataTransformerTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000004 /* StringExtensionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensionsTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000005 /* ContentExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentExtractorTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000006 /* TrackerBlockerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerBlockerTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000007 /* AppCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinatorTests.swift; sourceTree = "<group>"; };
+		B10002010000000000000008 /* LabelManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelManagementTests.swift; sourceTree = "<group>"; };
 		B10002010000000000000009 /* CPUMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUMonitorTests.swift; sourceTree = "<group>"; };
 		B1000201000000000000000A /* EmailActionCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailActionCoordinatorTests.swift; sourceTree = "<group>"; };
 		B1000201000000000000000B /* DraftLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftLifecycleTests.swift; sourceTree = "<group>"; };
-		A100020100000000000000FA /* UpdaterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterViewModel.swift; sourceTree = "<group>"; };
+		B10002010000000000000099 /* SerifTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SerifTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -314,6 +322,7 @@
 				A10004010000000000000002 /* Serif */,
 				B10004010000000000000001 /* SerifTests */,
 				A10004010000000000000099 /* Products */,
+				9EBEBCE82F5B21B400145F71 /* serif_icon.icon */,
 			);
 			sourceTree = "<group>";
 		};
@@ -474,16 +483,6 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
-		A100040100000000000000E3 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A100020100000000000000E0 /* BadgeView.swift */,
-				A100020100000000000000E1 /* CardContainer.swift */,
-				A100020100000000000000E2 /* IconButton.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
 		A1000401000000000000000D /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -496,7 +495,6 @@
 			isa = PBXGroup;
 			children = (
 				A10002010000000000000012 /* Assets.xcassets */,
-				A100020100000000000000B0 /* AppIcon.icns */,
 				A100020100000000000000FB /* editor.js */,
 				A10004010000000000000011 /* Fonts */,
 			);
@@ -577,15 +575,6 @@
 			path = Gmail;
 			sourceTree = "<group>";
 		};
-		A100040100000000000000F5 /* Protocols */ = {
-			isa = PBXGroup;
-			children = (
-				A100020100000000000000F5 /* MessageFetching.swift */,
-				A100020100000000000000F6 /* CacheStoring.swift */,
-			);
-			path = Protocols;
-			sourceTree = "<group>";
-		};
 		A10004010000000000000024 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
@@ -623,6 +612,25 @@
 				B10002010000000000000099 /* SerifTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A100040100000000000000E3 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A100020100000000000000E0 /* BadgeView.swift */,
+				A100020100000000000000E1 /* CardContainer.swift */,
+				A100020100000000000000E2 /* IconButton.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		A100040100000000000000F5 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				A100020100000000000000F5 /* MessageFetching.swift */,
+				A100020100000000000000F6 /* CacheStoring.swift */,
+			);
+			path = Protocols;
 			sourceTree = "<group>";
 		};
 		B10004010000000000000001 /* SerifTests */ = {
@@ -733,13 +741,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A100010100000000000000B0 /* AppIcon.icns in Resources */,
 				A10001010000000000000012 /* Assets.xcassets in Resources */,
 				A10001010000000000000020 /* PPEditorialNew-Regular.otf in Resources */,
 				A10001010000000000000021 /* PPEditorialNew-Italic.otf in Resources */,
 				A10001010000000000000022 /* PPLocomotiveNew-Light.ttf in Resources */,
 				A10001010000000000000023 /* PPLocomotiveNew-Light-Italic.ttf in Resources */,
 				A100010100000000000000FB /* editor.js in Resources */,
+				9EBEBCE92F5B21B400145F71 /* serif_icon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -896,16 +904,6 @@
 		};
 /* End PBXTargetDependency section */
 
-/* Begin PBXContainerItemProxy section */
-		B10005010000000000000003 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A10008010000000000000001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A10005010000000000000001;
-			remoteInfo = Serif;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin XCBuildConfiguration section */
 		A10009010000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1026,7 +1024,7 @@
 		A10009010000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = serif_icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Serif/Serif.entitlements;
@@ -1054,7 +1052,7 @@
 		A10009010000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = serif_icon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Serif/Serif.entitlements;
