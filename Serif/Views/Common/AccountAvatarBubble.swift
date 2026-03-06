@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct AccountAvatarBubble: View {
     let account: GmailAccount
@@ -6,6 +7,7 @@ struct AccountAvatarBubble: View {
     var size: CGFloat = 34
     let action: () -> Void
     @Environment(\.theme) private var theme
+    @State private var image: NSImage?
 
     private var initial: String {
         String(account.displayName.prefix(1)).uppercased()
@@ -16,22 +18,15 @@ struct AccountAvatarBubble: View {
             ZStack {
                 // Base circle
                 Circle().fill(isSelected ? theme.sidebarTextMuted : theme.hoverBackground)
-                if !isSelected && account.profilePictureURL == nil {
+                if !isSelected && image == nil && account.profilePictureURL == nil {
                     Circle().strokeBorder(theme.divider, lineWidth: 1)
                 }
 
-                if let url = account.profilePictureURL {
-                    AsyncImage(url: url) { phase in
-                        if case .success(let img) = phase {
-                            img.resizable()
-                                .scaledToFill()
-                                .frame(width: size, height: size)
-                        } else {
-                            Text(initial)
-                                .font(.system(size: size * 0.38, weight: .semibold))
-                                .foregroundColor(isSelected ? .white : theme.textSecondary)
-                        }
-                    }
+                if let image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
                 } else {
                     Text(initial)
                         .font(.system(size: size * 0.38, weight: .semibold))
@@ -49,5 +44,9 @@ struct AccountAvatarBubble: View {
         }
         .buttonStyle(.plain)
         .help(account.email)
+        .task(id: account.profilePictureURL?.absoluteString) {
+            guard let url = account.profilePictureURL else { return }
+            image = await AvatarCache.shared.image(for: url.absoluteString)
+        }
     }
 }
