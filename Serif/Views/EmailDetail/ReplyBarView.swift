@@ -77,12 +77,17 @@ struct ReplyBarView: View {
     }
 
     private var collapsedPlaceholder: String {
-        guard let threadID = email.gmailThreadID,
-              let saved = mailStore.replyDrafts[threadID] else {
-            return "Write a reply..."
+        let currentText = replyHTML.strippingHTML.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !currentText.isEmpty {
+            let preview = String(currentText.prefix(50))
+            return "\(preview)\(currentText.count > 50 ? "…" : "")"
         }
-        let preview = saved.preview
-        return "Continue: \(preview)\(preview.count >= 50 ? "…" : "")"
+        if let threadID = email.gmailThreadID,
+           let saved = mailStore.replyDrafts[threadID] {
+            let preview = saved.preview
+            return "\(preview)\(preview.count >= 50 ? "…" : "")"
+        }
+        return "Write a reply..."
     }
 
     // MARK: - Collapsed
