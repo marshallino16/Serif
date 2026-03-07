@@ -134,6 +134,7 @@ struct AccountsSettingsView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(theme.textTertiary.opacity(0.5))
                     .frame(width: 18)
+                    .contentShape(.rect)
             }
 
             // Avatar — tap to switch
