@@ -5,6 +5,8 @@ struct EmailRowView: View {
     let isSelected: Bool
     let action: () -> Void
     @State private var isHovered = false
+    @State private var hoverTask: Task<Void, Never>?
+    @State private var popoverHolder = PopoverHolder()
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -91,9 +93,67 @@ struct EmailRowView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .background(PopoverAnchor(holder: popoverHolder))
         .onHover { hovering in
             isHovered = hovering
+            if hovering {
+                guard !popoverHolder.isShowing else { return }
+                hoverTask?.cancel()
+                hoverTask = Task {
+                    try? await Task.sleep(for: .seconds(3))
+                    guard !Task.isCancelled else { return }
+                    let content = EmailHoverSummaryView(email: email)
+                        .frame(width: 340)
+                        .environment(\.theme, theme)
+                    popoverHolder.show(content: content)
+                }
+            } else {
+                hoverTask?.cancel()
+                hoverTask = nil
+            }
+        }
+        .onChange(of: isSelected) {
+            hoverTask?.cancel()
+            popoverHolder.close()
         }
     }
 }
 
+// MARK: - NSPopover wrapper
+
+private class PopoverHolder {
+    private var popover: NSPopover?
+    weak var anchorView: NSView?
+
+    var isShowing: Bool { popover?.isShown == true }
+
+    func show<V: View>(content: V) {
+        guard let anchorView, !isShowing else { return }
+        let controller = NSHostingController(rootView: content)
+        let popover = NSPopover()
+        popover.contentViewController = controller
+        popover.behavior = .transient
+        popover.animates = true
+        popover.show(relativeTo: anchorView.bounds, of: anchorView, preferredEdge: .maxX)
+        self.popover = popover
+    }
+
+    func close() {
+        popover?.performClose(nil)
+        popover = nil
+    }
+}
+
+private struct PopoverAnchor: NSViewRepresentable {
+    let holder: PopoverHolder
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        holder.anchorView = view
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        holder.anchorView = nsView
+    }
+}

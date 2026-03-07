@@ -108,9 +108,6 @@
 		A100010100000000000000E3 /* EmailContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E3 /* EmailContextMenu.swift */; };
 		A100010100000000000000E4 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E4 /* AppCoordinator.swift */; };
 		A100010100000000000000E5 /* KeyboardShortcutsModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */; };
-		A10001010000000000000201 /* SerifCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000201 /* SerifCommands.swift */; };
-		A10001010000000000000300 /* CalendarInviteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000300 /* CalendarInviteParser.swift */; };
-		A10001010000000000000301 /* CalendarInviteCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000301 /* CalendarInviteCardView.swift */; };
 		A100010100000000000000E6 /* EmailSelectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E6 /* EmailSelectionManager.swift */; };
 		A100010100000000000000E7 /* PullToRefreshView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E7 /* PullToRefreshView.swift */; };
 		A100010100000000000000E8 /* InAppBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000E8 /* InAppBrowserView.swift */; };
@@ -132,6 +129,11 @@
 		A10001010000000000000102 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000002 /* Sparkle */; };
 		A10001010000000000000103 /* UpdaterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100020100000000000000FA /* UpdaterViewModel.swift */; };
 		A10001010000000000000200 /* BlossomColorPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000003 /* BlossomColorPicker */; };
+		A10001010000000000000201 /* SerifCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000201 /* SerifCommands.swift */; };
+		A10001010000000000000300 /* CalendarInviteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000300 /* CalendarInviteParser.swift */; };
+		A10001010000000000000301 /* CalendarInviteCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000301 /* CalendarInviteCardView.swift */; };
+		A10001010000000000000302 /* EmailHoverSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000302 /* EmailHoverSummaryView.swift */; };
+		A10001010000000000000303 /* SummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000303 /* SummaryService.swift */; };
 		A10001010000000000000FF /* WebRichTextEditorRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */; };
 		A1000101000000000000100 /* WebRichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000100 /* WebRichTextEditor.swift */; };
 		A1000101000000000000101 /* InlineImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000201000000000000101 /* InlineImageProcessor.swift */; };
@@ -262,9 +264,6 @@
 		A100020100000000000000E3 /* EmailContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailContextMenu.swift; sourceTree = "<group>"; };
 		A100020100000000000000E4 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		A100020100000000000000E5 /* KeyboardShortcutsModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutsModifier.swift; sourceTree = "<group>"; };
-		A10002010000000000000201 /* SerifCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerifCommands.swift; sourceTree = "<group>"; };
-		A10002010000000000000300 /* CalendarInviteParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarInviteParser.swift; sourceTree = "<group>"; };
-		A10002010000000000000301 /* CalendarInviteCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarInviteCardView.swift; sourceTree = "<group>"; };
 		A100020100000000000000E6 /* EmailSelectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSelectionManager.swift; sourceTree = "<group>"; };
 		A100020100000000000000E7 /* PullToRefreshView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullToRefreshView.swift; sourceTree = "<group>"; };
 		A100020100000000000000E8 /* InAppBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserView.swift; sourceTree = "<group>"; };
@@ -284,6 +283,11 @@
 		A100020100000000000000FC /* HTMLTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLTemplate.swift; sourceTree = "<group>"; };
 		A100020100000000000000FD /* WebRichTextEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorState.swift; sourceTree = "<group>"; };
 		A100020100000000000000FE /* WebRichTextEditorCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorCoordinator.swift; sourceTree = "<group>"; };
+		A10002010000000000000201 /* SerifCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerifCommands.swift; sourceTree = "<group>"; };
+		A10002010000000000000300 /* CalendarInviteParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarInviteParser.swift; sourceTree = "<group>"; };
+		A10002010000000000000301 /* CalendarInviteCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarInviteCardView.swift; sourceTree = "<group>"; };
+		A10002010000000000000302 /* EmailHoverSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailHoverSummaryView.swift; sourceTree = "<group>"; };
+		A10002010000000000000303 /* SummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryService.swift; sourceTree = "<group>"; };
 		A10002010000000000000FF /* WebRichTextEditorRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditorRepresentable.swift; sourceTree = "<group>"; };
 		A1000201000000000000100 /* WebRichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRichTextEditor.swift; sourceTree = "<group>"; };
 		A1000201000000000000101 /* InlineImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineImageProcessor.swift; sourceTree = "<group>"; };
@@ -411,6 +415,7 @@
 				A100020100000000000000E3 /* EmailContextMenu.swift */,
 				A100020100000000000000E6 /* EmailSelectionManager.swift */,
 				A100020100000000000000E7 /* PullToRefreshView.swift */,
+				A10002010000000000000302 /* EmailHoverSummaryView.swift */,
 			);
 			path = EmailList;
 			sourceTree = "<group>";
@@ -556,6 +561,7 @@
 				A100020100000000000000F3 /* LabelSyncService.swift */,
 				A100020100000000000000F4 /* HistorySyncService.swift */,
 				A10002010000000000000300 /* CalendarInviteParser.swift */,
+				A10002010000000000000303 /* SummaryService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -867,6 +873,8 @@
 				A10001010000000000000201 /* SerifCommands.swift in Sources */,
 				A10001010000000000000300 /* CalendarInviteParser.swift in Sources */,
 				A10001010000000000000301 /* CalendarInviteCardView.swift in Sources */,
+				A10001010000000000000302 /* EmailHoverSummaryView.swift in Sources */,
+				A10001010000000000000303 /* SummaryService.swift in Sources */,
 				A100010100000000000000E3 /* EmailContextMenu.swift in Sources */,
 				A100010100000000000000E6 /* EmailSelectionManager.swift in Sources */,
 				A100010100000000000000E7 /* PullToRefreshView.swift in Sources */,
@@ -1044,6 +1052,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = JFTEHE2V9R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Serif/Info.plist;
@@ -1072,6 +1081,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = JFTEHE2V9R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Serif/Info.plist;
