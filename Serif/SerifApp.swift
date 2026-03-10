@@ -17,6 +17,7 @@ struct SerifApp: App {
                 }
             }
             .animation(.easeInOut(duration: 0.5), value: isSignedIn)
+            .onAppear { NotificationService.shared.requestPermission() }
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1200, height: 750)

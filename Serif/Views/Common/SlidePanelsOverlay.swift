@@ -39,6 +39,7 @@ struct SlidePanelsOverlay: View {
                     refreshInterval: $refreshInterval,
                     lastRefreshedAt: lastRefreshedAt
                 )
+                NotificationSettingsCard()
                 ContactsSettingsCard(
                     accountID: selectedAccountID ?? authViewModel.primaryAccount?.id ?? ""
                 )

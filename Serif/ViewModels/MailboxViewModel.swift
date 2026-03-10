@@ -549,6 +549,7 @@ final class MailboxViewModel: ObservableObject {
                         messages.insert(contentsOf: newMessages, at: 0)
                     }
                     fetchService.analyzeInBackground(newMessages)
+                    NotificationService.shared.notifyNewEmails(newMessages, accountEmail: accountID)
                 }
 
                 // Prune stale messages: locally cached but absent from the API's first page.
@@ -640,6 +641,7 @@ final class MailboxViewModel: ObservableObject {
             fetchService.allCachedMessages.insert(contentsOf: result.newMessages, at: 0)
             fetchService.localOffset += result.newMessages.count
             fetchService.analyzeInBackground(result.newMessages)
+            NotificationService.shared.notifyNewEmails(result.newMessages, accountEmail: accountID)
         }
 
         // Apply label changes to existing messages

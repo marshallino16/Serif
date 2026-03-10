@@ -16,6 +16,7 @@ class AppCoordinator: ObservableObject {
 
     private var cancellables: Set<AnyCancellable> = []
     private var pendingDraftSelection: Email?
+    private let backgroundSyncService = HistorySyncService(api: GmailMessageService.shared)
 
     // MARK: - Selection State
 
@@ -74,6 +75,42 @@ class AppCoordinator: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
+
+        NotificationService.shared.onNotificationTapped = { [weak self] messageID, accountID in
+            guard let self else { return }
+            if self.accountID != accountID {
+                self.selectedAccountID = accountID
+            }
+            NSApplication.shared.activate(ignoringOtherApps: true)
+            self.navigateToMessage(gmailMessageID: messageID)
+        }
+
+        IMAPIdleService.shared.onNewMail = { [weak self] accountID in
+            guard let self else { return }
+            if accountID == self.accountID && self.selectedFolder == .inbox {
+                // User is viewing this account's inbox — full UI refresh
+                Task { await self.mailboxViewModel.refreshCurrentFolder(labelIDs: ["INBOX"]) }
+            } else {
+                // Not viewing this account's inbox — lightweight history sync for notifications
+                let isActiveAccount = accountID == self.accountID
+                Task {
+                    let result = await self.backgroundSyncService.syncViaHistory(
+                        accountID: accountID, labelId: "INBOX", existingMessageIDs: []
+                    )
+                    if result.succeeded && !result.newMessages.isEmpty {
+                        NotificationService.shared.notifyNewEmails(result.newMessages, accountEmail: accountID)
+                    }
+                    if let historyId = result.latestHistoryId {
+                        self.backgroundSyncService.updateStoredHistoryId(historyId, accountID: accountID)
+                    }
+                    if isActiveAccount {
+                        await self.mailboxViewModel.loadCategoryUnreadCounts()
+                        let unread = self.mailboxViewModel.categoryUnreadCounts[.all] ?? 0
+                        NotificationService.shared.updateBadge(unreadCount: unread)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Computed Properties
@@ -235,6 +272,7 @@ class AppCoordinator: ObservableObject {
         if let account = authViewModel.primaryAccount {
             selectedAccountID = account.id
             mailboxViewModel.accountID = account.id
+            NotificationService.shared.isUserViewingInbox = true
             SubscriptionsStore.shared.accountID = account.id
             attachmentStore.accountID = account.id
             loadSignatures(for: account.id)
@@ -245,6 +283,7 @@ class AppCoordinator: ObservableObject {
             )
             attachmentIndexer = indexer
             mailboxViewModel.attachmentIndexer = indexer
+            IMAPIdleService.shared.startMonitoring(accounts: authViewModel.accounts)
             Task {
                 await indexer.setProgressUpdate { [weak attachmentStore] in
                     attachmentStore?.refresh()
@@ -253,6 +292,8 @@ class AppCoordinator: ObservableObject {
                 await mailboxViewModel.loadLabels()
                 await mailboxViewModel.loadSendAs()
                 await mailboxViewModel.loadCategoryUnreadCounts()
+                let unread = mailboxViewModel.categoryUnreadCounts[.all] ?? 0
+                NotificationService.shared.updateBadge(unreadCount: unread)
                 await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
                 lastRefreshedAt = Date()
                 await indexer.resumePending()
@@ -264,6 +305,7 @@ class AppCoordinator: ObservableObject {
     }
 
     func handleFolderChange(_ folder: Folder) {
+        NotificationService.shared.isUserViewingInbox = (folder == .inbox)
         if let pending = pendingDraftSelection {
             pendingDraftSelection = nil
             selectedEmail = pending
@@ -296,6 +338,7 @@ class AppCoordinator: ObservableObject {
     }
 
     func handleCategoryChange(_ category: InboxCategory?) {
+        NotificationService.shared.isUserViewingInbox = (selectedFolder == .inbox)
         selectedEmail = nil
         selectedEmailIDs = []
         searchResetTrigger += 1
@@ -310,6 +353,8 @@ class AppCoordinator: ObservableObject {
         let oldID = mailboxViewModel.accountID
         if !oldID.isEmpty { saveSignatures(for: oldID) }
         loadSignatures(for: id)
+        NotificationService.shared.isUserViewingInbox = false
+        IMAPIdleService.shared.startMonitoring(accounts: authViewModel.accounts)
         selectedFolder = .inbox
         selectedInboxCategory = .all
         selectedLabel = nil
@@ -336,6 +381,8 @@ class AppCoordinator: ObservableObject {
             await mailboxViewModel.loadLabels()
             await mailboxViewModel.loadSendAs()
             await mailboxViewModel.loadCategoryUnreadCounts()
+            let unread = mailboxViewModel.categoryUnreadCounts[.all] ?? 0
+            NotificationService.shared.updateBadge(unreadCount: unread)
             await GmailProfileService.shared.loadContactPhotos(accountID: id)
             await indexer.resumePending()
             await indexer.scanForAttachments()
@@ -344,6 +391,7 @@ class AppCoordinator: ObservableObject {
 
     func handleAccountsChange(_ accounts: [GmailAccount]) {
         if selectedAccountID == nil, let first = accounts.first { selectedAccountID = first.id }
+        IMAPIdleService.shared.startMonitoring(accounts: accounts)
     }
 
     func handleSelectedEmailChange(_ email: Email?) {
@@ -354,6 +402,8 @@ class AppCoordinator: ObservableObject {
         Task {
             await mailboxViewModel.markAsRead(message)
             await mailboxViewModel.loadCategoryUnreadCounts()
+            let unread = mailboxViewModel.categoryUnreadCounts[.all] ?? 0
+            NotificationService.shared.updateBadge(unreadCount: unread)
         }
     }
 }

@@ -52,6 +52,46 @@ struct BehaviorSettingsCard: View {
     }
 }
 
+// MARK: - Notification Settings Card
+
+struct NotificationSettingsCard: View {
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @AppStorage("notificationSoundEnabled") private var soundEnabled = true
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Notifications")
+                .font(.serifTitle)
+                .foregroundColor(theme.textPrimary)
+
+            HStack {
+                Text("Email notifications")
+                    .font(.serifCaption)
+                    .foregroundColor(theme.textSecondary)
+                Spacer()
+                Toggle("", isOn: $notificationsEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            Divider().background(theme.divider)
+
+            HStack {
+                Text("Notification sound")
+                    .font(.serifCaption)
+                    .foregroundColor(notificationsEnabled ? theme.textSecondary : theme.textTertiary)
+                Spacer()
+                Toggle("", isOn: $soundEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .disabled(!notificationsEnabled)
+            }
+        }
+        .cardStyle()
+    }
+}
+
 // MARK: - Contacts Settings Card
 
 struct ContactsSettingsCard: View {
