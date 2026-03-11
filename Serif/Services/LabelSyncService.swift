@@ -53,7 +53,7 @@ final class LabelSyncService {
         var counts: [InboxCategory: Int] = [:]
         await withTaskGroup(of: (InboxCategory, Int)?.self) { group in
             for category in InboxCategory.allCases {
-                let labelID = (category == .all) ? "INBOX" : category.rawValue
+                let labelID = (category == .all) ? GmailSystemLabel.inbox : category.rawValue
                 group.addTask {
                     guard let label = try? await GmailLabelService.shared.getLabel(id: labelID, accountID: aid),
                           let unread = label.messagesUnread, unread > 0 else { return nil }

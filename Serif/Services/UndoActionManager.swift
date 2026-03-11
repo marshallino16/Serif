@@ -71,7 +71,7 @@ final class UndoActionManager: ObservableObject {
     private func startCountdown() {
         countdownTask?.cancel()
 
-        let stored = UserDefaults.standard.integer(forKey: "undoDuration")
+        let stored = UserDefaults.standard.integer(forKey: UserDefaultsKey.undoDuration)
         let duration = Double([5, 10, 20, 30].contains(stored) ? stored : 5)
 
         progress = 1.0

@@ -37,7 +37,10 @@ final class EmailPrintService {
     }
 
     private func showPrintDialog(webView: WKWebView) {
-        let printInfo = NSPrintInfo.shared.copy() as! NSPrintInfo
+        guard let printInfo = NSPrintInfo.shared.copy() as? NSPrintInfo else {
+            cleanup()
+            return
+        }
         printInfo.topMargin = 36
         printInfo.bottomMargin = 36
         printInfo.leftMargin = 36
@@ -77,15 +80,7 @@ final class EmailPrintService {
         let ccValue = escapeHTML(message.cc)
         let replyTo = escapeHTML(message.replyTo)
 
-        let dateFormatted: String = {
-            if let d = message.date {
-                let fmt = DateFormatter()
-                fmt.dateStyle = .long
-                fmt.timeStyle = .short
-                return fmt.string(from: d)
-            }
-            return ""
-        }()
+        let dateFormatted = message.date?.formattedLongShort ?? ""
 
         let bodyHTML = message.htmlBody ?? "<p>\(escapeHTML(message.plainBody ?? email.body))</p>"
 

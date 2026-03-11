@@ -16,10 +16,7 @@ struct OriginalMessageView: View {
 
     private var dateValue: String {
         if let d = message.date {
-            let fmt = DateFormatter()
-            fmt.dateStyle = .long
-            fmt.timeStyle = .medium
-            return fmt.string(from: d)
+            return d.formattedLong
         }
         return message.header(named: "Date") ?? "—"
     }

@@ -4,7 +4,7 @@ import BlossomColorPicker
 struct AccountsSettingsView: View {
     @ObservedObject var authViewModel: AuthViewModel
     @Binding var selectedAccountID: String?
-    @AppStorage("isSignedIn") private var isSignedIn: Bool = true
+    @AppStorage("isSignedIn") private var isSignedIn: Bool = false
     @Environment(\.theme) private var theme
     @State private var colorBindings: [String: Color] = [:]
 

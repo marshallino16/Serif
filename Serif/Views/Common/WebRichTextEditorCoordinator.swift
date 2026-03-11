@@ -33,9 +33,7 @@ class WebRichTextEditorCoordinator: NSObject, WKScriptMessageHandler, WKNavigati
                 }
 
             case "fileDropped":
-                if let filename = dict["filename"] as? String {
-                    _ = filename
-                }
+                break  // Non-image file drops not yet supported
 
             case "openLink":
                 if let urlString = dict["url"] as? String, let url = URL(string: urlString) {

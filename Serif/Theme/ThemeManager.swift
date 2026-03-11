@@ -33,12 +33,12 @@ final class ThemeManager: ObservableObject {
     private var allOverrides: [String: [String: String]]
 
     private init() {
-        let savedId = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "midnight"
+        let savedId = UserDefaults.standard.string(forKey: UserDefaultsKey.selectedThemeId) ?? "midnight"
         let base = availableThemes.first { $0.id == savedId } ?? .midnight
         self.selectedBaseID = savedId
 
         // Load overrides
-        if let data = UserDefaults.standard.data(forKey: "themeOverrides"),
+        if let data = UserDefaults.standard.data(forKey: UserDefaultsKey.themeOverrides),
            let decoded = try? JSONDecoder().decode([String: [String: String]].self, from: data) {
             self.allOverrides = decoded
         } else {
@@ -51,7 +51,7 @@ final class ThemeManager: ObservableObject {
 
     func selectTheme(_ theme: Theme) {
         selectedBaseID = theme.id
-        UserDefaults.standard.set(theme.id, forKey: "selectedThemeId")
+        UserDefaults.standard.set(theme.id, forKey: UserDefaultsKey.selectedThemeId)
         let overrides = allOverrides[theme.id] ?? [:]
         currentTheme = overrides.isEmpty ? theme : theme.applying(overrides: overrides)
     }
@@ -92,7 +92,7 @@ final class ThemeManager: ObservableObject {
 
     private func persistOverrides() {
         let data = try? JSONEncoder().encode(allOverrides)
-        UserDefaults.standard.set(data, forKey: "themeOverrides")
+        UserDefaults.standard.set(data, forKey: UserDefaultsKey.themeOverrides)
     }
 
     private func theme(byId id: String) -> Theme {

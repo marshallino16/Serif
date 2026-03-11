@@ -9,6 +9,20 @@ struct GmailThreadMessageView: View {
     @State private var showQuoted = false
     @State private var contentHeight: CGFloat = 60
 
+    /// Cached result of `stripQuotedHTML` — computed once at init to avoid
+    /// repeated regex work (10 passes) on every render cycle.
+    private let cachedHTMLParts: (original: String, quoted: String?)
+
+    init(message: GmailMessage, fromAddress: String, resolvedHTML: String? = nil, onOpenLink: ((URL) -> Void)? = nil) {
+        self.message = message
+        self.fromAddress = fromAddress
+        self.resolvedHTML = resolvedHTML
+        self.onOpenLink = onOpenLink
+
+        let html = Self.computeFullHTML(message: message, resolvedHTML: resolvedHTML)
+        self.cachedHTMLParts = Self.stripQuotedHTML(html)
+    }
+
     private var sender: Contact { GmailDataTransformer.parseContact(message.from) }
 
     private var isSentByMe: Bool {
@@ -18,6 +32,11 @@ struct GmailThreadMessageView: View {
 
     /// The raw HTML for this message — use resolved (inline images) if available.
     private var fullHTML: String {
+        Self.computeFullHTML(message: message, resolvedHTML: resolvedHTML)
+    }
+
+    /// Compute the full HTML from message parts (static for use in init).
+    private static func computeFullHTML(message: GmailMessage, resolvedHTML: String?) -> String {
         if let resolved = resolvedHTML, !resolved.isEmpty { return resolved }
         if let html = message.htmlBody, !html.isEmpty { return html }
         if let plain = message.plainBody, !plain.isEmpty { return "<p>\(plain)</p>" }
@@ -25,17 +44,12 @@ struct GmailThreadMessageView: View {
         return body.isEmpty ? "" : "<p>\(body)</p>"
     }
 
-    /// Split the HTML into original content and (optional) quoted tail.
-    private var htmlParts: (original: String, quoted: String?) {
-        Self.stripQuotedHTML(fullHTML)
-    }
-
     /// Which HTML to actually render: stripped or full.
     private var renderedHTML: String {
-        if showQuoted || htmlParts.quoted == nil {
+        if showQuoted || cachedHTMLParts.quoted == nil {
             return fullHTML
         }
-        return htmlParts.original
+        return cachedHTMLParts.original
     }
 
     var body: some View {
@@ -59,7 +73,7 @@ struct GmailThreadMessageView: View {
                     HTMLEmailView(html: renderedHTML, contentHeight: $contentHeight, onOpenLink: onOpenLink)
                         .frame(height: contentHeight)
 
-                    if htmlParts.quoted != nil {
+                    if cachedHTMLParts.quoted != nil {
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showQuoted.toggle()

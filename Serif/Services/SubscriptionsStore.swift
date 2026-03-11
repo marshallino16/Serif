@@ -6,6 +6,7 @@ import Combine
 private final class URLValidityCache: @unchecked Sendable {
     private var cache: [URL: Bool] = [:]
     private let lock = NSLock()
+    private let maxCacheSize = 500
 
     func get(_ url: URL) -> Bool? {
         lock.lock(); defer { lock.unlock() }
@@ -13,6 +14,7 @@ private final class URLValidityCache: @unchecked Sendable {
     }
     func set(_ url: URL, valid: Bool) {
         lock.lock(); defer { lock.unlock() }
+        if cache.count >= maxCacheSize { cache.removeAll() }
         cache[url] = valid
     }
 
@@ -52,18 +54,23 @@ final class SubscriptionsStore: ObservableObject {
     var accountID: String = "" {
         didSet {
             guard accountID != oldValue else { return }
+            analysisTask?.cancel()
+            analysisTask = nil
             entries.removeAll()
             processedIDs.removeAll()
             validatedIDs = loadValidatedIDs()
             // Already validated IDs count as processed (skip HEAD next time)
             processedIDs = validatedIDs
+            pendingCount = 0
+            isAnalyzing  = false
         }
     }
 
-    private var processedIDs = Set<String>()   // per-session dedup
-    private var validatedIDs = Set<String>()   // persisted validated subscription IDs
-    private let urlCache     = URLValidityCache()
-    private var pendingCount = 0               // tracks concurrent analysis tasks
+    private var processedIDs  = Set<String>()   // per-session dedup
+    private var validatedIDs  = Set<String>()   // persisted validated subscription IDs
+    private let urlCache      = URLValidityCache()
+    private var pendingCount  = 0               // tracks concurrent analysis tasks
+    private var analysisTask: Task<Void, Never>?
 
     private init() {}
 
@@ -113,7 +120,12 @@ final class SubscriptionsStore: ObservableObject {
         pendingCount += 1
         isAnalyzing   = true
 
-        Task {
+        analysisTask = Task {
+            defer {
+                pendingCount -= 1
+                if pendingCount == 0 { isAnalyzing = false }
+            }
+
             var newValidated = false
             await withTaskGroup(of: (Email, Bool).self) { [urlCache] group in
                 for email in candidates {
@@ -124,6 +136,7 @@ final class SubscriptionsStore: ObservableObject {
                     }
                 }
                 for await (email, valid) in group {
+                    guard !Task.isCancelled else { return }
                     guard valid else { continue }
                     if !entries.contains(where: { $0.id == email.id }) {
                         entries.append(email)
@@ -134,11 +147,9 @@ final class SubscriptionsStore: ObservableObject {
                     }
                 }
             }
+            guard !Task.isCancelled else { return }
             entries.sort { $0.date > $1.date }
             if newValidated { saveValidatedIDs() }
-
-            pendingCount -= 1
-            if pendingCount == 0 { isAnalyzing = false }
         }
     }
 

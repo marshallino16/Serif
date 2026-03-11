@@ -118,11 +118,11 @@ final class AttachmentStore: ObservableObject {
     // MARK: - Exclusion Rules
 
     func loadExclusionRules() {
-        exclusionRules = UserDefaults.standard.stringArray(forKey: "attachmentExclusionRules.\(accountID)") ?? []
+        exclusionRules = UserDefaults.standard.stringArray(forKey: UserDefaultsKey.attachmentExclusionRules(accountID)) ?? []
     }
 
     func saveExclusionRules() {
-        UserDefaults.standard.set(exclusionRules, forKey: "attachmentExclusionRules.\(accountID)")
+        UserDefaults.standard.set(exclusionRules, forKey: UserDefaultsKey.attachmentExclusionRules(accountID))
     }
 
     func addExclusionRule(_ pattern: String) {

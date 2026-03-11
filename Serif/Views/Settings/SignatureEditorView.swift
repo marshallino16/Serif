@@ -4,6 +4,7 @@ struct SignatureEditorView: View {
     let alias: GmailSendAs
     let accountID: String
     var onSave: ((GmailSendAs) -> Void)?
+    var onUpdateSignature: ((String, String, String) async throws -> GmailSendAs)?
 
     @StateObject private var editorState = WebRichTextEditorState()
     @State private var htmlContent: String = ""
@@ -126,11 +127,11 @@ struct SignatureEditorView: View {
         errorMessage = nil
         Task {
             do {
-                let updated = try await GmailProfileService.shared.updateSignature(
-                    sendAsEmail: alias.sendAsEmail,
-                    signature: htmlContent,
-                    accountID: accountID
-                )
+                guard let updated = try await onUpdateSignature?(alias.sendAsEmail, htmlContent, accountID) else {
+                    errorMessage = "Failed to save: no response"
+                    isSaving = false
+                    return
+                }
                 onSave?(updated)
                 dismiss()
             } catch {

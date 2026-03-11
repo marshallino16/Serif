@@ -48,17 +48,11 @@ struct AttachmentCardView: View {
     private var formattedSize: String {
         let size = result.attachment.size
         guard size > 0 else { return "" }
-        if size < 1024 { return "\(size) B" }
-        if size < 1024 * 1024 { return "\(size / 1024) KB" }
-        return String(format: "%.1f MB", Double(size) / (1024 * 1024))
+        return GmailDataTransformer.sizeString(size)
     }
 
     private var formattedDate: String {
-        guard let date = result.attachment.emailDate else { return "" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
+        result.attachment.emailDate?.formattedDateOnly ?? ""
     }
 
     private var scoreColor: Color {

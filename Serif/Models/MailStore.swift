@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class MailStore: ObservableObject {
     @Published var emails: [Email]
     @Published var gmailDrafts: [Email] = []
@@ -55,13 +56,13 @@ final class MailStore: ObservableObject {
 
     func syncGmailDrafts(accountID: String) async {
         guard !accountID.isEmpty else { return }
-        await MainActor.run { isLoadingGmailDrafts = true }
-        defer { Task { @MainActor in isLoadingGmailDrafts = false } }
+        isLoadingGmailDrafts = true
+        defer { isLoadingGmailDrafts = false }
         do {
             let listResponse = try await GmailDraftService.shared.listDrafts(accountID: accountID)
             let draftRefs = listResponse.drafts ?? []
             guard !draftRefs.isEmpty else {
-                await MainActor.run { gmailDrafts = [] }
+                gmailDrafts = []
                 return
             }
             let draftIDs = draftRefs.map(\.id)
@@ -84,11 +85,7 @@ final class MailStore: ObservableObject {
                         let imageBase64: String?
                         if let embedded = part.body?.data {
                             // Data embedded in "full" response — convert base64url → base64
-                            var b64 = embedded
-                                .replacingOccurrences(of: "-", with: "+")
-                                .replacingOccurrences(of: "_", with: "/")
-                            while b64.count % 4 != 0 { b64 += "=" }
-                            imageBase64 = b64
+                            imageBase64 = Data(base64URLEncoded: embedded)?.base64EncodedString()
                         } else if let attID = part.body?.attachmentId {
                             // Large image — fetch via attachment API
                             if let data = try? await GmailMessageService.shared.getAttachment(
@@ -114,15 +111,13 @@ final class MailStore: ObservableObject {
                 }
                 emails.append(email)
             }
-            await MainActor.run {
-                gmailDrafts = emails
-                // Remove local drafts that now exist as Gmail drafts to avoid duplicates
-                let syncedGmailIDs = Set(emails.compactMap(\.gmailDraftID))
-                self.emails.removeAll { email in
-                    email.folder == .drafts && email.isDraft
-                        && email.gmailDraftID != nil
-                        && syncedGmailIDs.contains(email.gmailDraftID!)
-                }
+            gmailDrafts = emails
+            // Remove local drafts that now exist as Gmail drafts to avoid duplicates
+            let syncedGmailIDs = Set(emails.compactMap(\.gmailDraftID))
+            self.emails.removeAll { email in
+                email.folder == .drafts && email.isDraft
+                    && email.gmailDraftID != nil
+                    && syncedGmailIDs.contains(email.gmailDraftID!)
             }
         } catch {
             // Silently fail — keep existing cached drafts if any
@@ -211,24 +206,6 @@ final class MailStore: ObservableObject {
         }
     }
 
-    // MARK: - Attachments
-
-    func allAttachmentItems() -> [AttachmentItem] {
-        emails.flatMap { email in
-            email.attachments.map { attachment in
-                AttachmentItem(
-                    attachment: attachment,
-                    emailId: email.id,
-                    emailSubject: email.subject,
-                    senderName: email.sender.name,
-                    senderColor: email.sender.avatarColor,
-                    date: email.date,
-                    direction: email.folder == .sent ? .sent : .received
-                )
-            }
-        }
-        .sorted { $0.date > $1.date }
-    }
 }
 
 // MARK: - Attachment Item (attachment with email context)

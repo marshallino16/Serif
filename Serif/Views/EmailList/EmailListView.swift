@@ -32,16 +32,17 @@ struct EmailListView: View {
     @State private var sortOrder: EmailSortOrder = .dateNewest
     @State private var selectionAnchorID: String?
     @State private var isRefreshing = false
+    @State private var sortedEmails: [Email] = []
     @ObservedObject private var swipeCoordinator = SwipeCoordinator.shared
     @Environment(\.theme) private var theme
 
     private var isMultiSelect: Bool { selectedEmailIDs.count > 1 }
 
-    private var sortedEmails: [Email] {
+    private func recomputeSortedEmails() {
         switch sortOrder {
-        case .dateNewest, .unreadFirst: return emails  // unread: filtered at API level
-        case .dateOldest:               return emails.reversed()
-        case .sender:                   return emails.sorted { $0.sender.name.lowercased() < $1.sender.name.lowercased() }
+        case .dateNewest, .unreadFirst: sortedEmails = emails
+        case .dateOldest:               sortedEmails = emails.reversed()
+        case .sender:                   sortedEmails = emails.sorted { $0.sender.name.localizedCaseInsensitiveCompare($1.sender.name) == .orderedAscending }
         }
     }
 
@@ -53,11 +54,14 @@ struct EmailListView: View {
             hiddenButtons
         }
         .background(theme.listBackground)
+        .onAppear { recomputeSortedEmails() }
+        .onChange(of: emails) { _ in recomputeSortedEmails() }
         .onChange(of: searchResetTrigger) { _ in
             searchText = ""
             sortOrder = .dateNewest
         }
         .onChange(of: sortOrder) { newSort in
+            recomputeSortedEmails()
             switch newSort {
             case .unreadFirst: onSearch("is:unread")
             default:           onSearch(searchText)

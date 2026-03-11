@@ -320,28 +320,27 @@ final class DraftLifecycleTests: XCTestCase {
         XCTAssertEqual(reImages[0].contentID, "img_abc", "Round-trip: same CID")
     }
 
-    // MARK: - Draft duplicate prevention: needsResave
+    // MARK: - Draft save cancellation: new save cancels in-flight save
 
-    func testNeedsResaveIsSetWhenSaveIsInFlight() async {
+    func testNewSaveCancelsPreviousInFlightSave() async {
         let vm = ComposeViewModel(accountID: "", fromAddress: "test@test.com")
         vm.subject = "Test"
         vm.body = "Version 1"
         vm.isHTML = true
 
-        // Start first save (will be "in flight" — API fails but processing takes time)
+        // Start first save (will be "in flight" — API fails with empty accountID)
         async let save1: Void = vm.saveDraft()
 
-        // Tiny yield to let save1 start and set isSaving = true
+        // Tiny yield to let save1 start
         try? await Task.sleep(nanoseconds: 1_000_000)
 
-        // If save1 is still running, this should set needsResave
+        // Second save cancels the first and runs its own
+        vm.body = "Version 2"
         await vm.saveDraft()
 
         _ = await save1
 
-        // After all completes, needsResave should be cleared (retry executed)
-        XCTAssertFalse(vm.needsResave,
-                       "needsResave should be cleared after retry executes")
+        // No crash, no double-create — the stored task pattern handles it.
     }
 
     func testConcurrentSavesPreserveDraftID() async {

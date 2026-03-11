@@ -5,7 +5,7 @@ import Foundation
 struct GmailMessageListResponse: Codable {
     let messages:            [GmailMessageRef]?
     let nextPageToken:       String?
-    let resultSizeEstimate:  Int
+    let resultSizeEstimate:  Int?
 }
 
 struct GmailMessageRef: Codable {
@@ -92,7 +92,7 @@ struct GmailHistoryLabelRemoved: Codable {
 struct GmailThreadListResponse: Codable {
     let threads:            [GmailThreadRef]?
     let nextPageToken:      String?
-    let resultSizeEstimate: Int
+    let resultSizeEstimate: Int?
 }
 
 struct GmailThreadRef: Codable {
@@ -127,10 +127,10 @@ struct GmailLabel: Codable, Identifiable {
 
 extension GmailLabel {
     static let systemLabelIDs: Set<String> = [
-        "INBOX", "UNREAD", "STARRED", "IMPORTANT",
-        "SENT", "DRAFT", "TRASH", "SPAM",
-        "CATEGORY_PERSONAL", "CATEGORY_SOCIAL",
-        "CATEGORY_PROMOTIONS", "CATEGORY_UPDATES", "CATEGORY_FORUMS",
+        GmailSystemLabel.inbox, GmailSystemLabel.unread, GmailSystemLabel.starred, GmailSystemLabel.important,
+        GmailSystemLabel.sent, GmailSystemLabel.draft, GmailSystemLabel.trash, GmailSystemLabel.spam,
+        GmailSystemLabel.category_personal, GmailSystemLabel.category_social,
+        GmailSystemLabel.category_promotions, GmailSystemLabel.category_updates, GmailSystemLabel.category_forums,
         "CHAT",
         // Star/superstars variants
         "YELLOW_STAR", "ORANGE_STAR", "RED_STAR", "PURPLE_STAR", "BLUE_STAR", "GREEN_STAR",
@@ -159,9 +159,7 @@ extension GmailLabel {
 
     /// Stable hash for palette index — Swift's hashValue is randomised per launch.
     private var stablePaletteIndex: Int {
-        var hash: UInt64 = 5381
-        for byte in id.utf8 { hash = hash &* 33 &+ UInt64(byte) }
-        return Int(hash % UInt64(GmailLabel.colorPalette.count))
+        Int(stableHash(id) % UInt64(GmailLabel.colorPalette.count))
     }
 
     var resolvedBgColor: String {
@@ -217,7 +215,7 @@ struct GmailDraft: Codable {
 struct GmailDraftListResponse: Codable {
     let drafts:             [GmailDraftRef]?
     let nextPageToken:      String?
-    let resultSizeEstimate: Int
+    let resultSizeEstimate: Int?
 }
 
 struct GmailDraftRef: Codable {
@@ -245,9 +243,9 @@ extension GmailMessage {
         return Date(timeIntervalSince1970: TimeInterval(msInt) / 1000)
     }
 
-    var isUnread:  Bool { labelIds?.contains("UNREAD")   ?? false }
-    var isStarred: Bool { labelIds?.contains("STARRED")  ?? false }
-    var isDraft:   Bool { labelIds?.contains("DRAFT")    ?? false }
+    var isUnread:  Bool { labelIds?.contains(GmailSystemLabel.unread)   ?? false }
+    var isStarred: Bool { labelIds?.contains(GmailSystemLabel.starred)  ?? false }
+    var isDraft:   Bool { labelIds?.contains(GmailSystemLabel.draft)    ?? false }
 
     /// True when the message was sent by a mailing list (List-Unsubscribe or List-Id header present).
     var isFromMailingList: Bool {
@@ -365,7 +363,7 @@ extension GmailMessage {
     /// Decodes the raw RFC 2822 source from base64url.
     var rawSource: String? {
         guard let raw = raw else { return nil }
-        return decodeBase64URL(raw)
+        return Data(base64URLEncoded: raw).flatMap { String(data: $0, encoding: .utf8) }
     }
 
     // MARK: Private helpers
@@ -373,21 +371,12 @@ extension GmailMessage {
     private func extractBody(mimeType: String, from part: GmailMessagePart?) -> String? {
         guard let part = part else { return nil }
         if part.mimeType == mimeType, let data = part.body?.data {
-            return decodeBase64URL(data)
+            return Data(base64URLEncoded: data).flatMap { String(data: $0, encoding: .utf8) }
         }
         for sub in part.parts ?? [] {
             if let body = extractBody(mimeType: mimeType, from: sub) { return body }
         }
         return nil
-    }
-
-    private func decodeBase64URL(_ string: String) -> String? {
-        var base64 = string
-            .replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-        while base64.count % 4 != 0 { base64 += "=" }
-        guard let data = Data(base64Encoded: base64) else { return nil }
-        return String(data: data, encoding: .utf8)
     }
 
     /// Parts that are inline images (have Content-ID + attachmentId + image MIME type).

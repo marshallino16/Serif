@@ -9,18 +9,23 @@ struct FolderCache: Codable {
 /// File-based cache for mails, labels, and threads — per account + folder.
 final class MailCacheStore {
     static let shared = MailCacheStore()
+    private var createdDirs: Set<String> = []
+
     private init() {
         try? FileManager.default.createDirectory(at: baseDir, withIntermediateDirectories: true)
     }
 
-    private var baseDir: URL {
+    private let baseDir: URL = {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("com.genyus.serif.app/mail-cache", isDirectory: true)
-    }
+    }()
 
     private func fileURL(accountID: String, folderKey: String) -> URL {
         let accountDir = baseDir.appendingPathComponent(accountID, isDirectory: true)
-        try? FileManager.default.createDirectory(at: accountDir, withIntermediateDirectories: true)
+        if !createdDirs.contains(accountID) {
+            try? FileManager.default.createDirectory(at: accountDir, withIntermediateDirectories: true)
+            createdDirs.insert(accountID)
+        }
         let safe = folderKey.replacingOccurrences(of: "/", with: "_")
         return accountDir.appendingPathComponent("\(safe).json")
     }
@@ -29,7 +34,8 @@ final class MailCacheStore {
     static func folderKey(labelIDs: [String], query: String?) -> String {
         let base = labelIDs.sorted().joined(separator: "+")
         if let q = query, !q.isEmpty {
-            return "\(base)_q_\(q.hashValue)"
+            let safe = q.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? q
+            return "\(base)_q_\(String(safe.prefix(100)))"
         }
         return base.isEmpty ? "_all" : base
     }
@@ -52,8 +58,10 @@ final class MailCacheStore {
 
     func saveFolderCache(_ cache: FolderCache, accountID: String, folderKey: String) {
         let url = fileURL(accountID: accountID, folderKey: folderKey)
-        guard let data = try? JSONEncoder().encode(cache) else { return }
-        try? data.write(to: url, options: .atomic)
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(cache) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     // MARK: - Messages (legacy — used by switchAccount and other non-folder code)
@@ -64,8 +72,10 @@ final class MailCacheStore {
 
     func save(_ messages: [GmailMessage], accountID: String, folderKey: String) {
         let url = fileURL(accountID: accountID, folderKey: folderKey)
-        guard let data = try? JSONEncoder().encode(messages) else { return }
-        try? data.write(to: url, options: .atomic)
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(messages) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     // MARK: - Labels
@@ -80,16 +90,22 @@ final class MailCacheStore {
 
     func saveLabels(_ labels: [GmailLabel], accountID: String) {
         let url = fileURL(accountID: accountID, folderKey: "_labels")
-        guard let data = try? JSONEncoder().encode(labels) else { return }
-        try? data.write(to: url, options: .atomic)
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(labels) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     // MARK: - Threads (full format, for offline HTML)
 
     private func threadURL(accountID: String, threadID: String) -> URL {
+        let key = "\(accountID)/threads"
         let dir = baseDir.appendingPathComponent(accountID, isDirectory: true)
             .appendingPathComponent("threads", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        if !createdDirs.contains(key) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            createdDirs.insert(key)
+        }
         return dir.appendingPathComponent("\(threadID).json")
     }
 
@@ -103,8 +119,10 @@ final class MailCacheStore {
 
     func saveThread(_ thread: GmailThread, accountID: String) {
         let url = threadURL(accountID: accountID, threadID: thread.id)
-        guard let data = try? JSONEncoder().encode(thread) else { return }
-        try? data.write(to: url, options: .atomic)
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(thread) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     func deleteAccount(_ accountID: String) {

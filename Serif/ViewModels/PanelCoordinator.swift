@@ -1,7 +1,7 @@
 import SwiftUI
 
 @MainActor
-class PanelCoordinator: ObservableObject {
+final class PanelCoordinator: ObservableObject {
     // MARK: - Panel visibility
 
     @Published var showSettings = false
@@ -112,7 +112,9 @@ class PanelCoordinator: ObservableObject {
                         try? source.data(using: .utf8)?.write(to: url)
                     }
                 }
-            } catch { }
+            } catch {
+                ToastManager.shared.show(message: "Download failed: \(error.localizedDescription)", type: .error)
+            }
         }
     }
 }

@@ -93,6 +93,7 @@ struct DetailPaneView: View {
         var view = EmailDetailView(
             email: email,
             accountID: accountID,
+            mailStore: mailStore,
             attachmentIndexer: attachmentIndexer,
             onArchive: selectedFolder == .archive ? nil : { actionCoordinator.archiveEmail(email, selectNext: { coordinator.selectNext($0) }) },
             onDelete: selectedFolder == .trash ? nil : { actionCoordinator.deleteEmail(email, selectNext: { coordinator.selectNext($0) }) },
@@ -145,8 +146,14 @@ struct DetailPaneView: View {
             },
             fromAddress: fromAddress
         )
-        view.mailStore = mailStore
         view.onOpenLink = { url in panelCoordinator.openInAppBrowser(url: url) }
+        view.onMessagesRead = { messageIDs in mailboxViewModel.applyReadLocally(messageIDs) }
+        view.onGenerateQuickReplies = { email in
+            await QuickReplyService.shared.generateReplies(for: email)
+        }
+        view.onLoadDraft = { draftID, acctID in
+            try await GmailDraftService.shared.getDraft(id: draftID, accountID: acctID, format: "full")
+        }
         return view.id(email.id)
     }
 

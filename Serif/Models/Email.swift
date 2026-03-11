@@ -245,8 +245,8 @@ enum InboxCategory: String, CaseIterable, Identifiable {
     /// Label IDs to use when querying Gmail API for this category.
     var gmailLabelIDs: [String] {
         switch self {
-        case .all: return ["INBOX"]
-        default:   return ["INBOX", rawValue]
+        case .all: return [GmailSystemLabel.inbox]
+        default:   return [GmailSystemLabel.inbox, rawValue]
         }
     }
 }
@@ -287,12 +287,12 @@ enum Folder: String, CaseIterable, Identifiable {
     /// Gmail API label ID for this folder (nil = use gmailQuery instead).
     var gmailLabelID: String? {
         switch self {
-        case .inbox:       return "INBOX"
-        case .starred:     return "STARRED"
-        case .sent:        return "SENT"
-        case .drafts:      return "DRAFT"
-        case .spam:        return "SPAM"
-        case .trash:       return "TRASH"
+        case .inbox:       return GmailSystemLabel.inbox
+        case .starred:     return GmailSystemLabel.starred
+        case .sent:        return GmailSystemLabel.sent
+        case .drafts:      return GmailSystemLabel.draft
+        case .spam:        return GmailSystemLabel.spam
+        case .trash:       return GmailSystemLabel.trash
         case .archive, .attachments, .subscriptions, .labels: return nil
         }
     }

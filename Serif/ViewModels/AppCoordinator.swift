@@ -43,11 +43,11 @@ final class AppCoordinator: ObservableObject {
 
     // MARK: - AppStorage
 
-    @Published var undoDuration: Int = UserDefaults.standard.integer(forKey: "undoDuration").nonZeroOr(5) {
-        didSet { UserDefaults.standard.set(undoDuration, forKey: "undoDuration") }
+    @Published var undoDuration: Int = UserDefaults.standard.integer(forKey: UserDefaultsKey.undoDuration).nonZeroOr(5) {
+        didSet { UserDefaults.standard.set(undoDuration, forKey: UserDefaultsKey.undoDuration) }
     }
-    @Published var refreshInterval: Int = UserDefaults.standard.integer(forKey: "refreshInterval").nonZeroOr(120) {
-        didSet { UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval") }
+    @Published var refreshInterval: Int = UserDefaults.standard.integer(forKey: UserDefaultsKey.refreshInterval).nonZeroOr(120) {
+        didSet { UserDefaults.standard.set(refreshInterval, forKey: UserDefaultsKey.refreshInterval) }
     }
 
     // MARK: - Init
@@ -186,13 +186,13 @@ final class AppCoordinator: ObservableObject {
     // MARK: - Per-Account Signatures
 
     func loadSignatures(for id: String) {
-        signatureForNew = UserDefaults.standard.string(forKey: "signatureForNew.\(id)") ?? ""
-        signatureForReply = UserDefaults.standard.string(forKey: "signatureForReply.\(id)") ?? ""
+        signatureForNew = UserDefaults.standard.string(forKey: UserDefaultsKey.signatureForNew(id)) ?? ""
+        signatureForReply = UserDefaults.standard.string(forKey: UserDefaultsKey.signatureForReply(id)) ?? ""
     }
 
     func saveSignatures(for id: String) {
-        UserDefaults.standard.set(signatureForNew, forKey: "signatureForNew.\(id)")
-        UserDefaults.standard.set(signatureForReply, forKey: "signatureForReply.\(id)")
+        UserDefaults.standard.set(signatureForNew, forKey: UserDefaultsKey.signatureForNew(id))
+        UserDefaults.standard.set(signatureForReply, forKey: UserDefaultsKey.signatureForReply(id))
     }
 
     // MARK: - Folder Loading
@@ -203,12 +203,12 @@ final class AppCoordinator: ObservableObject {
         case .inbox:
             if let category = selectedInboxCategory {
                 if category == .all {
-                    await mailboxViewModel.refreshCurrentFolder(labelIDs: ["INBOX"])
+                    await mailboxViewModel.refreshCurrentFolder(labelIDs: [GmailSystemLabel.inbox])
                 } else {
                     await mailboxViewModel.refreshCurrentFolder(labelIDs: category.gmailLabelIDs)
                 }
             } else {
-                await mailboxViewModel.refreshCurrentFolder(labelIDs: ["INBOX"])
+                await mailboxViewModel.refreshCurrentFolder(labelIDs: [GmailSystemLabel.inbox])
             }
         case .labels:
             if let label = selectedLabel {
@@ -250,11 +250,12 @@ final class AppCoordinator: ObservableObject {
                 await indexer.setProgressUpdate { [weak attachmentStore] in
                     attachmentStore?.refresh()
                 }
-                await loadCurrentFolder()
-                await mailboxViewModel.loadLabels()
-                await mailboxViewModel.loadSendAs()
-                await mailboxViewModel.loadCategoryUnreadCounts()
-                await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
+                async let folderLoad: Void = loadCurrentFolder()
+                async let labelsLoad: Void = mailboxViewModel.loadLabels()
+                async let sendAsLoad: Void = mailboxViewModel.loadSendAs()
+                async let categoryLoad: Void = mailboxViewModel.loadCategoryUnreadCounts()
+                async let photosLoad: Void = GmailProfileService.shared.loadContactPhotos(accountID: account.id)
+                _ = await (folderLoad, labelsLoad, sendAsLoad, categoryLoad, photosLoad)
                 lastRefreshedAt = Date()
                 await indexer.resumePending()
                 await indexer.scanForAttachments()
@@ -334,11 +335,12 @@ final class AppCoordinator: ObservableObject {
                 attachmentStore?.refresh()
             }
             await mailboxViewModel.switchAccount(id)
-            await loadCurrentFolder()
-            await mailboxViewModel.loadLabels()
-            await mailboxViewModel.loadSendAs()
-            await mailboxViewModel.loadCategoryUnreadCounts()
-            await GmailProfileService.shared.loadContactPhotos(accountID: id)
+            async let folderLoad: Void = loadCurrentFolder()
+            async let labelsLoad: Void = mailboxViewModel.loadLabels()
+            async let sendAsLoad: Void = mailboxViewModel.loadSendAs()
+            async let categoryLoad: Void = mailboxViewModel.loadCategoryUnreadCounts()
+            async let photosLoad: Void = GmailProfileService.shared.loadContactPhotos(accountID: id)
+            _ = await (folderLoad, labelsLoad, sendAsLoad, categoryLoad, photosLoad)
             await indexer.resumePending()
             await indexer.scanForAttachments()
         }

@@ -45,10 +45,10 @@ enum GmailDataTransformer {
     // MARK: - Folder
 
     static func folderFor(labelIDs: [String]) -> Folder {
-        if labelIDs.contains("SENT")  { return .sent }
-        if labelIDs.contains("DRAFT") { return .drafts }
-        if labelIDs.contains("SPAM")  { return .spam }
-        if labelIDs.contains("TRASH") { return .trash }
+        if labelIDs.contains(GmailSystemLabel.sent)  { return .sent }
+        if labelIDs.contains(GmailSystemLabel.draft) { return .drafts }
+        if labelIDs.contains(GmailSystemLabel.spam)  { return .spam }
+        if labelIDs.contains(GmailSystemLabel.trash) { return .trash }
         return .inbox
     }
 
@@ -89,12 +89,6 @@ enum GmailDataTransformer {
         "#FDCB6E", "#E84393", "#00CEC9", "#A29BFE"
     ]
 
-    private static func stableHash(_ string: String) -> UInt64 {
-        var hash: UInt64 = 5381
-        for byte in string.utf8 { hash = (hash &* 33) &+ UInt64(byte) }
-        return hash
-    }
-
     private static func gravatarURL(for email: String) -> String {
         let normalized = email.lowercased().trimmingCharacters(in: .whitespaces)
         let hash = SHA256.hash(data: Data(normalized.utf8))
@@ -102,9 +96,14 @@ enum GmailDataTransformer {
         return "https://gravatar.com/avatar/\(hex)?s=80&d=404"
     }
 
-    private static func sizeString(_ bytes: Int) -> String {
+    static func sizeString(_ bytes: Int) -> String {
         if bytes < 1_024       { return "\(bytes) B" }
         if bytes < 1_048_576   { return String(format: "%.0f KB", Double(bytes) / 1_024) }
         return String(format: "%.1f MB", Double(bytes) / 1_048_576)
+    }
+
+    /// Formats Int64 byte counts to human-readable strings.
+    static func sizeString(_ bytes: Int64) -> String {
+        sizeString(Int(bytes))
     }
 }

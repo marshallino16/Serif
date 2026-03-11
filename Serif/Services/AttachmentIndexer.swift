@@ -147,7 +147,7 @@ actor AttachmentIndexer {
     /// Computes the cutoff date based on user's `attachmentScanMonths` setting.
     /// Returns nil if the setting is 0 (unlimited / all time).
     private var scanCutoffDate: Date? {
-        let months = UserDefaults.standard.integer(forKey: "attachmentScanMonths")
+        let months = UserDefaults.standard.integer(forKey: UserDefaultsKey.attachmentScanMonths)
         guard months > 0 else { return nil } // 0 (not set) or -1 = all time
         return Calendar.current.date(byAdding: .month, value: -months, to: Date())
     }
@@ -326,7 +326,7 @@ actor AttachmentIndexer {
             let alreadySeen = processedMessageIDs.contains(message.id)
 
             let labels = message.labelIds ?? []
-            let direction: IndexedAttachment.Direction = labels.contains("SENT") ? .sent : .received
+            let direction: IndexedAttachment.Direction = labels.contains(GmailSystemLabel.sent) ? .sent : .received
             let fromRaw = message.from
             let senderEmail = fromRaw.components(separatedBy: "<").last?.replacingOccurrences(of: ">", with: "").trimmingCharacters(in: .whitespaces)
             let senderName = fromRaw.components(separatedBy: "<").first?.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "\""))

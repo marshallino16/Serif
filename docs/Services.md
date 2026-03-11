@@ -9,7 +9,7 @@ Business logic, networking, and side effects. This is the **only** layer that ta
 - Services return raw API models (`GmailMessage`, `GmailLabel`, etc.). They do NOT return UI models.
 - Error handling: throw errors up to the ViewModel. Services don't show UI or set `@Published` state.
 - Services must be **account-aware**: every method takes `accountID` as parameter.
-- No SwiftUI imports. No `@Published`, no `ObservableObject` (except `UndoActionManager` which is a UI singleton by design).
+- No SwiftUI imports. No `@Published`, no `ObservableObject` (except `UndoActionManager` and `NetworkMonitor` which are UI singletons by design).
 
 ## Subfolders
 
@@ -18,8 +18,8 @@ OAuth flow, token storage (Keychain), token refresh. `OAuthService` handles the 
 
 ### `Gmail/`
 Gmail REST API wrappers. One service per domain:
-- `GmailAPIClient` — HTTP layer (auth headers, base URL, logging)
-- `GmailMessageService` — Messages, threads, mutations (trash, archive, star, labels), History API
+- `GmailAPIClient` — HTTP layer (auth headers, base URL, per-account token refresh coalescing)
+- `GmailMessageService` — Messages, threads, mutations (trash, archive, star, labels), History API. Label modifications delegate to a single `modifyLabels` method.
 - `GmailLabelService` — Label CRUD
 - `GmailProfileService` — Profile info, contacts, send-as aliases, photos
 - `GmailSendService` — Compose, send, draft CRUD (RFC 2822 MIME encoding with RFC 2047 header encoding)
@@ -29,18 +29,27 @@ Gmail REST API wrappers. One service per domain:
 ### Root-level files
 | File | Role |
 |------|------|
-| `HistorySyncService.swift` | Delta sync via Gmail History API with label-aware filtering |
-| `UndoActionManager.swift` | Undo toast state machine (schedule -> countdown -> confirm/undo) |
-| `UnsubscribeService.swift` | Parses List-Unsubscribe headers, RFC 8058 one-click POST |
-| `SubscriptionsStore.swift` | Detects newsletter/subscription emails, manages unsubscribe state |
-| `EmailPrintService.swift` | Print formatting via WKWebView |
-| `TrackerBlockerService.swift` | HTML sanitization, tracking pixel/domain blocking |
-| `BIMIService.swift` | BIMI logo resolution via DNS-over-HTTPS |
-| `NetworkMonitor.swift` | Online/offline detection |
+| `APICache.swift` | Generic ETag-based HTTP response caching |
 | `AttachmentDatabase.swift` | SQLite FTS5 index for attachment search |
 | `AttachmentIndexer.swift` | Async indexing with CPU throttling |
 | `AttachmentSearchService.swift` | Hybrid FTS + semantic embedding search |
+| `AvatarCache.swift` | Avatar image caching (uses shared `stableHash` for cache keys) |
+| `BIMIService.swift` | BIMI logo resolution via DNS-over-HTTPS |
+| `CalendarInviteParser.swift` | iCalendar (.ics) parsing for calendar invite cards |
 | `ContentExtractor.swift` | PDF/OCR/Word/text extraction + embedding generation |
-| `ThumbnailCache.swift` | Thumbnail generation + LRU caching |
-| `AvatarCache.swift` | Avatar image caching |
 | `CPUMonitor.swift` | Adaptive CPU throttling for background tasks |
+| `EmailPrintService.swift` | Print formatting via WKWebView |
+| `HistorySyncService.swift` | Delta sync via Gmail History API with label-aware filtering |
+| `LabelSyncService.swift` | Label + category unread count syncing |
+| `MailCacheStore.swift` | File-based JSON cache for messages/threads, keyed by accountID |
+| `MessageFetchService.swift` | Pagination, cache management, generation tracking for stale detection |
+| `NetworkMonitor.swift` | `@MainActor` online/offline detection via NWPathMonitor |
+| `QuickReplyService.swift` | AI-powered quick reply suggestions with bounded cache |
+| `SignatureResolver.swift` | Signature HTML lookup per alias, signature replacement in body |
+| `SubscriptionsStore.swift` | Detects newsletter/subscription emails, manages unsubscribe state |
+| `SummaryService.swift` | AI-powered email summaries (delegates to `String.cleanedForAI` for preprocessing) |
+| `ThumbnailCache.swift` | Thumbnail generation + LRU caching with concurrency limiting |
+| `ToastManager.swift` | Toast notification state (show/dismiss, typed messages) |
+| `TrackerBlockerService.swift` | HTML sanitization, tracking pixel/domain blocking (O(1) domain lookup) |
+| `UndoActionManager.swift` | Undo toast state machine (schedule -> countdown -> confirm/undo) |
+| `UnsubscribeService.swift` | Parses List-Unsubscribe headers, RFC 8058 one-click POST |

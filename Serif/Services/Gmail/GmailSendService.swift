@@ -59,16 +59,10 @@ final class GmailSendService {
         inlineImages: [InlineImageAttachment] = [],
         accountID: String
     ) async throws -> GmailDraft {
-        let raw: String
-        if !inlineImages.isEmpty {
-            raw = buildRawMultipart(from: from, to: to, cc: cc, bcc: [],
-                                    subject: subject, body: body, isHTML: isHTML,
-                                    inlineImages: inlineImages, attachments: [])
-        } else {
-            raw = buildRaw(from: from, to: to, cc: cc, bcc: [], subject: subject, body: body, isHTML: isHTML)
-        }
-        let payload: [String: Any] = ["message": ["raw": raw]]
-        let encoded = try JSONSerialization.data(withJSONObject: payload)
+        let encoded = try buildDraftPayload(
+            from: from, to: to, cc: cc, subject: subject,
+            body: body, isHTML: isHTML, inlineImages: inlineImages
+        )
         return try await GmailAPIClient.shared.request(
             path: "/users/me/drafts",
             method: "POST", body: encoded, contentType: "application/json",
@@ -87,6 +81,26 @@ final class GmailSendService {
         inlineImages: [InlineImageAttachment] = [],
         accountID: String
     ) async throws -> GmailDraft {
+        let encoded = try buildDraftPayload(
+            from: from, to: to, cc: cc, subject: subject,
+            body: body, isHTML: isHTML, inlineImages: inlineImages
+        )
+        return try await GmailAPIClient.shared.request(
+            path: "/users/me/drafts/\(draftID)",
+            method: "PUT", body: encoded, contentType: "application/json",
+            accountID: accountID
+        )
+    }
+
+    private func buildDraftPayload(
+        from: String,
+        to: [String],
+        cc: [String],
+        subject: String,
+        body: String,
+        isHTML: Bool,
+        inlineImages: [InlineImageAttachment]
+    ) throws -> Data {
         let raw: String
         if !inlineImages.isEmpty {
             raw = buildRawMultipart(from: from, to: to, cc: cc, bcc: [],
@@ -96,12 +110,7 @@ final class GmailSendService {
             raw = buildRaw(from: from, to: to, cc: cc, bcc: [], subject: subject, body: body, isHTML: isHTML)
         }
         let payload: [String: Any] = ["message": ["raw": raw]]
-        let encoded = try JSONSerialization.data(withJSONObject: payload)
-        return try await GmailAPIClient.shared.request(
-            path: "/users/me/drafts/\(draftID)",
-            method: "PUT", body: encoded, contentType: "application/json",
-            accountID: accountID
-        )
+        return try JSONSerialization.data(withJSONObject: payload)
     }
 
     func deleteDraft(draftID: String, accountID: String) async throws {

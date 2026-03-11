@@ -19,6 +19,9 @@ final class ThumbnailCache: ObservableObject {
     private var activeFetches = 0
     private let maxConcurrentFetches = 4
 
+    /// Tracks in-flight fetch tasks so they can be cancelled on clearAll().
+    private var fetchTasks: [String: Task<Void, Never>] = [:]
+
     private let maxSize = CGSize(width: 300, height: 200)
 
     /// Directory for disk-cached thumbnails.
@@ -30,9 +33,12 @@ final class ThumbnailCache: ObservableObject {
     }()
 
     func clearAll() {
+        fetchTasks.values.forEach { $0.cancel() }
+        fetchTasks.removeAll()
         thumbnails.removeAll()
         loading.removeAll()
         pendingQueue.removeAll()
+        activeFetches = 0
         try? FileManager.default.removeItem(at: cacheDirectory)
         try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
@@ -77,10 +83,11 @@ final class ThumbnailCache: ObservableObject {
         let attId = attachment.attachmentId
         let fileType = Attachment.FileType(rawValue: attachment.fileType) ?? .document
 
-        Task {
+        let task = Task {
             defer {
+                fetchTasks.removeValue(forKey: id)
                 loading.remove(id)
-                activeFetches -= 1
+                activeFetches = max(0, activeFetches - 1)
                 dequeueNext()
             }
             do {
@@ -89,6 +96,7 @@ final class ThumbnailCache: ObservableObject {
                     attachmentID: attId,
                     accountID: accountID
                 )
+                guard !Task.isCancelled else { return }
                 let thumb: NSImage? = switch fileType {
                 case .image: Self.imageThumb(from: data, maxSize: maxSize)
                 case .pdf:   Self.pdfThumb(from: data, maxSize: maxSize)
@@ -102,6 +110,7 @@ final class ThumbnailCache: ObservableObject {
                 // Silently skip — will show icon fallback
             }
         }
+        fetchTasks[id] = task
     }
 
     private func dequeueNext() {
@@ -131,15 +140,20 @@ final class ThumbnailCache: ObservableObject {
 
     private nonisolated func saveToDisk(image: NSImage, id: String) {
         let safeName = id.replacingOccurrences(of: "/", with: "_")
-        let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
             .appendingPathComponent("com.serif.thumbnails", isDirectory: true)
-            .appendingPathComponent(safeName + ".jpg")
+        let url = cacheDir.appendingPathComponent(safeName + ".jpg")
         Task.detached(priority: .utility) {
             guard let tiff = image.tiffRepresentation,
                   let rep = NSBitmapImageRep(data: tiff),
                   let jpeg = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.75])
             else { return }
-            try? jpeg.write(to: url)
+            do {
+                try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+                try jpeg.write(to: url)
+            } catch {
+                // Directory may have been removed by concurrent clearAll(); skip silently
+            }
         }
     }
 

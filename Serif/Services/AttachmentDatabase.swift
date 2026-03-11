@@ -1,6 +1,12 @@
 import Foundation
 import SQLite3
 
+/// SQLITE_TRANSIENT tells SQLite to copy bound data immediately.
+/// Using `OpaquePointer(bitPattern:)` avoids the undefined behavior of
+/// `unsafeBitCast(-1, to: sqlite3_destructor_type.self)` which casts an
+/// Int to a function pointer.
+private let SQLITE_TRANSIENT = unsafeBitCast(OpaquePointer(bitPattern: -1), to: sqlite3_destructor_type.self)
+
 // MARK: - Error
 
 enum AttachmentDatabaseError: Error {
@@ -243,7 +249,7 @@ final class AttachmentDatabase: @unchecked Sendable {
             if let embedding {
                 let data = serializeEmbedding(embedding)
                 data.withUnsafeBytes { buf in
-                    sqlite3_bind_blob(stmt, 2, buf.baseAddress, Int32(data.count), unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+                    sqlite3_bind_blob(stmt, 2, buf.baseAddress, Int32(data.count), SQLITE_TRANSIENT)
                 }
             } else {
                 sqlite3_bind_null(stmt, 2)
@@ -384,10 +390,13 @@ final class AttachmentDatabase: @unchecked Sendable {
             bindText(stmt, 2, accountID)
             sqlite3_bind_int64(stmt, 3, Int64(limit))
 
+            let columnCount = sqlite3_column_count(stmt)
+            let scoreIndex = columnCount - 1  // score is always the last column in our SELECT
+
             var results: [(IndexedAttachment, Double)] = []
             while sqlite3_step(stmt) == SQLITE_ROW {
                 let att = readRow(stmt)
-                let score = sqlite3_column_double(stmt, 19)
+                let score = sqlite3_column_double(stmt, scoreIndex)
                 results.append((att, score))
             }
             return results
@@ -396,13 +405,14 @@ final class AttachmentDatabase: @unchecked Sendable {
 
     // MARK: - All embeddings (for semantic search)
 
-    func allEmbeddings(accountID: String) -> [(String, [Float])] {
+    func allEmbeddings(accountID: String, limit: Int = 1000) -> [(String, [Float])] {
         queue.sync {
-            let sql = "SELECT id, embedding FROM attachments WHERE embedding IS NOT NULL AND accountID = ?"
+            let sql = "SELECT id, embedding FROM attachments WHERE embedding IS NOT NULL AND accountID = ? ORDER BY emailDate DESC LIMIT ?"
             var stmt: OpaquePointer?
             guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
             defer { sqlite3_finalize(stmt) }
             bindText(stmt, 1, accountID)
+            sqlite3_bind_int64(stmt, 2, Int64(limit))
 
             var results: [(String, [Float])] = []
             while sqlite3_step(stmt) == SQLITE_ROW {

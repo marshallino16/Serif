@@ -3,23 +3,25 @@ import SwiftUI
 /// Drives the email list for a given account and folder.
 @MainActor
 final class MailboxViewModel: ObservableObject {
-    @Published var messages:      [GmailMessage] = []
+    @Published var messages:      [GmailMessage] = [] { didSet { recomputeEmails() } }
     @Published var isLoading      = false
     @Published var error:         String?
     @Published var nextPageToken: String?
-    @Published var labels:                [GmailLabel] = []
+    @Published var labels:                [GmailLabel] = [] { didSet { recomputeEmails() } }
     @Published var sendAsAliases:         [GmailSendAs] = []
     @Published var readIDs:               Set<String> = []
     @Published var categoryUnreadCounts:  [InboxCategory: Int] = [:]
     /// Set by `restoreOptimistically` so the UI can re-select the restored email.
     @Published var lastRestoredMessageID: String?
+    @Published private(set) var emails: [Email] = []
 
     var accountID: String
     var attachmentIndexer: AttachmentIndexer? {
         didSet { fetchService.attachmentIndexer = attachmentIndexer }
     }
-    private var currentLabelIDs: [String] = ["INBOX"]
+    private var currentLabelIDs: [String] = [GmailSystemLabel.inbox]
     private var currentQuery:    String?
+    private var suppressRecompute = false
 
     // MARK: - Services
 
@@ -45,16 +47,18 @@ final class MailboxViewModel: ObservableObject {
         }
     }
 
-    // MARK: - GmailMessage → Email (computed)
+    // MARK: - GmailMessage → Email (cached)
 
-    var emails: [Email] {
-        // Group messages by threadId, keep the most recent per thread
+    /// Recomputes the `emails` array from `messages` and `labels`.
+    /// Called automatically via `didSet` on both properties.
+    private func recomputeEmails() {
+        guard !suppressRecompute else { return }
         let grouped = Dictionary(grouping: messages) { $0.threadId }
         let representatives: [(GmailMessage, Int)] = grouped.map { (_, msgs) in
             let sorted = msgs.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
             return (sorted[0], msgs.count)
         }
-        return representatives
+        emails = representatives
             .sorted { ($0.0.date ?? .distantPast) > ($1.0.date ?? .distantPast) }
             .map { (msg, count) in
                 var email = makeEmail(from: msg)
@@ -211,18 +215,35 @@ final class MailboxViewModel: ObservableObject {
         guard message.isUnread && !readIDs.contains(message.id) else { return }
         readIDs.insert(message.id)
         if let idx = messages.firstIndex(where: { $0.id == message.id }) {
-            messages[idx].labelIds?.removeAll { $0 == "UNREAD" }
+            suppressRecompute = true
+            messages[idx].labelIds?.removeAll { $0 == GmailSystemLabel.unread }
+            suppressRecompute = false
             fetchService.messageCache[message.id] = messages[idx]
+            updateEmailInPlace(message.id) { $0.isRead = true }
         }
         try? await api.markAsRead(id: message.id, accountID: accountID)
     }
 
+    /// Updates local state for messages already marked as read by another component (e.g. EmailDetailVM).
+    func applyReadLocally(_ messageIDs: [String]) {
+        for id in messageIDs {
+            readIDs.insert(id)
+            if let idx = messages.firstIndex(where: { $0.id == id }) {
+                messages[idx].labelIds?.removeAll { $0 == GmailSystemLabel.unread }
+                fetchService.messageCache[id] = messages[idx]
+            }
+        }
+    }
+
     func markAsUnread(_ messageID: String) async {
         if let idx = messages.firstIndex(where: { $0.id == messageID }) {
-            if messages[idx].labelIds?.contains("UNREAD") == false {
-                messages[idx].labelIds?.append("UNREAD")
+            suppressRecompute = true
+            if messages[idx].labelIds?.contains(GmailSystemLabel.unread) == false {
+                messages[idx].labelIds?.append(GmailSystemLabel.unread)
             }
+            suppressRecompute = false
             fetchService.messageCache[messageID] = messages[idx]
+            updateEmailInPlace(messageID) { $0.isRead = false }
         }
         readIDs.remove(messageID)
         do {
@@ -232,24 +253,30 @@ final class MailboxViewModel: ObservableObject {
 
     func toggleStar(_ messageID: String, isStarred: Bool) async {
         if let idx = messages.firstIndex(where: { $0.id == messageID }) {
+            suppressRecompute = true
             if isStarred {
-                messages[idx].labelIds?.removeAll { $0 == "STARRED" }
+                messages[idx].labelIds?.removeAll { $0 == GmailSystemLabel.starred }
             } else {
-                messages[idx].labelIds?.append("STARRED")
+                messages[idx].labelIds?.append(GmailSystemLabel.starred)
             }
+            suppressRecompute = false
             fetchService.messageCache[messageID] = messages[idx]
+            updateEmailInPlace(messageID) { $0.isStarred = !isStarred }
         }
         do {
             try await api.setStarred(!isStarred, id: messageID, accountID: accountID)
         } catch {
             // Revert on failure
             if let idx = messages.firstIndex(where: { $0.id == messageID }) {
+                suppressRecompute = true
                 if isStarred {
-                    messages[idx].labelIds?.append("STARRED")
+                    messages[idx].labelIds?.append(GmailSystemLabel.starred)
                 } else {
-                    messages[idx].labelIds?.removeAll { $0 == "STARRED" }
+                    messages[idx].labelIds?.removeAll { $0 == GmailSystemLabel.starred }
                 }
+                suppressRecompute = false
                 fetchService.messageCache[messageID] = messages[idx]
+                updateEmailInPlace(messageID) { $0.isStarred = isStarred }
             }
             self.error = error.localizedDescription
         }
@@ -258,20 +285,14 @@ final class MailboxViewModel: ObservableObject {
     func trash(_ messageID: String) async {
         do {
             try await api.trashMessage(id: messageID, accountID: accountID)
-            messages.removeAll { $0.id == messageID }   // no-op if already removed optimistically
-            fetchService.messageCache[messageID] = nil
-            fetchService.allCachedMessages.removeAll { $0.id == messageID }
-            saveCacheToDisk()
+            removeFromLocalState(messageID)
         } catch { self.error = error.localizedDescription }
     }
 
     func archive(_ messageID: String) async {
         do {
             try await api.archiveMessage(id: messageID, accountID: accountID)
-            messages.removeAll { $0.id == messageID }   // no-op if already removed optimistically
-            fetchService.messageCache[messageID] = nil
-            fetchService.allCachedMessages.removeAll { $0.id == messageID }
-            saveCacheToDisk()
+            removeFromLocalState(messageID)
         } catch { self.error = error.localizedDescription }
     }
 
@@ -307,6 +328,7 @@ final class MailboxViewModel: ObservableObject {
         let backup = messages
         let cacheBackup = fetchService.messageCache
         let cachedBackup = fetchService.allCachedMessages
+        let offsetBackup = fetchService.localOffset
         messages.removeAll()
         fetchService.messageCache.removeAll()
         fetchService.allCachedMessages.removeAll()
@@ -314,10 +336,22 @@ final class MailboxViewModel: ObservableObject {
         saveCacheToDisk()
         do {
             try await api.emptyTrash(accountID: accountID)
+        } catch let error as GmailAPIError {
+            if case .partialFailure = error {
+                self.error = error.localizedDescription  // inform but don't revert
+            } else {
+                messages = backup
+                fetchService.messageCache = cacheBackup
+                fetchService.allCachedMessages = cachedBackup
+                fetchService.localOffset = offsetBackup
+                saveCacheToDisk()
+                self.error = error.localizedDescription
+            }
         } catch {
             messages = backup
             fetchService.messageCache = cacheBackup
             fetchService.allCachedMessages = cachedBackup
+            fetchService.localOffset = offsetBackup
             saveCacheToDisk()
             self.error = error.localizedDescription
         }
@@ -327,6 +361,7 @@ final class MailboxViewModel: ObservableObject {
         let backup = messages
         let cacheBackup = fetchService.messageCache
         let cachedBackup = fetchService.allCachedMessages
+        let offsetBackup = fetchService.localOffset
         messages.removeAll()
         fetchService.messageCache.removeAll()
         fetchService.allCachedMessages.removeAll()
@@ -334,10 +369,22 @@ final class MailboxViewModel: ObservableObject {
         saveCacheToDisk()
         do {
             try await api.emptySpam(accountID: accountID)
+        } catch let error as GmailAPIError {
+            if case .partialFailure = error {
+                self.error = error.localizedDescription  // inform but don't revert
+            } else {
+                messages = backup
+                fetchService.messageCache = cacheBackup
+                fetchService.allCachedMessages = cachedBackup
+                fetchService.localOffset = offsetBackup
+                saveCacheToDisk()
+                self.error = error.localizedDescription
+            }
         } catch {
             messages = backup
             fetchService.messageCache = cacheBackup
             fetchService.allCachedMessages = cachedBackup
+            fetchService.localOffset = offsetBackup
             saveCacheToDisk()
             self.error = error.localizedDescription
         }
@@ -346,47 +393,39 @@ final class MailboxViewModel: ObservableObject {
     func moveToInbox(_ messageID: String) async {
         do {
             try await api.modifyLabels(
-                id: messageID, add: ["INBOX"], remove: [], accountID: accountID
+                id: messageID, add: [GmailSystemLabel.inbox], remove: [], accountID: accountID
             )
-            messages.removeAll { $0.id == messageID }
-            fetchService.messageCache[messageID] = nil
+            removeFromLocalState(messageID)
         } catch { self.error = error.localizedDescription }
     }
 
     func untrash(_ messageID: String) async {
         do {
             try await api.untrashMessage(id: messageID, accountID: accountID)
-            try await api.modifyLabels(
-                id: messageID, add: ["INBOX"], remove: [], accountID: accountID
-            )
-            messages.removeAll { $0.id == messageID }
-            fetchService.messageCache[messageID] = nil
+            removeFromLocalState(messageID)
         } catch { self.error = error.localizedDescription }
     }
 
     func deletePermanently(_ messageID: String) async {
         do {
             try await api.deleteMessagePermanently(id: messageID, accountID: accountID)
-            messages.removeAll { $0.id == messageID }
-            fetchService.messageCache[messageID] = nil
+            removeFromLocalState(messageID)
         } catch { self.error = error.localizedDescription }
     }
 
     func unspam(_ messageID: String) async {
         do {
             try await api.modifyLabels(
-                id: messageID, add: ["INBOX"], remove: ["SPAM"], accountID: accountID
+                id: messageID, add: [GmailSystemLabel.inbox], remove: [GmailSystemLabel.spam], accountID: accountID
             )
-            messages.removeAll { $0.id == messageID }
-            fetchService.messageCache[messageID] = nil
+            removeFromLocalState(messageID)
         } catch { self.error = error.localizedDescription }
     }
 
     func spam(_ messageID: String) async {
         do {
             try await api.spamMessage(id: messageID, accountID: accountID)
-            messages.removeAll { $0.id == messageID }
-            fetchService.messageCache[messageID] = nil
+            removeFromLocalState(messageID)
         } catch { self.error = error.localizedDescription }
     }
 
@@ -551,25 +590,27 @@ final class MailboxViewModel: ObservableObject {
                 }
 
                 // Prune stale messages: locally cached but absent from the API's first page.
-                // Verify each suspect with a lightweight API call to distinguish
-                // "deleted/moved" from "pushed to next page".
+                // Batch-verify suspects to distinguish "deleted/moved" from "pushed to next page".
                 if !refs.isEmpty {
                     let serverIDs = Set(refs.map(\.id))
                     let suspectIDs = messages.filter { !serverIDs.contains($0.id) }.map(\.id)
                     if !suspectIDs.isEmpty {
+                        guard !fetchService.isStale(generation: generation) else { return }
                         var staleIDs: [String] = []
                         let folderLabels = Set(currentLabelIDs)
+                        // Batch-verify suspects concurrently (tolerates individual 404s)
+                        let verified = await fetchService.verifyMessages(
+                            ids: suspectIDs, accountID: accountID, api: api
+                        )
                         for id in suspectIDs {
-                            guard !fetchService.isStale(generation: generation) else { break }
-                            do {
-                                let msg = try await api.getMessage(id: id, accountID: accountID, format: "minimal")
+                            if let msg = verified[id] {
                                 // Exists but moved to a different folder
                                 if !folderLabels.isEmpty,
                                    let msgLabels = msg.labelIds,
                                    folderLabels.isDisjoint(with: Set(msgLabels)) {
                                     staleIDs.append(id)
                                 }
-                            } catch {
+                            } else {
                                 staleIDs.append(id) // 404 → deleted on Gmail
                             }
                         }
@@ -671,6 +712,19 @@ final class MailboxViewModel: ObservableObject {
 
         if let err = result.error { error = err }
         return true
+    }
+
+    private func removeFromLocalState(_ messageID: String, persistCache: Bool = true) {
+        messages.removeAll { $0.id == messageID }
+        fetchService.messageCache[messageID] = nil
+        fetchService.allCachedMessages.removeAll { $0.id == messageID }
+        if persistCache { saveCacheToDisk() }
+    }
+
+    private func updateEmailInPlace(_ messageID: String, update: (inout Email) -> Void) {
+        if let idx = emails.firstIndex(where: { $0.gmailMessageID == messageID }) {
+            update(&emails[idx])
+        }
     }
 
     private func saveCacheToDisk() {

@@ -73,8 +73,6 @@ final class AvatarCache {
     }
 
     private func cacheKey(for urlString: String) -> String {
-        var hash: UInt64 = 5381
-        for byte in urlString.utf8 { hash = (hash &* 33) &+ UInt64(byte) }
-        return "\(hash)"
+        String(stableHash(urlString))
     }
 }

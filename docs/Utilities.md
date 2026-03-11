@@ -1,6 +1,6 @@
 # Utilities
 
-Pure helper functions and extensions. Zero state, zero side effects.
+Pure helper functions, extensions, and constants. Zero state, zero side effects.
 
 ## Guidelines
 
@@ -13,12 +13,10 @@ Pure helper functions and extensions. Zero state, zero side effects.
 
 | File | Role |
 |------|------|
+| `Constants.swift` | Shared constants: `UserDefaultsKey` enum, `GmailSystemLabel` enum |
 | `DateFormatting.swift` | Date display helpers (relative time, formatted dates) |
 | `FileUtils.swift` | File system helpers (temp dirs, file size formatting) |
 | `GmailDataTransformer.swift` | Transforms raw Gmail data (MIME parsing, header extraction, deterministic UUID) |
-| `InlineImageProcessor.swift` | Extracts inline data: images from HTML, converts to CID attachments |
-| `SignatureResolver.swift` | Signature HTML lookup per alias, signature replacement in body |
-| `ComposeModeInitializer.swift` | Initializes compose fields based on mode (reply, forward, new) |
 | `HTMLTemplate.swift` | HTML email rendering templates |
-| `StringExtensions.swift` | String helpers (HTML stripping, truncation) |
-| `URLExtensions.swift` | URL helpers (file type detection, SF Symbol icons, email compatibility) |
+| `InlineImageProcessor.swift` | Extracts inline data: images from HTML, converts to CID attachments |
+| `StringExtensions.swift` | String/Data helpers: HTML stripping, `cleanedForAI`, `stableHash`, `Data(base64URLEncoded:)` |

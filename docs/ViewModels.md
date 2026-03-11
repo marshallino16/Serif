@@ -18,11 +18,13 @@ State management layer between Services and Views. Each ViewModel is an `@MainAc
 
 | File | Role |
 |------|------|
+| `AppCoordinator.swift` | Navigation state (folder, selection, compose mode, pending draft selection). Parallelised startup loading via `async let`. |
 | `AuthViewModel.swift` | OAuth flow, account switching, sign-in/out state |
-| `MailboxViewModel.swift` | Email list, pagination, delta sync, stale pruning, cache orchestration |
-| `EmailDetailViewModel.swift` | Thread loading with disk cache, attachment download |
+| `AttachmentStore.swift` | Attachment vault state, exclusion rules, progress tracking |
 | `ComposeViewModel.swift` | Draft management, send, auto-save, inline images, Bcc |
-| `AppCoordinator.swift` | Navigation state (folder, selection, compose mode, pending draft selection) |
-| `EmailActionCoordinator.swift` | Email mutations (archive, delete, star, labels) with draft-aware delete |
-| `MessageFetchService.swift` | Pagination, cache management, generation tracking for stale detection |
-| `LabelSyncService.swift` | Label + category unread count syncing |
+| `ComposeModeInitializer.swift` | Initializes compose fields based on mode (reply, forward, new) |
+| `EmailActionCoordinator.swift` | Email mutations (archive, delete, star, labels) with bulk-action concurrency via `TaskGroup` |
+| `EmailDetailViewModel.swift` | Thread loading with disk cache, attachment download |
+| `MailboxViewModel.swift` | Email list, pagination, delta sync, stale pruning, cache orchestration. Targeted in-place updates for single-message mutations. |
+| `PanelCoordinator.swift` | Side panel state (compose, settings, shortcuts, browser) |
+| `UpdaterViewModel.swift` | Sparkle auto-update state |

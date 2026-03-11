@@ -11,7 +11,7 @@ final class GmailMessageService {
     /// Lists message refs for a given label and optional search query.
     func listMessages(
         accountID: String,
-        labelIDs: [String] = ["INBOX"],
+        labelIDs: [String] = [GmailSystemLabel.inbox],
         query: String? = nil,
         pageToken: String? = nil,
         maxResults: Int = 50
@@ -86,26 +86,15 @@ final class GmailMessageService {
     // MARK: - Mutations
 
     func markAsRead(id: String, accountID: String) async throws {
-        struct ModifyRequest: Encodable { let removeLabelIds: [String] }
-        let body = try JSONEncoder().encode(ModifyRequest(removeLabelIds: ["UNREAD"]))
-        let _: GmailMessage = try await client.request(
-            path: "/users/me/messages/\(id)/modify",
-            method: "POST", body: body, contentType: "application/json",
-            accountID: accountID
-        )
+        try await modifyLabels(id: id, add: [], remove: [GmailSystemLabel.unread], accountID: accountID)
     }
 
     func setStarred(_ starred: Bool, id: String, accountID: String) async throws {
-        struct ModifyRequest: Encodable { let addLabelIds: [String]; let removeLabelIds: [String] }
-        let req = starred
-            ? ModifyRequest(addLabelIds: ["STARRED"], removeLabelIds: [])
-            : ModifyRequest(addLabelIds: [], removeLabelIds: ["STARRED"])
-        let body = try JSONEncoder().encode(req)
-        let _: GmailMessage = try await client.request(
-            path: "/users/me/messages/\(id)/modify",
-            method: "POST", body: body, contentType: "application/json",
-            accountID: accountID
-        )
+        if starred {
+            try await modifyLabels(id: id, add: [GmailSystemLabel.starred], remove: [], accountID: accountID)
+        } else {
+            try await modifyLabels(id: id, add: [], remove: [GmailSystemLabel.starred], accountID: accountID)
+        }
     }
 
     func trashMessage(id: String, accountID: String) async throws {
@@ -117,23 +106,11 @@ final class GmailMessageService {
     }
 
     func archiveMessage(id: String, accountID: String) async throws {
-        struct ModifyRequest: Encodable { let removeLabelIds: [String] }
-        let body = try JSONEncoder().encode(ModifyRequest(removeLabelIds: ["INBOX"]))
-        let _: GmailMessage = try await client.request(
-            path: "/users/me/messages/\(id)/modify",
-            method: "POST", body: body, contentType: "application/json",
-            accountID: accountID
-        )
+        try await modifyLabels(id: id, add: [], remove: [GmailSystemLabel.inbox], accountID: accountID)
     }
 
     func markAsUnread(id: String, accountID: String) async throws {
-        struct ModifyRequest: Encodable { let addLabelIds: [String] }
-        let body = try JSONEncoder().encode(ModifyRequest(addLabelIds: ["UNREAD"]))
-        let _: GmailMessage = try await client.request(
-            path: "/users/me/messages/\(id)/modify",
-            method: "POST", body: body, contentType: "application/json",
-            accountID: accountID
-        )
+        try await modifyLabels(id: id, add: [GmailSystemLabel.unread], remove: [], accountID: accountID)
     }
 
     func untrashMessage(id: String, accountID: String) async throws {
@@ -153,13 +130,7 @@ final class GmailMessageService {
     }
 
     func spamMessage(id: String, accountID: String) async throws {
-        struct ModifyRequest: Encodable { let addLabelIds: [String]; let removeLabelIds: [String] }
-        let body = try JSONEncoder().encode(ModifyRequest(addLabelIds: ["SPAM"], removeLabelIds: ["INBOX"]))
-        let _: GmailMessage = try await client.request(
-            path: "/users/me/messages/\(id)/modify",
-            method: "POST", body: body, contentType: "application/json",
-            accountID: accountID
-        )
+        try await modifyLabels(id: id, add: [GmailSystemLabel.spam], remove: [GmailSystemLabel.inbox], accountID: accountID)
     }
 
     @discardableResult
@@ -174,43 +145,24 @@ final class GmailMessageService {
     }
 
     /// Permanently deletes all messages in Trash.
+    /// Continues through all batches even if some fail, then reports partial failure.
     func emptyTrash(accountID: String) async throws {
-        var pageToken: String? = nil
-        var allIDs: [String] = []
-        repeat {
-            let response = try await listMessages(
-                accountID: accountID,
-                labelIDs: ["TRASH"],
-                pageToken: pageToken,
-                maxResults: 100
-            )
-            allIDs.append(contentsOf: response.messages?.map(\.id) ?? [])
-            pageToken = response.nextPageToken
-        } while pageToken != nil
-
-        guard !allIDs.isEmpty else { return }
-
-        // Batch delete in groups of 100 (API limit)
-        for batch in stride(from: 0, to: allIDs.count, by: 100) {
-            let ids = Array(allIDs[batch..<min(batch + 100, allIDs.count)])
-            struct BatchDeleteRequest: Encodable { let ids: [String] }
-            let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
-            _ = try await client.rawRequest(
-                path: "/users/me/messages/batchDelete",
-                method: "POST", body: body, contentType: "application/json",
-                accountID: accountID
-            )
-        }
+        try await emptyFolder(labelID: GmailSystemLabel.trash, accountID: accountID)
     }
 
     /// Permanently deletes all messages in Spam.
+    /// Continues through all batches even if some fail, then reports partial failure.
     func emptySpam(accountID: String) async throws {
+        try await emptyFolder(labelID: GmailSystemLabel.spam, accountID: accountID)
+    }
+
+    private func emptyFolder(labelID: String, accountID: String) async throws {
         var pageToken: String? = nil
         var allIDs: [String] = []
         repeat {
             let response = try await listMessages(
                 accountID: accountID,
-                labelIDs: ["SPAM"],
+                labelIDs: [labelID],
                 pageToken: pageToken,
                 maxResults: 100
             )
@@ -220,15 +172,24 @@ final class GmailMessageService {
 
         guard !allIDs.isEmpty else { return }
 
+        // Batch delete in groups of 100 (API limit), accumulating failures
+        var failedIDs: [String] = []
         for batch in stride(from: 0, to: allIDs.count, by: 100) {
             let ids = Array(allIDs[batch..<min(batch + 100, allIDs.count)])
-            struct BatchDeleteRequest: Encodable { let ids: [String] }
-            let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
-            _ = try await client.rawRequest(
-                path: "/users/me/messages/batchDelete",
-                method: "POST", body: body, contentType: "application/json",
-                accountID: accountID
-            )
+            do {
+                struct BatchDeleteRequest: Encodable { let ids: [String] }
+                let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
+                _ = try await client.rawRequest(
+                    path: "/users/me/messages/batchDelete",
+                    method: "POST", body: body, contentType: "application/json",
+                    accountID: accountID
+                )
+            } catch {
+                failedIDs.append(contentsOf: ids)
+            }
+        }
+        if !failedIDs.isEmpty {
+            throw GmailAPIError.partialFailure(failedCount: failedIDs.count)
         }
     }
 
@@ -240,11 +201,9 @@ final class GmailMessageService {
             path: "/users/me/messages/\(messageID)/attachments/\(attachmentID)",
             accountID: accountID
         )
-        var base64 = response.data
-            .replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-        while base64.count % 4 != 0 { base64 += "=" }
-        guard let data = Data(base64Encoded: base64) else { throw GmailAPIError.decodingError(URLError(.badServerResponse)) }
+        guard let data = Data(base64URLEncoded: response.data) else {
+            throw GmailAPIError.decodingError(URLError(.badServerResponse))
+        }
         return data
     }
 }

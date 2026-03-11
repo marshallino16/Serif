@@ -115,26 +115,19 @@ final class EmailActionCoordinator: ObservableObject {
     }
 
     func emptyTrash(accountID: String, onConfirm: @escaping (Int) -> Void) {
-        guard !accountID.isEmpty else { return }
-        Task {
-            var count: Int
-            do {
-                let label = try await GmailLabelService.shared.getLabel(id: "TRASH", accountID: accountID)
-                count = label.messagesTotal ?? 0
-            } catch {
-                count = mailboxViewModel.emails.count
-            }
-            guard count > 0 else { return }
-            onConfirm(count)
-        }
+        confirmEmptyFolder(labelID: GmailSystemLabel.trash, accountID: accountID, onConfirm: onConfirm)
     }
 
     func emptySpam(accountID: String, onConfirm: @escaping (Int) -> Void) {
+        confirmEmptyFolder(labelID: GmailSystemLabel.spam, accountID: accountID, onConfirm: onConfirm)
+    }
+
+    private func confirmEmptyFolder(labelID: String, accountID: String, onConfirm: @escaping (Int) -> Void) {
         guard !accountID.isEmpty else { return }
         Task {
             var count: Int
             do {
-                let label = try await GmailLabelService.shared.getLabel(id: "SPAM", accountID: accountID)
+                let label = try await GmailLabelService.shared.getLabel(id: labelID, accountID: accountID)
                 count = label.messagesTotal ?? 0
             } catch {
                 count = mailboxViewModel.emails.count
@@ -153,7 +146,7 @@ final class EmailActionCoordinator: ObservableObject {
         onClear()
         UndoActionManager.shared.schedule(
             label: "Archived \(msgIDs.count) emails",
-            onConfirm: { Task { for id in msgIDs { await vm.archive(id) } } },
+            onConfirm: { Task { await withTaskGroup(of: Void.self) { group in for id in msgIDs { group.addTask { await vm.archive(id) } } } } },
             onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
         )
     }
@@ -165,7 +158,7 @@ final class EmailActionCoordinator: ObservableObject {
         onClear()
         UndoActionManager.shared.schedule(
             label: "Trashed \(msgIDs.count) emails",
-            onConfirm: { Task { for id in msgIDs { await vm.trash(id) } } },
+            onConfirm: { Task { await withTaskGroup(of: Void.self) { group in for id in msgIDs { group.addTask { await vm.trash(id) } } } } },
             onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
         )
     }
@@ -173,7 +166,8 @@ final class EmailActionCoordinator: ObservableObject {
     func bulkMarkUnread(_ emails: [Email], onClear: () -> Void) {
         let msgIDs = emails.compactMap(\.gmailMessageID)
         onClear()
-        Task { for id in msgIDs { await mailboxViewModel.markAsUnread(id) } }
+        let vm = mailboxViewModel
+        Task { await withTaskGroup(of: Void.self) { group in for id in msgIDs { group.addTask { await vm.markAsUnread(id) } } } }
     }
 
     func bulkMarkRead(_ emails: [Email], onClear: () -> Void) {
@@ -182,7 +176,8 @@ final class EmailActionCoordinator: ObservableObject {
             return mailboxViewModel.messages.first { $0.id == msgID }
         }
         onClear()
-        Task { for msg in msgs { await mailboxViewModel.markAsRead(msg) } }
+        let vm = mailboxViewModel
+        Task { await withTaskGroup(of: Void.self) { group in for msg in msgs { group.addTask { await vm.markAsRead(msg) } } } }
     }
 
     func bulkMoveToInbox(_ emails: [Email], selectedFolder: Folder, onClear: () -> Void) {
@@ -193,13 +188,13 @@ final class EmailActionCoordinator: ObservableObject {
         if selectedFolder == .trash {
             UndoActionManager.shared.schedule(
                 label: "Moved \(msgIDs.count) to Inbox",
-                onConfirm: { Task { for id in msgIDs { await vm.untrash(id) } } },
+                onConfirm: { Task { await withTaskGroup(of: Void.self) { group in for id in msgIDs { group.addTask { await vm.untrash(id) } } } } },
                 onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
             )
         } else {
             UndoActionManager.shared.schedule(
                 label: "Moved \(msgIDs.count) to Inbox",
-                onConfirm: { Task { for id in msgIDs { await vm.moveToInbox(id) } } },
+                onConfirm: { Task { await withTaskGroup(of: Void.self) { group in for id in msgIDs { group.addTask { await vm.moveToInbox(id) } } } } },
                 onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
             )
         }

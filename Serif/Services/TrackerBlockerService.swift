@@ -193,8 +193,13 @@ final class TrackerBlockerService {
     }
 
     private func isTrackerDomain(_ host: String) -> (isTracker: Bool, serviceName: String?) {
+        // O(1) exact match first
+        if let name = Self.trackerDomainMap[host] {
+            return (true, name)
+        }
+        // Subdomain check only on miss
         for (domain, name) in Self.trackerDomainMap {
-            if host == domain || host.hasSuffix("." + domain) {
+            if host.hasSuffix("." + domain) {
                 return (true, name)
             }
         }
