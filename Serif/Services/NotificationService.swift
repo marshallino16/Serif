@@ -7,7 +7,8 @@ final class NotificationService: NSObject, ObservableObject {
     static let shared = NotificationService()
 
     var onNotificationTapped: ((String, String) -> Void)?  // (gmailMessageID, accountID)
-    var isUserViewingInbox = false
+    /// The account ID whose inbox is currently being viewed (nil if not on inbox).
+    var viewingInboxAccountID: String?
 
     private let center = UNUserNotificationCenter.current()
     private let nonPrimaryLabels: Set<String> = [
@@ -45,7 +46,7 @@ final class NotificationService: NSObject, ObservableObject {
         }
 
         guard !eligible.isEmpty else { return }
-        if NSApplication.shared.isActive && isUserViewingInbox { return }
+        if NSApplication.shared.isActive && viewingInboxAccountID == accountEmail { return }
 
         let isMultiAccount = AccountStore.shared.accounts.count > 1
         let accountName = isMultiAccount

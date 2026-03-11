@@ -47,6 +47,10 @@ final class IMAPIdleConnection: @unchecked Sendable {
             let tlsOptions = NWProtocolTLS.Options()
             let tcpOptions = NWProtocolTCP.Options()
             tcpOptions.connectionTimeout = 30
+            tcpOptions.enableKeepalive = true
+            tcpOptions.keepaliveIdle = 300      // First probe after 5 min idle
+            tcpOptions.keepaliveInterval = 60   // Probe every 60s after that
+            tcpOptions.keepaliveCount = 3       // 3 failed probes → dead
             let params = NWParameters(tls: tlsOptions, tcp: tcpOptions)
 
             let conn = NWConnection(host: "imap.gmail.com", port: 993, using: params)
@@ -59,6 +63,10 @@ final class IMAPIdleConnection: @unchecked Sendable {
                     log.info("[\(self.accountID)] TLS connection established")
                     self.state = .greeting
                     self.receiveLoop()
+                case .waiting(let error):
+                    log.warning("[\(self.accountID)] Connection waiting: \(error.localizedDescription)")
+                    // Network lost — cancel and let the service handle reconnection
+                    self.handleDisconnect()
                 case .failed(let error):
                     log.error("[\(self.accountID)] Connection failed: \(error.localizedDescription)")
                     self.handleDisconnect()
@@ -158,7 +166,11 @@ final class IMAPIdleConnection: @unchecked Sendable {
             // Ignore + continuation (IDLE confirmed) and other untagged responses
 
         case .doneWaiting:
-            if line.hasPrefix("\(idleTag) OK") {
+            if line.hasPrefix("* BYE") {
+                log.warning("[\(self.accountID)] Server sent BYE during DONE wait")
+                if newMailPending { onNewMail?() }
+                handleDisconnect()
+            } else if line.hasPrefix("\(idleTag) OK") {
                 if newMailPending {
                     log.info("[\(self.accountID)] IDLE completed with new mail, notifying")
                     onNewMail?()

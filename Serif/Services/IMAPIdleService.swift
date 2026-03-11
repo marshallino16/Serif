@@ -18,6 +18,7 @@ final class IMAPIdleService {
     private var retryTimers: [String: Timer] = [:]
     private var monitoredAccountIDs: Set<String> = []
     private var cancellables: Set<AnyCancellable> = []
+    private var appNapActivity: NSObjectProtocol?
 
     private init() {
         // Reconnect all when network is restored
@@ -28,6 +29,17 @@ final class IMAPIdleService {
             .sink { [weak self] _ in
                 guard let self else { return }
                 self.reconnectAll()
+            }
+            .store(in: &cancellables)
+
+        // Force reconnect after system wake (connections are dead after sleep)
+        NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
+            .receive(on: DispatchQueue.main)
+            .debounce(for: .seconds(2), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                log.info("System woke — forcing reconnect")
+                self.forceReconnectAll()
             }
             .store(in: &cancellables)
 
@@ -55,6 +67,7 @@ final class IMAPIdleService {
         }
 
         monitoredAccountIDs = newIDs
+        updateAppNapAssertion()
     }
 
     func stopMonitoring(for accountID: String) {
@@ -70,6 +83,7 @@ final class IMAPIdleService {
         for id in Array(connections.keys) {
             stopMonitoring(for: id)
         }
+        updateAppNapAssertion()
     }
 
     // MARK: - Private
@@ -134,6 +148,31 @@ final class IMAPIdleService {
             if let account = AccountStore.shared.accounts.first(where: { $0.id == accountID }) {
                 startConnection(for: account)
             }
+        }
+    }
+
+    /// Tears down ALL connections and reconnects from scratch (used after system wake).
+    private func forceReconnectAll() {
+        for (id, conn) in connections {
+            conn.disconnect()
+            connections[id] = nil
+        }
+        retryDelays.removeAll()
+        for (id, timer) in retryTimers { timer.invalidate(); retryTimers[id] = nil }
+        reconnectAll()
+    }
+
+    // MARK: - App Nap
+
+    private func updateAppNapAssertion() {
+        if !monitoredAccountIDs.isEmpty && appNapActivity == nil {
+            appNapActivity = ProcessInfo.processInfo.beginActivity(
+                options: .userInitiatedAllowingIdleSystemSleep,
+                reason: "Monitoring inbox via IMAP IDLE"
+            )
+        } else if monitoredAccountIDs.isEmpty, let activity = appNapActivity {
+            ProcessInfo.processInfo.endActivity(activity)
+            appNapActivity = nil
         }
     }
 

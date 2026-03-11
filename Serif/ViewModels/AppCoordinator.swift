@@ -272,7 +272,7 @@ class AppCoordinator: ObservableObject {
         if let account = authViewModel.primaryAccount {
             selectedAccountID = account.id
             mailboxViewModel.accountID = account.id
-            NotificationService.shared.isUserViewingInbox = true
+            NotificationService.shared.viewingInboxAccountID = account.id
             SubscriptionsStore.shared.accountID = account.id
             attachmentStore.accountID = account.id
             loadSignatures(for: account.id)
@@ -305,7 +305,7 @@ class AppCoordinator: ObservableObject {
     }
 
     func handleFolderChange(_ folder: Folder) {
-        NotificationService.shared.isUserViewingInbox = (folder == .inbox)
+        NotificationService.shared.viewingInboxAccountID = (folder == .inbox) ? accountID : nil
         if let pending = pendingDraftSelection {
             pendingDraftSelection = nil
             selectedEmail = pending
@@ -338,7 +338,7 @@ class AppCoordinator: ObservableObject {
     }
 
     func handleCategoryChange(_ category: InboxCategory?) {
-        NotificationService.shared.isUserViewingInbox = (selectedFolder == .inbox)
+        NotificationService.shared.viewingInboxAccountID = (selectedFolder == .inbox) ? accountID : nil
         selectedEmail = nil
         selectedEmailIDs = []
         searchResetTrigger += 1
@@ -353,7 +353,7 @@ class AppCoordinator: ObservableObject {
         let oldID = mailboxViewModel.accountID
         if !oldID.isEmpty { saveSignatures(for: oldID) }
         loadSignatures(for: id)
-        NotificationService.shared.isUserViewingInbox = false
+        NotificationService.shared.viewingInboxAccountID = nil
         IMAPIdleService.shared.startMonitoring(accounts: authViewModel.accounts)
         selectedFolder = .inbox
         selectedInboxCategory = .all

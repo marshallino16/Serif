@@ -1,4 +1,5 @@
 import SwiftUI
+import ServiceManagement
 
 // MARK: - Behavior Settings Card
 
@@ -57,6 +58,7 @@ struct BehaviorSettingsCard: View {
 struct NotificationSettingsCard: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("notificationSoundEnabled") private var soundEnabled = true
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -86,6 +88,34 @@ struct NotificationSettingsCard: View {
                     .toggleStyle(.switch)
                     .labelsHidden()
                     .disabled(!notificationsEnabled)
+            }
+
+            Divider().background(theme.divider)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Launch at login")
+                        .font(.serifCaption)
+                        .foregroundColor(theme.textSecondary)
+                    Text("Keep Serif running for real-time notifications")
+                        .font(.serifSmall)
+                        .foregroundColor(theme.textTertiary)
+                }
+                Spacer()
+                Toggle("", isOn: $launchAtLogin)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .onChange(of: launchAtLogin) { enabled in
+                        do {
+                            if enabled {
+                                try SMAppService.mainApp.register()
+                            } else {
+                                try SMAppService.mainApp.unregister()
+                            }
+                        } catch {
+                            launchAtLogin = SMAppService.mainApp.status == .enabled
+                        }
+                    }
             }
         }
         .cardStyle()
