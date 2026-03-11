@@ -102,9 +102,14 @@ enum GmailDataTransformer {
         return "https://gravatar.com/avatar/\(hex)?s=80&d=404"
     }
 
-    private static func sizeString(_ bytes: Int) -> String {
+    static func sizeString(_ bytes: Int) -> String {
         if bytes < 1_024       { return "\(bytes) B" }
         if bytes < 1_048_576   { return String(format: "%.0f KB", Double(bytes) / 1_024) }
         return String(format: "%.1f MB", Double(bytes) / 1_048_576)
+    }
+
+    /// Formats Int64 byte counts to human-readable strings.
+    static func sizeString(_ bytes: Int64) -> String {
+        sizeString(Int(bytes))
     }
 }

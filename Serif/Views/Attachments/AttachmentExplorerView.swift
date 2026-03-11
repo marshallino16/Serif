@@ -5,6 +5,7 @@ struct AttachmentExplorerView: View {
     @ObservedObject var panelCoordinator: PanelCoordinator
     let accountID: String
     var onViewMessage: ((String) -> Void)?
+    var onDownloadAttachment: ((String, String, String) async throws -> Data)?
     @State private var downloadingAttachmentID: String?
     @State private var showExclusionRuleAlert = false
     @State private var exclusionRulePattern = ""
@@ -162,11 +163,7 @@ struct AttachmentExplorerView: View {
         Task {
             defer { downloadingAttachmentID = nil }
             do {
-                let data = try await GmailMessageService.shared.getAttachment(
-                    messageID: attachment.messageId,
-                    attachmentID: attachment.attachmentId,
-                    accountID: accountID
-                )
+                guard let data = try await onDownloadAttachment?(attachment.messageId, attachment.attachmentId, accountID) else { return }
                 panelCoordinator.previewAttachment(data: data, name: attachment.filename, fileType: fileType)
             } catch {
                 print("[AttachmentExplorer] Preview failed: \(error)")

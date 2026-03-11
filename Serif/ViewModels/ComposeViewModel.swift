@@ -17,8 +17,7 @@ final class ComposeViewModel: ObservableObject {
     let accountID:   String
     var fromAddress: String
     var gmailDraftID:     String?   // set once we've created a remote draft
-    private(set) var isSaving = false     // guard against concurrent saves
-    private(set) var needsResave = false  // queued save while one was in flight
+    private var saveDraftTask: Task<Void, Never>?
     var threadID:         String?   // for replies
     var replyToMessageID: String?   // for In-Reply-To / References headers
     var attachmentURLs:   [URL] = []
@@ -62,55 +61,57 @@ final class ComposeViewModel: ObservableObject {
     // MARK: - Draft
 
     func saveDraft() async {
-        guard !isSaving else {
-            needsResave = true
-            return
-        }
-        isSaving = true
-        defer {
-            isSaving = false
-            if needsResave {
-                needsResave = false
-                Task { await saveDraft() }
-            }
-        }
-        do {
-            // Extract inline data: URLs → cid: + MIME parts for proper Gmail storage
-            let (processedBody, extractedImages) = InlineImageProcessor.extractInlineImages(from: body)
-            let allImages = extractedImages + inlineImages
+        // Cancel any previous in-flight save so we don't get double creates
+        saveDraftTask?.cancel()
 
-            if let draftID = gmailDraftID {
-                let draft = try await GmailSendService.shared.updateDraft(
-                    draftID:      draftID,
-                    from:         fromAddress,
-                    to:           splitAddresses(to),
-                    cc:           splitAddresses(cc),
-                    subject:      subject,
-                    body:         processedBody,
-                    isHTML:       isHTML,
-                    inlineImages: allImages,
-                    accountID:    accountID
-                )
-                gmailDraftID = draft.id
-            } else {
-                let draft = try await GmailSendService.shared.createDraft(
-                    from:         fromAddress,
-                    to:           splitAddresses(to),
-                    cc:           splitAddresses(cc),
-                    subject:      subject,
-                    body:         processedBody,
-                    isHTML:       isHTML,
-                    inlineImages: allImages,
-                    accountID:    accountID
-                )
-                gmailDraftID = draft.id
+        let task = Task {
+            guard !Task.isCancelled else { return }
+            do {
+                // Extract inline data: URLs → cid: + MIME parts for proper Gmail storage
+                let (processedBody, extractedImages) = InlineImageProcessor.extractInlineImages(from: body)
+                let allImages = extractedImages + inlineImages
+
+                if let draftID = gmailDraftID {
+                    let draft = try await GmailSendService.shared.updateDraft(
+                        draftID:      draftID,
+                        from:         fromAddress,
+                        to:           splitAddresses(to),
+                        cc:           splitAddresses(cc),
+                        subject:      subject,
+                        body:         processedBody,
+                        isHTML:       isHTML,
+                        inlineImages: allImages,
+                        accountID:    accountID
+                    )
+                    guard !Task.isCancelled else { return }
+                    gmailDraftID = draft.id
+                } else {
+                    let draft = try await GmailSendService.shared.createDraft(
+                        from:         fromAddress,
+                        to:           splitAddresses(to),
+                        cc:           splitAddresses(cc),
+                        subject:      subject,
+                        body:         processedBody,
+                        isHTML:       isHTML,
+                        inlineImages: allImages,
+                        accountID:    accountID
+                    )
+                    guard !Task.isCancelled else { return }
+                    gmailDraftID = draft.id
+                }
+            } catch {
+                if !Task.isCancelled {
+                    self.error = error.localizedDescription
+                }
             }
-        } catch {
-            self.error = error.localizedDescription
         }
+        saveDraftTask = task
+        await task.value
     }
 
     func discardDraft() async {
+        saveDraftTask?.cancel()
+        saveDraftTask = nil
         guard let draftID = gmailDraftID else { return }
         try? await GmailSendService.shared.deleteDraft(draftID: draftID, accountID: accountID)
         gmailDraftID = nil

@@ -246,6 +246,31 @@ final class MessageFetchService {
         }
     }
 
+    // MARK: - Batch verify (stale detection)
+
+    /// Verifies a batch of message IDs concurrently, tolerating individual 404 errors.
+    /// Returns a dictionary of successfully fetched messages keyed by ID.
+    /// Messages that return 404 (deleted) are simply absent from the result.
+    func verifyMessages(
+        ids: [String],
+        accountID: String,
+        api: MessageFetching
+    ) async -> [String: GmailMessage] {
+        await withTaskGroup(of: (String, GmailMessage?).self) { group in
+            for id in ids {
+                group.addTask {
+                    let msg = try? await api.getMessage(id: id, accountID: accountID, format: "minimal")
+                    return (id, msg)
+                }
+            }
+            var result: [String: GmailMessage] = [:]
+            for await (id, msg) in group {
+                if let msg { result[id] = msg }
+            }
+            return result
+        }
+    }
+
     // MARK: - Reset (for account switch)
 
     func resetState() {

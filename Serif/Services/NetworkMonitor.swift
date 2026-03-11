@@ -14,4 +14,8 @@ final class NetworkMonitor: ObservableObject {
         }
         monitor.start(queue: DispatchQueue(label: "com.serif.network-monitor"))
     }
+
+    deinit {
+        monitor.cancel()
+    }
 }

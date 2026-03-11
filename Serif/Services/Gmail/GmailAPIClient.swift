@@ -7,6 +7,7 @@ final class GmailAPIClient {
     private init() {}
 
     private let baseURL = "https://gmail.googleapis.com/gmail/v1"
+    private var refreshTask: Task<AuthToken, Error>?
 
     // MARK: - Decoded requests
 
@@ -134,14 +135,24 @@ final class GmailAPIClient {
 
     @MainActor
     private func validToken(for accountID: String) async throws -> AuthToken {
-        guard var token = try TokenStore.shared.retrieve(for: accountID) else {
+        guard let token = try TokenStore.shared.retrieve(for: accountID) else {
             throw GmailAPIError.unauthorized
         }
-        if token.isExpired {
-            token = try await OAuthService.shared.refreshToken(token)
-            try TokenStore.shared.save(token, for: accountID)
+        guard token.isExpired else { return token }
+
+        // Coalesce concurrent refresh calls — only one refresh in flight at a time
+        if let existing = refreshTask {
+            return try await existing.value
         }
-        return token
+
+        let task = Task<AuthToken, Error> { @MainActor in
+            defer { self.refreshTask = nil }
+            let fresh = try await OAuthService.shared.refreshToken(token)
+            try TokenStore.shared.save(fresh, for: accountID)
+            return fresh
+        }
+        refreshTask = task
+        return try await task.value
     }
 
     // MARK: - HTTP layer
@@ -183,13 +194,15 @@ enum GmailAPIError: Error, LocalizedError {
     case unauthorized
     case httpError(Int, Data)
     case decodingError(Error)
+    case partialFailure(failedCount: Int)
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL:           return "Invalid API URL"
-        case .unauthorized:         return "Unauthorized — please sign in again"
-        case .httpError(let c, _):  return "HTTP \(c)"
-        case .decodingError(let e): return "Decode failed: \(e.localizedDescription)"
+        case .invalidURL:                return "Invalid API URL"
+        case .unauthorized:              return "Unauthorized — please sign in again"
+        case .httpError(let c, _):       return "HTTP \(c)"
+        case .decodingError(let e):      return "Decode failed: \(e.localizedDescription)"
+        case .partialFailure(let count): return "Failed to delete \(count) messages"
         }
     }
 }

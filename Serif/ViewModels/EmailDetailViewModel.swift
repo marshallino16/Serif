@@ -27,6 +27,7 @@ final class EmailDetailViewModel: ObservableObject {
 
     let accountID: String
     var attachmentIndexer: AttachmentIndexer?
+    var onMessagesRead: (([String]) -> Void)?
 
     init(accountID: String) {
         self.accountID = accountID
@@ -70,9 +71,17 @@ final class EmailDetailViewModel: ObservableObject {
                     Task { await indexer.registerFromFullMessages(messages: withAttachments) }
                 }
             }
-            // Mark all unread messages in the thread as read
-            for message in fresh.messages ?? [] where message.isUnread {
-                try? await GmailMessageService.shared.markAsRead(id: message.id, accountID: accountID)
+            // Mark all unread messages in the thread as read (concurrently)
+            let unreadMessages = (fresh.messages ?? []).filter(\.isUnread)
+            if !unreadMessages.isEmpty {
+                await withTaskGroup(of: Void.self) { group in
+                    for message in unreadMessages {
+                        group.addTask { [accountID] in
+                            try? await GmailMessageService.shared.markAsRead(id: message.id, accountID: accountID)
+                        }
+                    }
+                }
+                onMessagesRead?(unreadMessages.map(\.id))
             }
         } catch {
             // Keep cached thread if API fails (offline mode)
@@ -162,19 +171,42 @@ final class EmailDetailViewModel: ObservableObject {
 
     /// Downloads inline CID images and replaces cid: references with data: URIs in the HTML.
     private func resolveInlineImages(for message: GmailMessage) async {
-        let inlineParts = message.inlineParts
-        guard !inlineParts.isEmpty else { resolvedHTML = nil; return }
+        guard !message.inlineParts.isEmpty else { resolvedHTML = nil; return }
 
         let baseHTML = displayHTML ?? message.htmlBody ?? ""
         guard !baseHTML.isEmpty else { resolvedHTML = nil; return }
 
-        var html = baseHTML
+        resolvedHTML = await Self.replaceCIDReferences(in: baseHTML, message: message, accountID: accountID)
+    }
+
+    /// Resolves inline CID images for older thread messages in parallel and stores results per message ID.
+    private func resolveInlineImagesForOlderMessages(_ messages: [GmailMessage]) async {
+        let accountID = self.accountID
+        await withTaskGroup(of: (String, String).self) { group in
+            for message in messages {
+                guard !message.inlineParts.isEmpty else { continue }
+                guard let baseHTML = message.htmlBody, !baseHTML.isEmpty else { continue }
+
+                group.addTask {
+                    let result = await Self.replaceCIDReferences(in: baseHTML, message: message, accountID: accountID)
+                    return (message.id, result)
+                }
+            }
+            for await (messageID, html) in group {
+                resolvedMessageHTML[messageID] = html
+            }
+        }
+    }
+
+    /// Shared helper: downloads inline CID attachments and replaces cid: references with data: URIs.
+    private static nonisolated func replaceCIDReferences(in html: String, message: GmailMessage, accountID: String) async -> String {
+        var result = html
         await withTaskGroup(of: (String, String, Data?).self) { group in
-            for part in inlineParts {
+            for part in message.inlineParts {
                 guard let cid = part.contentID,
                       let attachmentID = part.body?.attachmentId,
                       let mime = part.mimeType else { continue }
-                group.addTask { [accountID] in
+                group.addTask {
                     let data = try? await GmailMessageService.shared.getAttachment(
                         messageID: message.id,
                         attachmentID: attachmentID,
@@ -184,46 +216,12 @@ final class EmailDetailViewModel: ObservableObject {
                 }
             }
             for await (cid, mime, data) in group {
-                guard let data = data else { continue }
+                guard let data else { continue }
                 let dataURI = "data:\(mime);base64,\(data.base64EncodedString())"
-                html = html.replacingOccurrences(of: "cid:\(cid)", with: dataURI)
+                result = result.replacingOccurrences(of: "cid:\(cid)", with: dataURI)
             }
         }
-        resolvedHTML = html
-    }
-
-    /// Resolves inline CID images for older thread messages and stores results per message ID.
-    private func resolveInlineImagesForOlderMessages(_ messages: [GmailMessage]) async {
-        for message in messages {
-            let inlineParts = message.inlineParts
-            guard !inlineParts.isEmpty else { continue }
-
-            let baseHTML = message.htmlBody ?? ""
-            guard !baseHTML.isEmpty else { continue }
-
-            var html = baseHTML
-            await withTaskGroup(of: (String, String, Data?).self) { group in
-                for part in inlineParts {
-                    guard let cid = part.contentID,
-                          let attachmentID = part.body?.attachmentId,
-                          let mime = part.mimeType else { continue }
-                    group.addTask { [accountID] in
-                        let data = try? await GmailMessageService.shared.getAttachment(
-                            messageID: message.id,
-                            attachmentID: attachmentID,
-                            accountID: accountID
-                        )
-                        return (cid, mime, data)
-                    }
-                }
-                for await (cid, mime, data) in group {
-                    guard let data = data else { continue }
-                    let dataURI = "data:\(mime);base64,\(data.base64EncodedString())"
-                    html = html.replacingOccurrences(of: "cid:\(cid)", with: dataURI)
-                }
-            }
-            resolvedMessageHTML[message.id] = html
-        }
+        return result
     }
 
     // MARK: - Attachments

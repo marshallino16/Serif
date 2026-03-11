@@ -1,27 +1,71 @@
 import Foundation
 import CryptoKit
+import Security
 
 /// Persists OAuth tokens in UserDefaults, encrypted with AES-256-GCM.
-/// A random symmetric key is generated on first launch and stored in UserDefaults.
-/// This avoids macOS Keychain access prompts entirely.
+/// The symmetric key is stored in the macOS Keychain, tokens stay in UserDefaults.
 final class TokenStore {
     static let shared = TokenStore()
-    private init() {}
+    private init() {
+        migrateKeyFromUserDefaultsIfNeeded()
+    }
 
     private let defaults      = UserDefaults.standard
     private let keyPrefix     = "com.serif.token."
     private let accountsKey   = "com.serif.token.accounts"
-    private let symmetricKeyUD = "com.serif.token.key"
+    private let keychainService = "com.serif.token"
+    private let keychainAccount = "encryption-key"
+    private let legacyKeyUD    = "com.serif.token.key"
 
-    // MARK: - Symmetric key (generated once, persisted in UserDefaults)
+    // MARK: - Symmetric key (Keychain)
 
     private var symmetricKey: SymmetricKey {
-        if let data = defaults.data(forKey: symmetricKeyUD) {
+        if let data = loadKeyFromKeychain() {
             return SymmetricKey(data: data)
         }
         let key = SymmetricKey(size: .bits256)
-        defaults.set(key.withUnsafeBytes { Data($0) }, forKey: symmetricKeyUD)
+        let keyData = key.withUnsafeBytes { Data($0) }
+        saveKeyToKeychain(keyData)
         return key
+    }
+
+    private func loadKeyFromKeychain() -> Data? {
+        let query: [String: Any] = [
+            kSecClass as String:            kSecClassGenericPassword,
+            kSecAttrService as String:      keychainService,
+            kSecAttrAccount as String:      keychainAccount,
+            kSecReturnData as String:       true,
+            kSecMatchLimit as String:       kSecMatchLimitOne,
+        ]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess else { return nil }
+        return result as? Data
+    }
+
+    private func saveKeyToKeychain(_ data: Data) {
+        let query: [String: Any] = [
+            kSecClass as String:            kSecClassGenericPassword,
+            kSecAttrService as String:      keychainService,
+            kSecAttrAccount as String:      keychainAccount,
+            kSecValueData as String:        data,
+            kSecAttrAccessible as String:   kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+        let status = SecItemAdd(query as CFDictionary, nil)
+        if status == errSecDuplicateItem {
+            let update: [String: Any] = [kSecValueData as String: data]
+            SecItemUpdate(query as CFDictionary, update as CFDictionary)
+        }
+    }
+
+    private func migrateKeyFromUserDefaultsIfNeeded() {
+        guard let legacyData = defaults.data(forKey: legacyKeyUD) else { return }
+        guard loadKeyFromKeychain() == nil else {
+            defaults.removeObject(forKey: legacyKeyUD)
+            return
+        }
+        saveKeyToKeychain(legacyData)
+        defaults.removeObject(forKey: legacyKeyUD)
     }
 
     // MARK: - CRUD

@@ -174,6 +174,7 @@ final class GmailMessageService {
     }
 
     /// Permanently deletes all messages in Trash.
+    /// Continues through all batches even if some fail, then reports partial failure.
     func emptyTrash(accountID: String) async throws {
         var pageToken: String? = nil
         var allIDs: [String] = []
@@ -190,20 +191,29 @@ final class GmailMessageService {
 
         guard !allIDs.isEmpty else { return }
 
-        // Batch delete in groups of 100 (API limit)
+        // Batch delete in groups of 100 (API limit), accumulating failures
+        var failedIDs: [String] = []
         for batch in stride(from: 0, to: allIDs.count, by: 100) {
             let ids = Array(allIDs[batch..<min(batch + 100, allIDs.count)])
-            struct BatchDeleteRequest: Encodable { let ids: [String] }
-            let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
-            _ = try await client.rawRequest(
-                path: "/users/me/messages/batchDelete",
-                method: "POST", body: body, contentType: "application/json",
-                accountID: accountID
-            )
+            do {
+                struct BatchDeleteRequest: Encodable { let ids: [String] }
+                let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
+                _ = try await client.rawRequest(
+                    path: "/users/me/messages/batchDelete",
+                    method: "POST", body: body, contentType: "application/json",
+                    accountID: accountID
+                )
+            } catch {
+                failedIDs.append(contentsOf: ids)
+            }
+        }
+        if !failedIDs.isEmpty {
+            throw GmailAPIError.partialFailure(failedCount: failedIDs.count)
         }
     }
 
     /// Permanently deletes all messages in Spam.
+    /// Continues through all batches even if some fail, then reports partial failure.
     func emptySpam(accountID: String) async throws {
         var pageToken: String? = nil
         var allIDs: [String] = []
@@ -220,15 +230,23 @@ final class GmailMessageService {
 
         guard !allIDs.isEmpty else { return }
 
+        var failedIDs: [String] = []
         for batch in stride(from: 0, to: allIDs.count, by: 100) {
             let ids = Array(allIDs[batch..<min(batch + 100, allIDs.count)])
-            struct BatchDeleteRequest: Encodable { let ids: [String] }
-            let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
-            _ = try await client.rawRequest(
-                path: "/users/me/messages/batchDelete",
-                method: "POST", body: body, contentType: "application/json",
-                accountID: accountID
-            )
+            do {
+                struct BatchDeleteRequest: Encodable { let ids: [String] }
+                let body = try JSONEncoder().encode(BatchDeleteRequest(ids: ids))
+                _ = try await client.rawRequest(
+                    path: "/users/me/messages/batchDelete",
+                    method: "POST", body: body, contentType: "application/json",
+                    accountID: accountID
+                )
+            } catch {
+                failedIDs.append(contentsOf: ids)
+            }
+        }
+        if !failedIDs.isEmpty {
+            throw GmailAPIError.partialFailure(failedCount: failedIDs.count)
         }
     }
 

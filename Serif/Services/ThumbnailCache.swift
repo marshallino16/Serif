@@ -19,6 +19,9 @@ final class ThumbnailCache: ObservableObject {
     private var activeFetches = 0
     private let maxConcurrentFetches = 4
 
+    /// Tracks in-flight fetch tasks so they can be cancelled on clearAll().
+    private var fetchTasks: [String: Task<Void, Never>] = [:]
+
     private let maxSize = CGSize(width: 300, height: 200)
 
     /// Directory for disk-cached thumbnails.
@@ -30,9 +33,12 @@ final class ThumbnailCache: ObservableObject {
     }()
 
     func clearAll() {
+        fetchTasks.values.forEach { $0.cancel() }
+        fetchTasks.removeAll()
         thumbnails.removeAll()
         loading.removeAll()
         pendingQueue.removeAll()
+        activeFetches = 0
         try? FileManager.default.removeItem(at: cacheDirectory)
         try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
@@ -77,8 +83,9 @@ final class ThumbnailCache: ObservableObject {
         let attId = attachment.attachmentId
         let fileType = Attachment.FileType(rawValue: attachment.fileType) ?? .document
 
-        Task {
+        let task = Task {
             defer {
+                fetchTasks.removeValue(forKey: id)
                 loading.remove(id)
                 activeFetches -= 1
                 dequeueNext()
@@ -89,6 +96,7 @@ final class ThumbnailCache: ObservableObject {
                     attachmentID: attId,
                     accountID: accountID
                 )
+                guard !Task.isCancelled else { return }
                 let thumb: NSImage? = switch fileType {
                 case .image: Self.imageThumb(from: data, maxSize: maxSize)
                 case .pdf:   Self.pdfThumb(from: data, maxSize: maxSize)
@@ -102,6 +110,7 @@ final class ThumbnailCache: ObservableObject {
                 // Silently skip — will show icon fallback
             }
         }
+        fetchTasks[id] = task
     }
 
     private func dequeueNext() {

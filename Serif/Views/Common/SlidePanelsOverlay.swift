@@ -13,7 +13,10 @@ struct SlidePanelsOverlay: View {
     @Binding var signatureForReply: String
     var sendAsAliases: [GmailSendAs]
     var onAliasesUpdated: (() -> Void)?
+    var onRefreshContacts: ((String) async -> Void)?
+    var onSaveSignature: ((String, String, String) async throws -> GmailSendAs)?
     @ObservedObject var attachmentStore: AttachmentStore
+    var mailStore: MailStore
 
     @Environment(\.theme) private var theme
 
@@ -40,14 +43,16 @@ struct SlidePanelsOverlay: View {
                     lastRefreshedAt: lastRefreshedAt
                 )
                 ContactsSettingsCard(
-                    accountID: selectedAccountID ?? authViewModel.primaryAccount?.id ?? ""
+                    accountID: selectedAccountID ?? authViewModel.primaryAccount?.id ?? "",
+                    onRefreshContacts: onRefreshContacts
                 )
                 SignatureSettingsCard(
                     aliases: sendAsAliases,
                     accountID: selectedAccountID ?? authViewModel.primaryAccount?.id ?? "",
                     signatureForNew: $signatureForNew,
                     signatureForReply: $signatureForReply,
-                    onAliasesUpdated: { onAliasesUpdated?() }
+                    onAliasesUpdated: { onAliasesUpdated?() },
+                    onSaveSignature: onSaveSignature
                 )
                 StorageSettingsCard(attachmentStore: attachmentStore)
                 DeveloperSettingsCard()
@@ -134,6 +139,7 @@ struct SlidePanelsOverlay: View {
                 EmailDetailView(
                     email: email,
                     accountID: panels.previewAccountID,
+                    mailStore: mailStore,
                     onPreviewAttachment: { data, name, fileType in
                         panels.previewAttachment(data: data, name: name, fileType: fileType)
                     }

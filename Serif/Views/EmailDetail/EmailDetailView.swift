@@ -27,8 +27,11 @@ struct EmailDetailView: View {
     var checkUnsubscribed: ((String) -> Bool)?
     var extractBodyUnsubscribeURL: ((String) -> URL?)?
     var onOpenLink: ((URL) -> Void)?
+    var onMessagesRead: (([String]) -> Void)?
+    var onGenerateQuickReplies: ((Email) async -> [String])?
+    var onLoadDraft: ((String, String) async throws -> GmailDraft?)?
     var fromAddress: String = ""
-    var mailStore: MailStore?
+    var mailStore: MailStore
 
     @StateObject private var detailVM: EmailDetailViewModel
     @State private var emailBodyHeight: CGFloat = 100
@@ -63,6 +66,7 @@ struct EmailDetailView: View {
     init(
         email: Email,
         accountID: String,
+        mailStore: MailStore,
         attachmentIndexer: AttachmentIndexer? = nil,
         onArchive:            (() -> Void)? = nil,
         onDelete:             (() -> Void)? = nil,
@@ -89,6 +93,7 @@ struct EmailDetailView: View {
     ) {
         self.email              = email
         self.accountID          = accountID
+        self.mailStore          = mailStore
         self.attachmentIndexer  = attachmentIndexer
         self.onArchive          = onArchive
         self.onDelete           = onDelete
@@ -269,7 +274,15 @@ struct EmailDetailView: View {
                 }
 
                 // Floating reply bar
-                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress, mailStore: mailStore ?? MailStore(), onOpenLink: onOpenLink)
+                ReplyBarView(
+                    email: email,
+                    accountID: accountID,
+                    fromAddress: fromAddress,
+                    mailStore: mailStore,
+                    onOpenLink: onOpenLink,
+                    onGenerateQuickReplies: onGenerateQuickReplies,
+                    onLoadDraft: onLoadDraft
+                )
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }
@@ -310,6 +323,7 @@ struct EmailDetailView: View {
     private func loadThread() {
         guard let threadID = email.gmailThreadID else { return }
         detailVM.attachmentIndexer = attachmentIndexer
+        detailVM.onMessagesRead = onMessagesRead
         Task { await detailVM.loadThread(id: threadID) }
     }
 

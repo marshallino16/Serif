@@ -55,6 +55,8 @@ final class AccountStore {
         accounts = all
     }
 
+    /// Removes an account and its associated data.
+    /// Note: Caller must also call `SubscriptionsStore.shared.deleteAccount(id)` from `@MainActor` context.
     func remove(id: String) {
         accounts = accounts.filter { $0.id != id }
         TokenStore.shared.delete(for: id)
@@ -62,7 +64,6 @@ final class AccountStore {
         MailCacheStore.shared.deleteAccount(id)
         UnsubscribeService.shared.clearAccount(id)
         ContactStore.shared.deleteAccount(id)
-        Task { @MainActor in SubscriptionsStore.shared.deleteAccount(id) }
         // Clean per-account UserDefaults
         UserDefaults.standard.removeObject(forKey: "signatureForNew.\(id)")
         UserDefaults.standard.removeObject(forKey: "signatureForReply.\(id)")

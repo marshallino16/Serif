@@ -36,4 +36,36 @@ extension Date {
         }
         return formatter.string(from: self)
     }
+
+    /// Medium date with short time: "Mar 1, 2025, 2:34 PM".
+    var formattedMedium: String {
+        let fmt = DateFormatter()
+        fmt.dateStyle = .medium
+        fmt.timeStyle = .short
+        return fmt.string(from: self)
+    }
+
+    /// Long date with medium time: "March 1, 2025 at 2:34:56 PM".
+    var formattedLong: String {
+        let fmt = DateFormatter()
+        fmt.dateStyle = .long
+        fmt.timeStyle = .medium
+        return fmt.string(from: self)
+    }
+
+    /// Long date with short time: "March 1, 2025 at 2:34 PM".
+    var formattedLongShort: String {
+        let fmt = DateFormatter()
+        fmt.dateStyle = .long
+        fmt.timeStyle = .short
+        return fmt.string(from: self)
+    }
+
+    /// Medium date only: "Mar 1, 2025".
+    var formattedDateOnly: String {
+        let fmt = DateFormatter()
+        fmt.dateStyle = .medium
+        fmt.timeStyle = .none
+        return fmt.string(from: self)
+    }
 }

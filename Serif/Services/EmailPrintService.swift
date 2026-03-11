@@ -77,15 +77,7 @@ final class EmailPrintService {
         let ccValue = escapeHTML(message.cc)
         let replyTo = escapeHTML(message.replyTo)
 
-        let dateFormatted: String = {
-            if let d = message.date {
-                let fmt = DateFormatter()
-                fmt.dateStyle = .long
-                fmt.timeStyle = .short
-                return fmt.string(from: d)
-            }
-            return ""
-        }()
+        let dateFormatted = message.date?.formattedLongShort ?? ""
 
         let bodyHTML = message.htmlBody ?? "<p>\(escapeHTML(message.plainBody ?? email.body))</p>"
 

@@ -49,4 +49,8 @@ struct WebRichTextEditorRepresentable: NSViewRepresentable {
             placeholderColor: theme.textTertiary.hexString
         )
     }
+
+    static func dismantleNSView(_ webView: WKWebView, coordinator: WebRichTextEditorCoordinator) {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "editor")
+    }
 }

@@ -56,6 +56,7 @@ struct BehaviorSettingsCard: View {
 
 struct ContactsSettingsCard: View {
     let accountID: String
+    var onRefreshContacts: ((String) async -> Void)?
     @State private var isRefreshingContacts = false
     @State private var contactCount = 0
     @Environment(\.theme) private var theme
@@ -77,7 +78,7 @@ struct ContactsSettingsCard: View {
                     guard !isRefreshingContacts else { return }
                     isRefreshingContacts = true
                     Task {
-                        await GmailProfileService.shared.refreshContacts(accountID: accountID)
+                        await onRefreshContacts?(accountID)
                         isRefreshingContacts = false
                         contactCount = ContactStore.shared.contacts(for: accountID).count
                     }
@@ -115,6 +116,7 @@ struct SignatureSettingsCard: View {
     @Binding var signatureForNew: String
     @Binding var signatureForReply: String
     var onAliasesUpdated: (() -> Void)?
+    var onSaveSignature: ((String, String, String) async throws -> GmailSendAs)?
     @State private var editingAlias: GmailSendAs?
     @Environment(\.theme) private var theme
 
@@ -212,7 +214,8 @@ struct SignatureSettingsCard: View {
             SignatureEditorView(
                 alias: alias,
                 accountID: accountID,
-                onSave: { _ in onAliasesUpdated?() }
+                onSave: { _ in onAliasesUpdated?() },
+                onUpdateSignature: onSaveSignature
             )
         }
     }
@@ -229,10 +232,7 @@ struct StorageSettingsCard: View {
     @Environment(\.theme) private var theme
 
     private var formattedSize: String {
-        let bytes = dbSize
-        if bytes < 1024 { return "\(bytes) B" }
-        if bytes < 1024 * 1024 { return String(format: "%.1f KB", Double(bytes) / 1024) }
-        return String(format: "%.1f MB", Double(bytes) / (1024 * 1024))
+        GmailDataTransformer.sizeString(dbSize)
     }
 
     var body: some View {

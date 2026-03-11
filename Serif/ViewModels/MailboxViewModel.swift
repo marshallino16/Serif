@@ -3,16 +3,17 @@ import SwiftUI
 /// Drives the email list for a given account and folder.
 @MainActor
 final class MailboxViewModel: ObservableObject {
-    @Published var messages:      [GmailMessage] = []
+    @Published var messages:      [GmailMessage] = [] { didSet { recomputeEmails() } }
     @Published var isLoading      = false
     @Published var error:         String?
     @Published var nextPageToken: String?
-    @Published var labels:                [GmailLabel] = []
+    @Published var labels:                [GmailLabel] = [] { didSet { recomputeEmails() } }
     @Published var sendAsAliases:         [GmailSendAs] = []
     @Published var readIDs:               Set<String> = []
     @Published var categoryUnreadCounts:  [InboxCategory: Int] = [:]
     /// Set by `restoreOptimistically` so the UI can re-select the restored email.
     @Published var lastRestoredMessageID: String?
+    @Published private(set) var emails: [Email] = []
 
     var accountID: String
     var attachmentIndexer: AttachmentIndexer? {
@@ -45,16 +46,17 @@ final class MailboxViewModel: ObservableObject {
         }
     }
 
-    // MARK: - GmailMessage → Email (computed)
+    // MARK: - GmailMessage → Email (cached)
 
-    var emails: [Email] {
-        // Group messages by threadId, keep the most recent per thread
+    /// Recomputes the `emails` array from `messages` and `labels`.
+    /// Called automatically via `didSet` on both properties.
+    private func recomputeEmails() {
         let grouped = Dictionary(grouping: messages) { $0.threadId }
         let representatives: [(GmailMessage, Int)] = grouped.map { (_, msgs) in
             let sorted = msgs.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
             return (sorted[0], msgs.count)
         }
-        return representatives
+        emails = representatives
             .sorted { ($0.0.date ?? .distantPast) > ($1.0.date ?? .distantPast) }
             .map { (msg, count) in
                 var email = makeEmail(from: msg)
@@ -215,6 +217,17 @@ final class MailboxViewModel: ObservableObject {
             fetchService.messageCache[message.id] = messages[idx]
         }
         try? await api.markAsRead(id: message.id, accountID: accountID)
+    }
+
+    /// Updates local state for messages already marked as read by another component (e.g. EmailDetailVM).
+    func applyReadLocally(_ messageIDs: [String]) {
+        for id in messageIDs {
+            readIDs.insert(id)
+            if let idx = messages.firstIndex(where: { $0.id == id }) {
+                messages[idx].labelIds?.removeAll { $0 == "UNREAD" }
+                fetchService.messageCache[id] = messages[idx]
+            }
+        }
     }
 
     func markAsUnread(_ messageID: String) async {
@@ -551,25 +564,27 @@ final class MailboxViewModel: ObservableObject {
                 }
 
                 // Prune stale messages: locally cached but absent from the API's first page.
-                // Verify each suspect with a lightweight API call to distinguish
-                // "deleted/moved" from "pushed to next page".
+                // Batch-verify suspects to distinguish "deleted/moved" from "pushed to next page".
                 if !refs.isEmpty {
                     let serverIDs = Set(refs.map(\.id))
                     let suspectIDs = messages.filter { !serverIDs.contains($0.id) }.map(\.id)
                     if !suspectIDs.isEmpty {
+                        guard !fetchService.isStale(generation: generation) else { return }
                         var staleIDs: [String] = []
                         let folderLabels = Set(currentLabelIDs)
+                        // Batch-verify suspects concurrently (tolerates individual 404s)
+                        let verified = await fetchService.verifyMessages(
+                            ids: suspectIDs, accountID: accountID, api: api
+                        )
                         for id in suspectIDs {
-                            guard !fetchService.isStale(generation: generation) else { break }
-                            do {
-                                let msg = try await api.getMessage(id: id, accountID: accountID, format: "minimal")
+                            if let msg = verified[id] {
                                 // Exists but moved to a different folder
                                 if !folderLabels.isEmpty,
                                    let msgLabels = msg.labelIds,
                                    folderLabels.isDisjoint(with: Set(msgLabels)) {
                                     staleIDs.append(id)
                                 }
-                            } catch {
+                            } else {
                                 staleIDs.append(id) // 404 → deleted on Gmail
                             }
                         }

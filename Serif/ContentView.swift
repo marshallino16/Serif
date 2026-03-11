@@ -64,6 +64,11 @@ struct ContentView: View {
                         accountID: coordinator.accountID,
                         onViewMessage: { messageId in
                             coordinator.navigateToMessage(gmailMessageID: messageId)
+                        },
+                        onDownloadAttachment: { messageID, attachmentID, accountID in
+                            try await GmailMessageService.shared.getAttachment(
+                                messageID: messageID, attachmentID: attachmentID, accountID: accountID
+                            )
                         }
                     )
                 } else {
@@ -116,7 +121,16 @@ struct ContentView: View {
                 onAliasesUpdated: {
                     Task { await coordinator.mailboxViewModel.loadSendAs() }
                 },
-                attachmentStore: coordinator.attachmentStore
+                onRefreshContacts: { accountID in
+                    await GmailProfileService.shared.refreshContacts(accountID: accountID)
+                },
+                onSaveSignature: { sendAsEmail, signature, accountID in
+                    try await GmailProfileService.shared.updateSignature(
+                        sendAsEmail: sendAsEmail, signature: signature, accountID: accountID
+                    )
+                },
+                attachmentStore: coordinator.attachmentStore,
+                mailStore: coordinator.mailStore
             )
         }
     }

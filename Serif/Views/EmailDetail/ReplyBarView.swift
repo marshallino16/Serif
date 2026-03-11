@@ -6,6 +6,8 @@ struct ReplyBarView: View {
     let fromAddress: String
     let mailStore: MailStore
     var onOpenLink: ((URL) -> Void)?
+    var onGenerateQuickReplies: ((Email) async -> [String])?
+    var onLoadDraft: ((String, String) async throws -> GmailDraft?)?
 
     @State private var replyHTML = ""
     @State private var isExpanded = false
@@ -23,12 +25,22 @@ struct ReplyBarView: View {
     @State private var gradientRotation: Double = 0
     @Environment(\.theme) private var theme
 
-    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, onOpenLink: ((URL) -> Void)? = nil) {
+    init(
+        email: Email,
+        accountID: String,
+        fromAddress: String,
+        mailStore: MailStore,
+        onOpenLink: ((URL) -> Void)? = nil,
+        onGenerateQuickReplies: ((Email) async -> [String])? = nil,
+        onLoadDraft: ((String, String) async throws -> GmailDraft?)? = nil
+    ) {
         self.email = email
         self.accountID = accountID
         self.fromAddress = fromAddress
         self.mailStore = mailStore
         self.onOpenLink = onOpenLink
+        self.onGenerateQuickReplies = onGenerateQuickReplies
+        self.onLoadDraft = onLoadDraft
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
             fromAddress: fromAddress,
@@ -86,7 +98,7 @@ struct ReplyBarView: View {
         }
         .task(id: email.id) {
             isLoadingReplies = true
-            quickReplies = await QuickReplyService.shared.generateReplies(for: email)
+            quickReplies = await onGenerateQuickReplies?(email) ?? []
             isLoadingReplies = false
         }
         .alert("Discard reply?", isPresented: $showDiscardAlert) {
@@ -425,10 +437,8 @@ struct ReplyBarView: View {
         isLoadingDraft = true
         Task {
             do {
-                let draft = try await GmailDraftService.shared.getDraft(
-                    id: saved.gmailDraftID, accountID: accountID, format: "full"
-                )
-                if let body = draft.message?.body, !body.isEmpty {
+                let draft = try await onLoadDraft?(saved.gmailDraftID, accountID)
+                if let body = draft?.message?.body, !body.isEmpty {
                     composeVM.gmailDraftID = saved.gmailDraftID
                     isInitialLoad = true
                     replyHTML = body

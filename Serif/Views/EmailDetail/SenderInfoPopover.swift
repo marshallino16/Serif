@@ -17,13 +17,7 @@ struct SenderInfoPopover: View {
     }
 
     private var dateFormatted: String {
-        if let d = message.date {
-            let fmt = DateFormatter()
-            fmt.dateStyle = .medium
-            fmt.timeStyle = .short
-            return fmt.string(from: d)
-        }
-        return "—"
+        message.date?.formattedMedium ?? "—"
     }
 
     var body: some View {

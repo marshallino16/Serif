@@ -26,6 +26,7 @@ struct HTMLEmailView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.userContentController.add(context.coordinator, name: "imageLog")
+        config.defaultWebpagePreferences.allowsContentJavaScript = false
         #if DEBUG
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
         #endif
@@ -40,11 +41,22 @@ struct HTMLEmailView: NSViewRepresentable {
         let cacheKey = "\(html)|\(textHex)"
         guard context.coordinator.lastCacheKey != cacheKey else { return }
         context.coordinator.lastCacheKey = cacheKey
+        context.coordinator.isLoadingContent = true
         // Defer height reset so SwiftUI processes it after the current render pass.
         // This shrinks the frame before didFinish measures the new content.
         DispatchQueue.main.async {
             self.contentHeight = 1
         }
+
+        let controller = webView.configuration.userContentController
+        controller.removeAllUserScripts()
+        let userScript = WKUserScript(
+            source: Self.userScriptSource(textHex: textHex),
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        )
+        controller.addUserScript(userScript)
+
         let fullHTML = """
         <!DOCTYPE html>
         <html>
@@ -79,18 +91,28 @@ struct HTMLEmailView: NSViewRepresentable {
             pre, code { background: rgba(255,255,255,0.1); color: #e8eaed; }
         }
         </style>
-        <script>
-        // ── Dark-mode readability fix ────────────────────────────────────────
-        // Walks common text elements, computes WCAG contrast ratio against the
-        // dark background, and lightens only colours that fall below the threshold
-        // while preserving hue and saturation as much as possible.
+        </head>
+        <body><div id="emailContent" style="padding-bottom:16px">\(html)</div></body>
+        </html>
+        """
+        webView.loadHTMLString(fullHTML, baseURL: nil)
+    }
+
+    static func dismantleNSView(_ webView: WKWebView, coordinator: Coordinator) {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "imageLog")
+    }
+
+    // MARK: - User Script
+
+    private static func userScriptSource(textHex: String) -> String {
+        """
         var THEME_TEXT = '\(textHex)';
 
         function fixDarkModeColors() {
             if (!window.matchMedia('(prefers-color-scheme: dark)').matches) return;
 
-            var BG_LUM = 0.015; // approximate dark-theme background luminance (~#1c1c1e)
-            var MIN_CR = 4.0;   // WCAG AA large-text threshold (good balance vs aggression)
+            var BG_LUM = 0.015;
+            var MIN_CR = 4.0;
 
             function linearize(c) {
                 c /= 255;
@@ -117,7 +139,6 @@ struct HTMLEmailView: NSViewRepresentable {
                 if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
                 return p;
             }
-            // Raise lightness (HSL) just enough to reach MIN_CR, keeps hue+sat intact
             function lightenToContrast(r, g, b) {
                 r /= 255; g /= 255; b /= 255;
                 var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
@@ -139,7 +160,7 @@ struct HTMLEmailView: NSViewRepresentable {
                     if (contrastWith(relativeLum(nr, ng, nb)) >= MIN_CR)
                         return 'rgb(' + nr + ',' + ng + ',' + nb + ')';
                 }
-                return THEME_TEXT; // safe fallback
+                return THEME_TEXT;
             }
 
             function isAchromatic(r, g, b) {
@@ -175,8 +196,6 @@ struct HTMLEmailView: NSViewRepresentable {
                 var hi = Math.max(textLum, bgLum), lo = Math.min(textLum, bgLum);
                 var cr = (hi + 0.05) / (lo + 0.05);
                 if (cr >= MIN_CR) return;
-                // Near-black unsaturated text → use theme textPrimary
-                // Colored text → lighten while preserving hue
                 var replacement = isAchromatic(rgb[0], rgb[1], rgb[2])
                     ? THEME_TEXT
                     : lightenToContrast(rgb[0], rgb[1], rgb[2]);
@@ -188,35 +207,27 @@ struct HTMLEmailView: NSViewRepresentable {
             ).forEach(processEl);
         }
 
-        // ── Image monitoring + trigger colour fix on load ────────────────────
-        window.addEventListener('load', function() {
-            fixDarkModeColors();
+        fixDarkModeColors();
 
-            var imgs = document.querySelectorAll('img');
-            imgs.forEach(function(img) {
-                window.webkit.messageHandlers.imageLog.postMessage(
-                    'img src=' + img.src.substring(0,80) + ' complete=' + img.complete + ' naturalW=' + img.naturalWidth
-                );
-                if (!img.complete) {
-                    img.addEventListener('load', function() {
-                        window.webkit.messageHandlers.imageLog.postMessage('LOADED: ' + this.src.substring(0,80));
-                        window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
-                    });
-                    img.addEventListener('error', function() {
-                        window.webkit.messageHandlers.imageLog.postMessage('FAILED: ' + this.src.substring(0,80));
-                    });
-                }
-            });
+        var imgs = document.querySelectorAll('img');
+        imgs.forEach(function(img) {
             window.webkit.messageHandlers.imageLog.postMessage(
-                'Total imgs: ' + imgs.length + ', already complete: ' + Array.from(imgs).filter(function(i){return i.complete;}).length
+                'img src=' + img.src.substring(0,80) + ' complete=' + img.complete + ' naturalW=' + img.naturalWidth
             );
+            if (!img.complete) {
+                img.addEventListener('load', function() {
+                    window.webkit.messageHandlers.imageLog.postMessage('LOADED: ' + this.src.substring(0,80));
+                    window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
+                });
+                img.addEventListener('error', function() {
+                    window.webkit.messageHandlers.imageLog.postMessage('FAILED: ' + this.src.substring(0,80));
+                });
+            }
         });
-        </script>
-        </head>
-        <body><div id="emailContent" style="padding-bottom:16px">\(html)</div></body>
-        </html>
+        window.webkit.messageHandlers.imageLog.postMessage(
+            'Total imgs: ' + imgs.length + ', already complete: ' + Array.from(imgs).filter(function(i){return i.complete;}).length
+        );
         """
-        webView.loadHTMLString(fullHTML, baseURL: URL(string: "https://mail.google.com/"))
     }
 
     // MARK: - Coordinator
@@ -224,6 +235,7 @@ struct HTMLEmailView: NSViewRepresentable {
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: HTMLEmailView
         var lastCacheKey: String = ""
+        var isLoadingContent = false
 
         init(_ parent: HTMLEmailView) { self.parent = parent }
 
@@ -245,6 +257,7 @@ struct HTMLEmailView: NSViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            isLoadingContent = false
             measureHeight(webView)
             // Re-measure after delays to catch lazy/slow images
             for delay in [0.5, 1.5, 3.0] {
@@ -280,9 +293,18 @@ struct HTMLEmailView: NSViewRepresentable {
                     NSWorkspace.shared.open(url)
                 }
                 decisionHandler(.cancel)
-            } else {
-                decisionHandler(.allow)
+                return
             }
+
+            guard isLoadingContent,
+                  navigationAction.navigationType == .other,
+                  navigationAction.request.url?.scheme == "about"
+                      || navigationAction.request.url?.absoluteString == "about:blank"
+            else {
+                decisionHandler(.cancel)
+                return
+            }
+            decisionHandler(.allow)
         }
     }
 }
