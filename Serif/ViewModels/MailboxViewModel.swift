@@ -408,8 +408,7 @@ final class MailboxViewModel: ObservableObject {
             let newLabel = try await GmailLabelService.shared.createLabel(name: name, accountID: accountID)
             labels.append(newLabel)
             await addLabel(newLabel.id, to: messageID)
-            // Force re-computation of emails (computed depends on both messages and labels)
-            objectWillChange.send()
+            // labels is @Published — changing it already triggers re-computation of emails
             return newLabel.id
         } catch {
             self.error = error.localizedDescription

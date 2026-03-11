@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 
 @MainActor
-class AppCoordinator: ObservableObject {
+final class AppCoordinator: ObservableObject {
 
     // MARK: - Child ViewModels
 
@@ -235,6 +235,7 @@ class AppCoordinator: ObservableObject {
         if let account = authViewModel.primaryAccount {
             selectedAccountID = account.id
             mailboxViewModel.accountID = account.id
+            mailStore.accountID = account.id
             SubscriptionsStore.shared.accountID = account.id
             attachmentStore.accountID = account.id
             loadSignatures(for: account.id)
@@ -317,6 +318,7 @@ class AppCoordinator: ObservableObject {
         selectedEmailIDs = []
         searchResetTrigger += 1
         ThumbnailCache.shared.clearAll()
+        mailStore.accountID = id
         SubscriptionsStore.shared.accountID = id
         attachmentStore.accountID = id
         attachmentStore.refresh()

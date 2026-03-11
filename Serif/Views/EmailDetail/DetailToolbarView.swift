@@ -120,8 +120,9 @@ struct DetailToolbarView: View {
                 }
                 Divider()
                 Section {
-                    Button { } label: { Label("Mute Thread",    systemImage: "bell.slash") }
-                    Button { } label: { Label("Block Sender",   systemImage: "hand.raised") }
+                    // TODO: Implement mute thread and block sender features
+                    // Button { } label: { Label("Mute Thread", systemImage: "bell.slash") }
+                    // Button { } label: { Label("Block Sender", systemImage: "hand.raised") }
                     if let onMarkNotSpam {
                         Button { onMarkNotSpam() } label: { Label("Not Spam", systemImage: "tray.and.arrow.down") }
                     } else {

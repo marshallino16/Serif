@@ -31,6 +31,18 @@ final class TrackerBlockerService {
     static let shared = TrackerBlockerService()
     private init() {}
 
+    // MARK: - Cached regexes (compiled once, reused across all calls)
+
+    private static let imgTagRegex = try! NSRegularExpression(pattern: "<img\\b[^>]*>", options: .caseInsensitive)
+    private static let cssBackgroundRegex = try! NSRegularExpression(
+        pattern: "background(?:-image)?\\s*:[^;]*url\\(\\s*['\"]?([^'\")\\s]+)['\"]?\\s*\\)",
+        options: .caseInsensitive
+    )
+    private static let anchorHrefRegex = try! NSRegularExpression(
+        pattern: "<a\\b[^>]*\\bhref\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>",
+        options: .caseInsensitive
+    )
+
     // MARK: - Public API
 
     func sanitize(html: String) -> TrackerResult {
@@ -47,7 +59,7 @@ final class TrackerBlockerService {
     // MARK: - Pass 1: IMG tags
 
     private func scanAndStripImages(_ html: inout String, _ trackers: inout [TrackerInfo]) {
-        guard let regex = try? NSRegularExpression(pattern: "<img\\b[^>]*>", options: .caseInsensitive) else { return }
+        let regex = Self.imgTagRegex
         let nsHTML = html as NSString
         let matches = regex.matches(in: html, range: NSRange(location: 0, length: nsHTML.length))
 
@@ -85,11 +97,7 @@ final class TrackerBlockerService {
     // MARK: - Pass 2: CSS background-image
 
     private func scanAndStripCSS(_ html: inout String, _ trackers: inout [TrackerInfo]) {
-        guard let regex = try? NSRegularExpression(
-            pattern: "background(?:-image)?\\s*:[^;]*url\\(\\s*['\"]?([^'\")\\s]+)['\"]?\\s*\\)",
-            options: .caseInsensitive
-        ) else { return }
-
+        let regex = Self.cssBackgroundRegex
         let nsHTML = html as NSString
         let matches = regex.matches(in: html, range: NSRange(location: 0, length: nsHTML.length))
 
@@ -117,11 +125,7 @@ final class TrackerBlockerService {
     // MARK: - Pass 3: Tracking link redirects
 
     private func rewriteTrackingLinks(_ html: inout String, _ trackers: inout [TrackerInfo]) {
-        guard let regex = try? NSRegularExpression(
-            pattern: "<a\\b[^>]*\\bhref\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>",
-            options: .caseInsensitive
-        ) else { return }
-
+        let regex = Self.anchorHrefRegex
         let nsHTML = html as NSString
         let matches = regex.matches(in: html, range: NSRange(location: 0, length: nsHTML.length))
 
@@ -147,9 +151,19 @@ final class TrackerBlockerService {
 
     // MARK: - Helpers
 
+    private static let attrRegexCache = NSCache<NSString, NSRegularExpression>()
+
+    private func cachedRegex(for pattern: String) -> NSRegularExpression? {
+        let key = pattern as NSString
+        if let cached = Self.attrRegexCache.object(forKey: key) { return cached }
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return nil }
+        Self.attrRegexCache.setObject(regex, forKey: key)
+        return regex
+    }
+
     private func extractAttribute(_ name: String, from tag: String) -> String? {
         let pattern = "\\b\(name)\\s*=\\s*[\"']([^\"']+)[\"']"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return nil }
+        guard let regex = cachedRegex(for: pattern) else { return nil }
         let nsTag = tag as NSString
         guard let match = regex.firstMatch(in: tag, range: NSRange(location: 0, length: nsTag.length)),
               match.numberOfRanges > 1 else { return nil }
@@ -171,7 +185,7 @@ final class TrackerBlockerService {
 
     private func extractDimension(_ name: String, from tag: String) -> Int? {
         let pattern = "\\b\(name)\\s*=\\s*[\"']?(\\d+)"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return nil }
+        guard let regex = cachedRegex(for: pattern) else { return nil }
         let nsTag = tag as NSString
         guard let match = regex.firstMatch(in: tag, range: NSRange(location: 0, length: nsTag.length)),
               match.numberOfRanges > 1 else { return nil }

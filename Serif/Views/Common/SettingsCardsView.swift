@@ -60,8 +60,6 @@ struct ContactsSettingsCard: View {
     @State private var contactCount = 0
     @Environment(\.theme) private var theme
 
-    private let refreshTimer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Contacts")
@@ -105,12 +103,6 @@ struct ContactsSettingsCard: View {
         .cardStyle()
         .onAppear {
             contactCount = ContactStore.shared.contacts(for: accountID).count
-        }
-        .onReceive(refreshTimer) { _ in
-            let current = ContactStore.shared.contacts(for: accountID).count
-            if current != contactCount {
-                contactCount = current
-            }
         }
     }
 }

@@ -332,7 +332,9 @@ struct EmailDetailView: View {
                 guard let msgID = detailVM.latestMessage?.id else { return }
                 let data = try await detailVM.downloadAttachment(messageID: msgID, part: part)
                 await MainActor.run { saveAttachmentData(data, named: attachment.name) }
-            } catch { }
+            } catch {
+                ToastManager.shared.show(message: "Download failed: \(error.localizedDescription)", type: .error)
+            }
         }
     }
 

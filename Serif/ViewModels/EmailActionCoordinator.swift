@@ -1,7 +1,7 @@
 import SwiftUI
 
 @MainActor
-class EmailActionCoordinator: ObservableObject {
+final class EmailActionCoordinator: ObservableObject {
     let mailboxViewModel: MailboxViewModel
     let mailStore: MailStore
 

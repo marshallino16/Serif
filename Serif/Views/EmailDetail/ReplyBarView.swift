@@ -336,7 +336,8 @@ struct ReplyBarView: View {
 
     private func animateChips() {
         visibleChipCount = 0
-        for i in 0...quickReplies.count {
+        guard !quickReplies.isEmpty else { return }
+        for i in 0..<quickReplies.count {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(i) * 0.1)) {
                 visibleChipCount = i + 1
             }

@@ -242,12 +242,12 @@ final class EmailDetailViewModel: ObservableObject {
     // MARK: - Label mutation (optimistic local update)
 
     func updateLabelIDs(_ labelIDs: [String]) {
-        guard let msgs = thread?.messages, let lastID = msgs.last?.id else { return }
+        guard let current = thread, let msgs = current.messages, let lastID = msgs.last?.id else { return }
         var updated = msgs
         if let idx = updated.firstIndex(where: { $0.id == lastID }) {
             updated[idx].labelIds = labelIDs
         }
-        thread = GmailThread(id: thread!.id, historyId: thread!.historyId, messages: updated)
+        thread = GmailThread(id: current.id, historyId: current.historyId, messages: updated)
     }
 
     /// Optimistically toggles the STARRED label on the latest message.

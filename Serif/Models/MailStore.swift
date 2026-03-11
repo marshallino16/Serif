@@ -13,21 +13,32 @@ final class MailStore: ObservableObject {
     }
     var replyDrafts: [String: ReplyDraftInfo] = [:]
 
-    private static let replyDraftsKey = "replyDrafts"
+    private static let replyDraftsKeyPrefix = "replyDrafts."
+    /// Current account ID for scoping reply drafts persistence.
+    var accountID: String = "" {
+        didSet {
+            guard oldValue != accountID else { return }
+            loadReplyDrafts()
+        }
+    }
 
     init(emails: [Email] = []) {
         self.emails = emails
-        loadReplyDrafts()
     }
 
     func saveReplyDrafts() {
+        guard !accountID.isEmpty else { return }
         guard let data = try? JSONEncoder().encode(replyDrafts) else { return }
-        UserDefaults.standard.set(data, forKey: Self.replyDraftsKey)
+        UserDefaults.standard.set(data, forKey: Self.replyDraftsKeyPrefix + accountID)
     }
 
     private func loadReplyDrafts() {
-        guard let data = UserDefaults.standard.data(forKey: Self.replyDraftsKey),
-              let decoded = try? JSONDecoder().decode([String: ReplyDraftInfo].self, from: data) else { return }
+        guard !accountID.isEmpty else { return }
+        guard let data = UserDefaults.standard.data(forKey: Self.replyDraftsKeyPrefix + accountID),
+              let decoded = try? JSONDecoder().decode([String: ReplyDraftInfo].self, from: data) else {
+            replyDrafts = [:]
+            return
+        }
         replyDrafts = decoded
     }
 
@@ -165,10 +176,6 @@ final class MailStore: ObservableObject {
     }
 
     func updateDraft(id: UUID, subject: String, body: String, to: String, cc: String) {
-        let parseContacts: (String) -> [Contact] = { raw in
-            raw.split(separator: ",")
-                .map { Contact(name: String($0.trimmingCharacters(in: .whitespaces)), email: String($0.trimmingCharacters(in: .whitespaces))) }
-        }
 
         // Try local drafts first, then Gmail drafts
         if let index = emails.firstIndex(where: { $0.id == id }) {
@@ -176,15 +183,15 @@ final class MailStore: ObservableObject {
             emails[index].body       = body
             emails[index].preview    = body.isEmpty ? "New draft" : String(body.strippingHTML.prefix(120))
             emails[index].date       = Date()
-            emails[index].recipients = to.isEmpty ? [] : parseContacts(to)
-            emails[index].cc         = cc.isEmpty ? [] : parseContacts(cc)
+            emails[index].recipients = to.isEmpty ? [] : GmailDataTransformer.parseContacts(to)
+            emails[index].cc         = cc.isEmpty ? [] : GmailDataTransformer.parseContacts(cc)
         } else if let index = gmailDrafts.firstIndex(where: { $0.id == id }) {
             gmailDrafts[index].subject    = subject.isEmpty ? "(No subject)" : subject
             gmailDrafts[index].body       = body
             gmailDrafts[index].preview    = body.isEmpty ? "New draft" : String(body.strippingHTML.prefix(120))
             gmailDrafts[index].date       = Date()
-            gmailDrafts[index].recipients = to.isEmpty ? [] : parseContacts(to)
-            gmailDrafts[index].cc         = cc.isEmpty ? [] : parseContacts(cc)
+            gmailDrafts[index].recipients = to.isEmpty ? [] : GmailDataTransformer.parseContacts(to)
+            gmailDrafts[index].cc         = cc.isEmpty ? [] : GmailDataTransformer.parseContacts(cc)
         }
     }
 

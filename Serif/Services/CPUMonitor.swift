@@ -1,14 +1,20 @@
 import Foundation
 import Darwin.Mach
+import os
 
-final class CPUMonitor {
+final class CPUMonitor: Sendable {
     static let shared = CPUMonitor()
 
-    // Process CPU measurement (not system-wide)
-    private var previousProcessTime: Double = 0
-    private var previousWallTime: UInt64 = 0
-    private var cachedUsage: Double = 0
-    private var cacheTimestamp: UInt64 = 0
+    // All mutable state protected by os_unfair_lock
+    private let lock = OSAllocatedUnfairLock(initialState: State())
+
+    private struct State {
+        var previousProcessTime: Double = 0
+        var previousWallTime: UInt64 = 0
+        var cachedUsage: Double = 0
+        var cacheTimestamp: UInt64 = 0
+    }
+
     /// Minimum interval between real samples (500ms)
     private let cacheInterval: UInt64 = 500_000_000
     /// Process CPU threshold (Activity Monitor scale: 100 = one full core)
@@ -16,8 +22,12 @@ final class CPUMonitor {
 
     private init() {
         // Prime the first sample
-        previousProcessTime = processTime() ?? 0
-        previousWallTime = clock_gettime_nsec_np(CLOCK_UPTIME_RAW)
+        let now = clock_gettime_nsec_np(CLOCK_UPTIME_RAW)
+        let time = Self.processTime() ?? 0
+        lock.withLock { state in
+            state.previousProcessTime = time
+            state.previousWallTime = now
+        }
     }
 
     // MARK: - Public API
@@ -26,22 +36,24 @@ final class CPUMonitor {
     /// Cached for 500ms to avoid micro-deltas from rapid successive calls.
     func processCPUUsage() -> Double {
         let now = clock_gettime_nsec_np(CLOCK_UPTIME_RAW)
-        if now - cacheTimestamp < cacheInterval {
-            return cachedUsage
+        return lock.withLock { state in
+            if now - state.cacheTimestamp < cacheInterval {
+                return state.cachedUsage
+            }
+            guard let currentTime = Self.processTime() else { return state.cachedUsage }
+
+            let wallDelta = Double(now - state.previousWallTime) / 1_000_000_000
+            guard wallDelta > 0.01 else { return state.cachedUsage } // need at least 10ms of wall time
+
+            let cpuDelta = currentTime - state.previousProcessTime
+            let usage = (cpuDelta / wallDelta) * 100
+
+            state.previousProcessTime = currentTime
+            state.previousWallTime = now
+            state.cachedUsage = usage
+            state.cacheTimestamp = now
+            return usage
         }
-        guard let currentTime = processTime() else { return cachedUsage }
-
-        let wallDelta = Double(now - previousWallTime) / 1_000_000_000
-        guard wallDelta > 0.01 else { return cachedUsage } // need at least 10ms of wall time
-
-        let cpuDelta = currentTime - previousProcessTime
-        let usage = (cpuDelta / wallDelta) * 100
-
-        previousProcessTime = currentTime
-        previousWallTime = now
-        cachedUsage = usage
-        cacheTimestamp = now
-        return usage
     }
 
     /// Recommended concurrency (1...max) based on process CPU.
@@ -71,7 +83,7 @@ final class CPUMonitor {
     // MARK: - Private
 
     /// Total CPU time (user + system) consumed by this process, in seconds.
-    private func processTime() -> Double? {
+    private static func processTime() -> Double? {
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(
             MemoryLayout<mach_task_basic_info>.size / MemoryLayout<natural_t>.size
