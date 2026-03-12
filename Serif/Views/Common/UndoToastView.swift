@@ -62,7 +62,7 @@ struct UndoToastView: View {
     private func toastCard(_ action: PendingUndoAction) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                Text(action.label)
+                Text(action.displayLabel)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(theme.textPrimary)
                     .lineLimit(1)
