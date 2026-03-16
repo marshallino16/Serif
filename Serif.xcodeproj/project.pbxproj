@@ -22,6 +22,11 @@
 		B10001010000000000000009 /* CPUMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002010000000000000009 /* CPUMonitorTests.swift */; };
 		B1000101000000000000000A /* EmailActionCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000201000000000000000A /* EmailActionCoordinatorTests.swift */; };
 		B1000101000000000000000B /* DraftLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000201000000000000000B /* DraftLifecycleTests.swift */; };
+		C10001010000000000000001 /* EmailTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10002010000000000000001 /* EmailTemplate.swift */; };
+		C10001010000000000000002 /* TemplateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10002010000000000000002 /* TemplateStore.swift */; };
+		C10001010000000000000003 /* TemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10002010000000000000003 /* TemplateListView.swift */; };
+		C10001010000000000000004 /* TemplateEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10002010000000000000004 /* TemplateEditorView.swift */; };
+		C10001010000000000000005 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10002010000000000000005 /* TemplatePickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +54,11 @@
 		B1000201000000000000000A /* EmailActionCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailActionCoordinatorTests.swift; sourceTree = "<group>"; };
 		B1000201000000000000000B /* DraftLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftLifecycleTests.swift; sourceTree = "<group>"; };
 		B10002010000000000000099 /* SerifTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SerifTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C10002010000000000000001 /* EmailTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailTemplate.swift; sourceTree = "<group>"; };
+		C10002010000000000000002 /* TemplateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateStore.swift; sourceTree = "<group>"; };
+		C10002010000000000000003 /* TemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListView.swift; sourceTree = "<group>"; };
+		C10002010000000000000004 /* TemplateEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditorView.swift; sourceTree = "<group>"; };
+		C10002010000000000000005 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -90,6 +100,9 @@
 			isa = PBXGroup;
 			children = (
 				9E160AA62F60CC08004784BD /* Serif */,
+				C10004010000000000000001 /* Models */,
+				C10004010000000000000002 /* Services */,
+				C10004010000000000000003 /* Views */,
 				B10004010000000000000001 /* SerifTests */,
 				A10004010000000000000099 /* Products */,
 				9EBEBCE82F5B21B400145F71 /* serif_icon.icon */,
@@ -121,6 +134,51 @@
 				B1000201000000000000000B /* DraftLifecycleTests.swift */,
 			);
 			path = SerifTests;
+			sourceTree = "<group>";
+		};
+		C10004010000000000000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C10002010000000000000001 /* EmailTemplate.swift */,
+			);
+			name = Models;
+			path = Serif/Models;
+			sourceTree = "<group>";
+		};
+		C10004010000000000000002 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C10002010000000000000002 /* TemplateStore.swift */,
+			);
+			name = Services;
+			path = Serif/Services;
+			sourceTree = "<group>";
+		};
+		C10004010000000000000003 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C10004010000000000000004 /* Templates */,
+				C10004010000000000000005 /* Compose */,
+			);
+			name = Views;
+			path = Serif/Views;
+			sourceTree = "<group>";
+		};
+		C10004010000000000000004 /* Templates */ = {
+			isa = PBXGroup;
+			children = (
+				C10002010000000000000003 /* TemplateListView.swift */,
+				C10002010000000000000004 /* TemplateEditorView.swift */,
+			);
+			path = Templates;
+			sourceTree = "<group>";
+		};
+		C10004010000000000000005 /* Compose */ = {
+			isa = PBXGroup;
+			children = (
+				C10002010000000000000005 /* TemplatePickerView.swift */,
+			);
+			path = Compose;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -227,6 +285,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C10001010000000000000001 /* EmailTemplate.swift in Sources */,
+				C10001010000000000000002 /* TemplateStore.swift in Sources */,
+				C10001010000000000000003 /* TemplateListView.swift in Sources */,
+				C10001010000000000000004 /* TemplateEditorView.swift in Sources */,
+				C10001010000000000000005 /* TemplatePickerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

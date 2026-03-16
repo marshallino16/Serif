@@ -10,6 +10,7 @@ struct ComposeView: View {
     let signatureForNew: String
     let signatureForReply: String
     let contacts: [StoredContact]
+    let templates: [EmailTemplate]
     let onDiscard: () -> Void
     var onOpenLink: ((URL) -> Void)?
 
@@ -29,6 +30,9 @@ struct ComposeView: View {
     @State private var selectedAliasEmail: String
     @State private var currentSignatureHTML: String = ""
     @State private var showDiscardAlert = false
+    @State private var showTemplatePicker = false
+    @State private var showSaveTemplateAlert = false
+    @State private var templateName = ""
     @StateObject private var editorState = WebRichTextEditorState()
     @StateObject private var composeVM: ComposeViewModel
     @Environment(\.theme) private var theme
@@ -43,6 +47,7 @@ struct ComposeView: View {
         signatureForNew: String = "",
         signatureForReply: String = "",
         contacts: [StoredContact] = [],
+        templates: [EmailTemplate] = [],
         onDiscard: @escaping () -> Void,
         onOpenLink: ((URL) -> Void)? = nil
     ) {
@@ -55,6 +60,7 @@ struct ComposeView: View {
         self.signatureForNew   = signatureForNew
         self.signatureForReply = signatureForReply
         self.contacts          = contacts
+        self.templates         = templates
         self.onDiscard         = onDiscard
         self.onOpenLink        = onOpenLink
         self._selectedAliasEmail = State(initialValue: fromAddress)
@@ -159,6 +165,17 @@ struct ComposeView: View {
         .onChange(of: selectedAliasEmail) { newEmail in
             composeVM.fromAddress = newEmail
             replaceSignature(for: newEmail)
+        }
+        .alert("Save as Template", isPresented: $showSaveTemplateAlert) {
+            TextField("Template name", text: $templateName)
+            Button("Cancel", role: .cancel) {}
+            Button("Save") {
+                guard !templateName.isEmpty else { return }
+                let template = EmailTemplate(name: templateName, subject: subject, bodyHTML: bodyHTML)
+                TemplateStore.shared.save(template, accountID: accountID)
+            }
+        } message: {
+            Text("Enter a name for this template.")
         }
         .alert("Discard draft?", isPresented: $showDiscardAlert) {
             Button("Cancel", role: .cancel) {}
@@ -308,6 +325,23 @@ struct ComposeView: View {
             Spacer()
 
             toolbarButton(icon: "paperclip", label: "Attach") { attachFiles() }
+
+            toolbarButton(icon: "doc.on.doc", label: "Use Template") {
+                showTemplatePicker.toggle()
+            }
+            .popover(isPresented: $showTemplatePicker) {
+                TemplatePickerView(templates: templates) { template in
+                    subject = template.subject
+                    bodyHTML = template.bodyHTML
+                    editorState.setHTML(template.bodyHTML)
+                    showTemplatePicker = false
+                }
+            }
+
+            toolbarButton(icon: "square.and.arrow.down", label: "Save as Template") {
+                templateName = ""
+                showSaveTemplateAlert = true
+            }
 
             Button {
                 showCc.toggle()

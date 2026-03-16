@@ -66,6 +66,31 @@ struct ContentView: View {
                             coordinator.navigateToMessage(gmailMessageID: messageId)
                         }
                     )
+                } else if coordinator.selectedFolder == .templates {
+                    TemplateListView(
+                        store: coordinator.templateStore,
+                        selectedTemplateID: $coordinator.selectedTemplateID,
+                        accountID: coordinator.accountID
+                    )
+
+                    if let templateID = coordinator.selectedTemplateID {
+                        TemplateEditorView(
+                            templateID: templateID,
+                            accountID: coordinator.accountID,
+                            store: coordinator.templateStore,
+                            onDelete: { coordinator.selectedTemplateID = nil }
+                        )
+                    } else {
+                        VStack {
+                            Spacer()
+                            Text("Select a template")
+                                .font(.system(size: 14))
+                                .foregroundColor(themeManager.currentTheme.textTertiary)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .background(themeManager.currentTheme.detailBackground)
+                    }
                 } else {
                     ListPaneView(
                         emails: coordinator.displayedEmails,

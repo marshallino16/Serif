@@ -81,6 +81,7 @@ struct DetailPaneView: View {
             signatureForNew: signatureForNew,
             signatureForReply: signatureForReply,
             contacts: ContactStore.shared.contacts(for: accountID),
+            templates: coordinator.templateStore.templates,
             onDiscard: { coordinator.discardDraft(id: draftId) },
             onOpenLink: { url in panelCoordinator.openInAppBrowser(url: url) }
         )

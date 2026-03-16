@@ -20,6 +20,7 @@ struct ReplyBarView: View {
     @StateObject private var composeVM: ComposeViewModel
     @State private var quickReplies: [String] = []
     @State private var isLoadingReplies = false
+    @State private var showTemplatePicker = false
     @State private var gradientRotation: Double = 0
     @Environment(\.theme) private var theme
 
@@ -222,6 +223,22 @@ struct ReplyBarView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Attach file")
+
+                Button { showTemplatePicker.toggle() } label: {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.textSecondary)
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+                .help("Use template")
+                .popover(isPresented: $showTemplatePicker) {
+                    TemplatePickerView(templates: TemplateStore.shared.templates) { template in
+                        replyHTML = template.bodyHTML
+                        editorState.setHTML(template.bodyHTML)
+                        showTemplatePicker = false
+                    }
+                }
 
                 if let err = sendError {
                     Text(err)

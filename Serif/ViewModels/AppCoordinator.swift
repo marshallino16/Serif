@@ -25,6 +25,8 @@ final class AppCoordinator: ObservableObject {
     @Published var selectedLabel: GmailLabel?
     @Published var selectedEmail: Email?
     @Published var selectedEmailIDs: Set<String> = []
+    @Published var selectedTemplateID: UUID?
+    let templateStore = TemplateStore.shared
 
     // MARK: - UI State
 
@@ -274,7 +276,10 @@ final class AppCoordinator: ObservableObject {
         selectedEmailIDs = []
         searchResetTrigger += 1
         if folder != .labels { selectedLabel = nil }
-        if folder == .attachments {
+        if folder != .templates { selectedTemplateID = nil }
+        if folder == .templates {
+            templateStore.load(accountID: accountID)
+        } else if folder == .attachments {
             attachmentStore.refresh()
             if let indexer = attachmentIndexer {
                 Task {
@@ -334,6 +339,7 @@ final class AppCoordinator: ObservableObject {
                 attachmentStore?.refresh()
             }
             await mailboxViewModel.switchAccount(id)
+            templateStore.load(accountID: id)
             // Load folder, labels, and unread counts in parallel
             async let folder: Void = loadCurrentFolder()
             async let labels: Void = mailboxViewModel.loadLabels()
