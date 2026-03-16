@@ -334,11 +334,13 @@ final class AppCoordinator: ObservableObject {
                 attachmentStore?.refresh()
             }
             await mailboxViewModel.switchAccount(id)
-            await loadCurrentFolder()
-            await mailboxViewModel.loadLabels()
-            await mailboxViewModel.loadSendAs()
-            await mailboxViewModel.loadCategoryUnreadCounts()
-            await GmailProfileService.shared.loadContactPhotos(accountID: id)
+            // Load folder, labels, and unread counts in parallel
+            async let folder: Void = loadCurrentFolder()
+            async let labels: Void = mailboxViewModel.loadLabels()
+            async let sendAs: Void = mailboxViewModel.loadSendAs()
+            async let unread: Void = mailboxViewModel.loadCategoryUnreadCounts()
+            async let photos: Void = GmailProfileService.shared.loadContactPhotos(accountID: id)
+            _ = await (folder, labels, sendAs, unread, photos)
             await indexer.resumePending()
             await indexer.scanForAttachments()
         }

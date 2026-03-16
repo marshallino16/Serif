@@ -12,7 +12,7 @@ final class ThemeManager: ObservableObject {
         .serif,
         .nord,
         .rose,
-        .solarizedDark,
+        .zinc,
         .dracula,
         .oneDark,
         .catppuccin,

@@ -156,34 +156,34 @@ extension Theme {
         tagBackground: Color(hex: "#42303E")
     )
 
-    // MARK: Solarized Dark
-    static let solarizedDark = Theme(
-        id: "solarized-dark",
-        name: "Solarized",
-        icon: "sun.haze.fill",
-        sidebarBackground: Color(hex: "#002129"),
-        listBackground: Color(hex: "#002B36"),
-        detailBackground: Color(hex: "#073642"),
-        cardBackground: Color(hex: "#0A4050"),
-        selectedCardBackground: Color(hex: "#114B5C"),
-        hoverBackground: Color(hex: "#0A4050"),
-        searchBarBackground: Color(hex: "#0A4050"),
-        accentPrimary: Color(hex: "#268BD2"),
-        accentSecondary: Color(hex: "#2AA198"),
-        textPrimary: Color(hex: "#FDF6E3"),
-        textSecondary: Color(hex: "#93A1A1"),
-        textTertiary: Color(hex: "#657B83"),
-        textInverse: Color(hex: "#002B36"),
-        border: Color(hex: "#114B5C"),
-        divider: Color(hex: "#073642"),
-        unreadIndicator: Color(hex: "#268BD2"),
-        attachmentBackground: Color(hex: "#0A4050"),
-        avatarRing: Color(hex: "#268BD2"),
-        destructive: Color(hex: "#DC322F"),
-        buttonPrimary: Color(hex: "#268BD2"),
-        buttonSecondary: Color(hex: "#114B5C"),
-        inputBackground: Color(hex: "#002B36"),
-        tagBackground: Color(hex: "#114B5C")
+    // MARK: Zinc (shadcn dark)
+    static let zinc = Theme(
+        id: "zinc",
+        name: "Zinc",
+        icon: "cube.fill",
+        sidebarBackground: Color(hex: "#09090B"),
+        listBackground: Color(hex: "#111114"),
+        detailBackground: Color(hex: "#111114"),
+        cardBackground: Color(hex: "#18181B"),
+        selectedCardBackground: Color(hex: "#27272A"),
+        hoverBackground: Color(hex: "#1C1C20"),
+        searchBarBackground: Color(hex: "#18181B"),
+        accentPrimary: Color(hex: "#FAFAFA"),
+        accentSecondary: Color(hex: "#A1A1AA"),
+        textPrimary: Color(hex: "#FAFAFA"),
+        textSecondary: Color(hex: "#A1A1AA"),
+        textTertiary: Color(hex: "#52525B"),
+        textInverse: Color(hex: "#09090B"),
+        border: Color(hex: "#27272A"),
+        divider: Color(hex: "#1E1E22"),
+        unreadIndicator: Color(hex: "#FAFAFA"),
+        attachmentBackground: Color(hex: "#18181B"),
+        avatarRing: Color(hex: "#D4D4D8"),
+        destructive: Color(hex: "#EF4444"),
+        buttonPrimary: Color(hex: "#FAFAFA"),
+        buttonSecondary: Color(hex: "#27272A"),
+        inputBackground: Color(hex: "#18181B"),
+        tagBackground: Color(hex: "#27272A")
     )
 
     // MARK: Dracula
