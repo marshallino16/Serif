@@ -1,7 +1,8 @@
 .DS_STORE
 .claude/*
 .xcodebuildmcp/*
-Serif/Configuration/GoogleCredentials.swift
+Serif/macOS/GoogleCredentials.swift
+Serif/iOS/GoogleCredentialsiOS.swift
 
 ## User settings
 xcuserdata/
