@@ -1,0 +1,306 @@
+import SwiftUI
+
+struct iOSAttachmentCardView: View {
+    let result: AttachmentSearchResult
+    let isSearchActive: Bool
+    let accountID: String
+    var onTap: (() -> Void)?
+    var onShare: (() -> Void)?
+    var onViewMessage: (() -> Void)?
+    @ObservedObject private var thumbCache = ThumbnailCache.shared
+    @Environment(\.theme) private var theme
+
+    private let thumbHeight: CGFloat = 120
+
+    // MARK: - Computed
+
+    private var fileType: Attachment.FileType {
+        Attachment.FileType(rawValue: result.attachment.fileType) ?? .document
+    }
+
+    private var fileTypeIcon: String { fileType.rawValue }
+
+    private var typeColor: Color {
+        switch fileType {
+        case .image:        return .blue
+        case .pdf:          return .red
+        case .spreadsheet:  return .green
+        case .document:     return .orange
+        case .presentation: return .orange
+        case .archive:      return .gray
+        case .code:         return .purple
+        }
+    }
+
+    private var iconBackgroundColor: Color {
+        typeColor.opacity(0.12)
+    }
+
+    private var formattedSize: String {
+        let size = result.attachment.size
+        guard size > 0 else { return "" }
+        if size < 1024 { return "\(size) B" }
+        if size < 1024 * 1024 { return "\(size / 1024) KB" }
+        return String(format: "%.1f MB", Double(size) / (1024 * 1024))
+    }
+
+    private var formattedDate: String {
+        guard let date = result.attachment.emailDate else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
+    }
+
+    private var scoreColor: Color {
+        if result.score > 0.7 { return .green }
+        if result.score > 0.4 { return .orange }
+        return .red
+    }
+
+    // MARK: - Body
+
+    var body: some View {
+        Button {
+            onTap?()
+        } label: {
+            cardContent
+        }
+        .buttonStyle(.plain)
+        .onAppear {
+            thumbCache.loadIfNeeded(attachment: result.attachment, accountID: accountID)
+        }
+        .onDisappear {
+            thumbCache.cancelIfNeeded(id: result.attachment.id)
+        }
+        .contextMenu {
+            Button {
+                onShare?()
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+
+            Button {
+                onViewMessage?()
+            } label: {
+                Label("View Email", systemImage: "envelope")
+            }
+        }
+    }
+
+    // MARK: - Card Content
+
+    private var cardContent: some View {
+        VStack(spacing: 0) {
+            // Type color indicator bar
+            typeColor
+                .frame(height: 3)
+                .frame(maxWidth: .infinity)
+
+            VStack(spacing: 0) {
+                thumbnailArea
+                Spacer().frame(height: 8)
+                filenameArea
+                Spacer().frame(height: 4)
+                metadataArea
+                if isSearchActive { scoreArea }
+            }
+            .padding(10)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 210)
+        .background(RoundedRectangle(cornerRadius: 12).fill(theme.cardBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Subviews
+
+    private var thumbnailArea: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(iconBackgroundColor)
+
+            if let thumb = thumbCache.thumbnail(for: result.attachment.id) {
+                GeometryReader { geo in
+                    Image(uiImage: thumb)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                }
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: fileTypeIcon)
+                        .font(.system(size: 32))
+                        .foregroundStyle(typeColor)
+                    if !formattedSize.isEmpty {
+                        Text(formattedSize)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(theme.textTertiary)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: thumbHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var filenameArea: some View {
+        Text(result.attachment.filename)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(theme.textPrimary)
+            .lineLimit(2)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .frame(height: 34, alignment: .top)
+    }
+
+    private var metadataArea: some View {
+        VStack(spacing: 2) {
+            Text(result.attachment.senderName ?? result.attachment.senderEmail ?? "")
+                .font(.system(size: 11))
+                .foregroundStyle(theme.textTertiary)
+                .lineLimit(1)
+            Text(formattedDate)
+                .font(.system(size: 11))
+                .foregroundStyle(theme.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var scoreArea: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(scoreColor)
+                .frame(width: 6, height: 6)
+            Text("\(Int(result.score * 100))%")
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundStyle(theme.textSecondary)
+        }
+        .frame(height: 14)
+        .padding(.top, 2)
+    }
+}
+
+// MARK: - List Row Variant
+
+struct iOSAttachmentListRow: View {
+    let result: AttachmentSearchResult
+    let accountID: String
+    var onTap: (() -> Void)?
+    var onShare: (() -> Void)?
+    var onViewMessage: (() -> Void)?
+    @ObservedObject private var thumbCache = ThumbnailCache.shared
+    @Environment(\.theme) private var theme
+
+    private var fileType: Attachment.FileType {
+        Attachment.FileType(rawValue: result.attachment.fileType) ?? .document
+    }
+
+    private var typeColor: Color {
+        switch fileType {
+        case .image:        return .blue
+        case .pdf:          return .red
+        case .spreadsheet:  return .green
+        case .document:     return .orange
+        case .presentation: return .orange
+        case .archive:      return .gray
+        case .code:         return .purple
+        }
+    }
+
+    private var formattedSize: String {
+        let size = result.attachment.size
+        guard size > 0 else { return "" }
+        if size < 1024 { return "\(size) B" }
+        if size < 1024 * 1024 { return "\(size / 1024) KB" }
+        return String(format: "%.1f MB", Double(size) / (1024 * 1024))
+    }
+
+    private var formattedDate: String {
+        guard let date = result.attachment.emailDate else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
+    }
+
+    var body: some View {
+        Button {
+            onTap?()
+        } label: {
+            HStack(spacing: 12) {
+                // Thumbnail / icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(typeColor.opacity(0.12))
+
+                    if let thumb = thumbCache.thumbnail(for: result.attachment.id) {
+                        Image(uiImage: thumb)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else {
+                        Image(systemName: fileType.rawValue)
+                            .font(.system(size: 18))
+                            .foregroundStyle(typeColor)
+                    }
+                }
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                // Details
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(result.attachment.filename)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+
+                    HStack(spacing: 6) {
+                        Text(result.attachment.senderName ?? result.attachment.senderEmail ?? "")
+                            .font(.system(size: 13))
+                            .foregroundStyle(theme.textSecondary)
+                            .lineLimit(1)
+
+                        if !formattedDate.isEmpty {
+                            Text(formattedDate)
+                                .font(.system(size: 13))
+                                .foregroundStyle(theme.textTertiary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                // Size
+                if !formattedSize.isEmpty {
+                    Text(formattedSize)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(theme.textTertiary)
+                }
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onAppear {
+            thumbCache.loadIfNeeded(attachment: result.attachment, accountID: accountID)
+        }
+        .onDisappear {
+            thumbCache.cancelIfNeeded(id: result.attachment.id)
+        }
+        .contextMenu {
+            Button {
+                onShare?()
+            } label: {
+                Label("Share", systemImage: "square.and.arrow.up")
+            }
+
+            Button {
+                onViewMessage?()
+            } label: {
+                Label("View Email", systemImage: "envelope")
+            }
+        }
+    }
+}

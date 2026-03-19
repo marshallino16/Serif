@@ -124,8 +124,9 @@ actor AttachmentIndexer {
 
             switch result {
             case .text(let text):
+                let truncatedText = String(text.prefix(2000))
                 let embedding = ContentExtractor.generateEmbedding(for: text)
-                database.updateIndexedContent(id: att.id, text: text, embedding: embedding, status: .indexed)
+                database.updateIndexedContent(id: att.id, text: truncatedText, embedding: embedding, status: .indexed)
                 print("[AttachmentIndexer] Indexed: \(att.filename)")
             case .unsupported:
                 database.updateIndexedContent(id: att.id, text: nil, embedding: nil, status: .unsupported)

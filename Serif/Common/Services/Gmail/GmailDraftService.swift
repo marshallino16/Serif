@@ -30,6 +30,17 @@ final class GmailDraftService {
         )
     }
 
+    // MARK: - Delete Draft
+
+    /// Permanently deletes a draft. The message it was based on is NOT deleted.
+    func deleteDraft(id: String, accountID: String) async throws {
+        _ = try await client.rawRequest(
+            path: "/users/me/drafts/\(id)",
+            method: "DELETE",
+            accountID: accountID
+        )
+    }
+
     // MARK: - Batch fetch
 
     /// Fetches a batch of draft IDs in groups of 5 to avoid rate limits.

@@ -46,7 +46,7 @@ enum HTMLTemplate {
         #editor {
             min-height: 100%;
             outline: none;
-            padding: 8px 4px;
+            padding: 10px 12px;
             word-wrap: break-word;
             overflow-wrap: break-word;
         }

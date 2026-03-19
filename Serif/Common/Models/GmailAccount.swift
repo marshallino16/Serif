@@ -58,9 +58,7 @@ final class AccountStore {
     func remove(id: String) {
         accounts = accounts.filter { $0.id != id }
         TokenStore.shared.delete(for: id)
-        #if os(macOS)
         AttachmentDatabase.shared.deleteByAccountID(id)
-        #endif
         MailCacheStore.shared.deleteAccount(id)
         UnsubscribeService.shared.clearAccount(id)
         ContactStore.shared.deleteAccount(id)

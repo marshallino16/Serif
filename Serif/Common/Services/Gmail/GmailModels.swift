@@ -107,12 +107,12 @@ struct GmailLabelListResponse: Codable {
     let labels: [GmailLabel]
 }
 
-struct GmailLabelColor: Codable {
+struct GmailLabelColor: Codable, Hashable {
     let textColor:       String?
     let backgroundColor: String?
 }
 
-struct GmailLabel: Codable, Identifiable {
+struct GmailLabel: Codable, Identifiable, Hashable {
     let id:              String
     let name:            String
     let type:            String?
@@ -281,7 +281,18 @@ extension GmailMessage {
     var htmlBody:  String? { extractBody(mimeType: "text/html",  from: payload) }
     var plainBody: String? { extractBody(mimeType: "text/plain", from: payload) }
 
-    var body: String { htmlBody ?? plainBody ?? snippet ?? "" }
+    var body: String {
+        if let html = htmlBody { return html }
+        // Plain text: convert newlines to <br> and escape HTML entities for safe rendering
+        if let plain = plainBody {
+            return plain
+                .replacingOccurrences(of: "&", with: "&amp;")
+                .replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
+                .replacingOccurrences(of: "\n", with: "<br>")
+        }
+        return snippet ?? ""
+    }
 
     /// Parts that are actual file attachments (requires body.attachmentId — full format only).
     var attachmentParts: [GmailMessagePart] { collectAttachments(from: payload) }

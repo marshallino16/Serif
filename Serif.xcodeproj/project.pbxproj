@@ -59,22 +59,40 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				iOS/SerifApp.swift,
-				iOS/iOSContentView.swift,
 				iOS/GoogleCredentialsiOS.swift,
+				iOS/iOSContentView.swift,
+				iOS/SerifApp.swift,
+				iOS/Views/Account/AccountTab.swift,
+				iOS/Views/Attachments/iOSAttachmentCardView.swift,
+				iOS/Views/Attachments/iOSAttachmentExplorerView.swift,
+				iOS/Views/Components/iOSAttachmentPreviewView.swift,
+				iOS/Views/Components/iOSComposeView.swift,
+				iOS/Views/Components/iOSContactAutocompleteField.swift,
+				iOS/Views/Components/iOSEmailDetailView.swift,
+				iOS/Views/Components/iOSEmailListView.swift,
+				iOS/Views/Components/iOSEmailRow.swift,
+				iOS/Views/Components/iOSFormattingToolbar.swift,
+				iOS/Views/Components/iOSLabelManagementSheet.swift,
+				iOS/Views/Components/iOSQuickReplyView.swift,
+				iOS/Views/Components/iOSTemplateViews.swift,
+				iOS/Views/Components/iOSThemePickerView.swift,
+				iOS/Views/Components/iOSToastOverlay.swift,
+				iOS/Views/Components/iOSWebRichTextEditor.swift,
+				iOS/Views/Components/iOSWebRichTextEditorCoordinator.swift,
+				iOS/Views/Components/iOSWebRichTextEditorRepresentable.swift,
+				iOS/Views/iOSOnboardingView.swift,
+				iOS/Views/Mail/FoldersTab.swift,
+				iOS/Views/Mail/InboxTab.swift,
+				iOS/Views/Mail/SearchTab.swift,
+				iOS/Views/MainTabView.swift,
 			);
 			target = A10005010000000000000001 /* Serif */;
 		};
 		D10003010000000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
-				Common/Services/AttachmentDatabase.swift,
-				Common/Services/AttachmentIndexer.swift,
-				Common/Services/AttachmentSearchService.swift,
-				Common/Services/CPUMonitor.swift,
-				Common/Services/ContentExtractor.swift,
 				Common/Services/EmailPrintService.swift,
+				Info.plist,
 				macOS/ContentView.swift,
 				macOS/GoogleCredentials.swift,
 				macOS/SerifApp.swift,
@@ -89,7 +107,6 @@
 				macOS/Views/Common/FormattingToolbar.swift,
 				macOS/Views/Common/InAppBrowserView.swift,
 				macOS/Views/Common/KeyboardShortcutsModifier.swift,
-				macOS/Views/Common/LabelChipView.swift,
 				macOS/Views/Common/SearchBarView.swift,
 				macOS/Views/Common/SerifCommands.swift,
 				macOS/Views/Common/SettingsCardsView.swift,
@@ -98,11 +115,9 @@
 				macOS/Views/Common/SlidePanelsOverlay.swift,
 				macOS/Views/Common/ThemePickerView.swift,
 				macOS/Views/Common/ToastOverlayView.swift,
-				macOS/Views/Common/UndoToastView.swift,
 				macOS/Views/Common/WebRichTextEditor.swift,
 				macOS/Views/Common/WebRichTextEditorCoordinator.swift,
 				macOS/Views/Common/WebRichTextEditorRepresentable.swift,
-				macOS/Views/Common/WebRichTextEditorState.swift,
 				macOS/Views/Components/BadgeView.swift,
 				macOS/Views/Components/CardContainer.swift,
 				macOS/Views/Components/IconButton.swift,
@@ -132,7 +147,6 @@
 				macOS/Views/EmailList/ListPaneView.swift,
 				macOS/Views/EmailList/PullToRefreshView.swift,
 				macOS/Views/EmailList/SwipeableEmailRow.swift,
-				macOS/Views/Onboarding/GoogleLogo.swift,
 				macOS/Views/Onboarding/OnboardingView.swift,
 				macOS/Views/Settings/SignatureEditorView.swift,
 				macOS/Views/Sidebar/AccountSwitcherView.swift,
@@ -267,6 +281,7 @@
 			buildConfigurationList = D10007010000000000000001 /* Build configuration list for PBXNativeTarget "Serif iOS" */;
 			buildPhases = (
 				D10006010000000000000001 /* Sources */,
+				D10006010000000000000003 /* Resources */,
 				D10003010000000000000002 /* Frameworks */,
 			);
 			buildRules = (
@@ -338,6 +353,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				9EBEBCE92F5B21B400145F71 /* serif_icon.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10006010000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -622,20 +644,29 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "Serif/Resources/iOS/Serif iOS.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Serif;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_ImageName = SerifLogo;
+				INFOPLIST_KEY_UILaunchScreen_ImageRespectsSafeAreaInsets = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.genyus.serif.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.genyus.serif.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -647,20 +678,29 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "Serif/Resources/iOS/Serif iOS.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Serif;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_ImageName = SerifLogo;
+				INFOPLIST_KEY_UILaunchScreen_ImageRespectsSafeAreaInsets = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.genyus.serif.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.genyus.serif.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

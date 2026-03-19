@@ -26,9 +26,7 @@ final class EmailDetailViewModel: ObservableObject {
     var hasBlockedTrackers: Bool { !allowTrackers && (trackerResult?.hasTrackers ?? false) }
 
     let accountID: String
-    #if os(macOS)
     var attachmentIndexer: AttachmentIndexer?
-    #endif
 
     init(accountID: String) {
         self.accountID = accountID
@@ -66,14 +64,12 @@ final class EmailDetailViewModel: ObservableObject {
             }
             MailCacheStore.shared.saveThread(fresh, accountID: accountID)
             // Passive attachment registration from full-format messages
-            #if os(macOS)
             if let indexer = attachmentIndexer, let messages = fresh.messages {
                 let withAttachments = messages.filter { !$0.attachmentParts.isEmpty }
                 if !withAttachments.isEmpty {
                     Task { await indexer.registerFromFullMessages(messages: withAttachments) }
                 }
             }
-            #endif
             // Mark all unread messages in the thread as read
             for message in fresh.messages ?? [] where message.isUnread {
                 try? await GmailMessageService.shared.markAsRead(id: message.id, accountID: accountID)

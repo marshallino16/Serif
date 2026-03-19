@@ -5,6 +5,7 @@ import SwiftUI
 final class MailboxViewModel: ObservableObject {
     @Published var messages:      [GmailMessage] = []
     @Published var isLoading      = false
+    @Published var isLoadingMore   = false
     @Published var error:         String?
     @Published var nextPageToken: String?
     @Published var labels:                [GmailLabel] = []
@@ -15,11 +16,9 @@ final class MailboxViewModel: ObservableObject {
     @Published var lastRestoredMessageID: String?
 
     var accountID: String
-    #if os(macOS)
     var attachmentIndexer: AttachmentIndexer? {
         didSet { fetchService.attachmentIndexer = attachmentIndexer }
     }
-    #endif
     private var currentLabelIDs: [String] = ["INBOX"]
     private var currentQuery:    String?
 
@@ -107,6 +106,7 @@ final class MailboxViewModel: ObservableObject {
             nextPageToken = promoted
         }
         guard nextPageToken != nil else { return }
+        isLoadingMore = true
         let gen = fetchService.currentGeneration // don't bump — loadMore appends, doesn't replace
         let countBefore = messages.count
         await performFetch(reset: false, generation: gen)
@@ -114,6 +114,7 @@ final class MailboxViewModel: ObservableObject {
         while messages.count == countBefore && nextPageToken != nil && !Task.isCancelled {
             await performFetch(reset: false, generation: gen)
         }
+        isLoadingMore = false
     }
 
     /// Cancel any in-flight search/load task. Called from the view layer

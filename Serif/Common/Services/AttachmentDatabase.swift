@@ -174,6 +174,15 @@ final class AttachmentDatabase: @unchecked Sendable {
             exec("PRAGMA user_version = 2")
             print("[AttachmentDB] Migrated to v2 (accountID cleanup + vacuum)")
         }
+
+        // v2 → v3: truncate extractedText to 2000 chars to reduce DB size
+        if version < 3 {
+            sqlite3_exec(db, "UPDATE attachments SET extractedText = SUBSTR(extractedText, 1, 2000) WHERE LENGTH(extractedText) > 2000", nil, nil, nil)
+            exec("INSERT INTO attachments_fts(attachments_fts) VALUES('rebuild')")
+            exec("VACUUM")
+            exec("PRAGMA user_version = 3")
+            print("[AttachmentDB] Migrated to v3 (truncated extractedText + vacuum)")
+        }
     }
 
     // MARK: - Insert
@@ -577,6 +586,21 @@ final class AttachmentDatabase: @unchecked Sendable {
             exec("DELETE FROM scan_state")
             exec("INSERT INTO attachments_fts(attachments_fts) VALUES('rebuild')")
             exec("VACUUM")
+        }
+    }
+
+    // MARK: - Optimize (truncate extracted text + vacuum)
+
+    /// Truncates all `extractedText` values to `maxLength` characters,
+    /// rebuilds the FTS index, and runs VACUUM to reclaim disk space.
+    /// Safe to call multiple times — only rows exceeding the limit are updated.
+    func truncateExtractedText(maxLength: Int = 2000) {
+        queue.sync {
+            let sql = "UPDATE attachments SET extractedText = SUBSTR(extractedText, 1, \(maxLength)) WHERE LENGTH(extractedText) > \(maxLength)"
+            sqlite3_exec(db, sql, nil, nil, nil)
+            exec("INSERT INTO attachments_fts(attachments_fts) VALUES('rebuild')")
+            exec("VACUUM")
+            print("[AttachmentDB] Truncated extractedText to \(maxLength) chars + vacuum")
         }
     }
 

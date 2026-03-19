@@ -1,12 +1,13 @@
 import Foundation
 
-struct Email: Identifiable, Equatable {
+struct Email: Identifiable, Equatable, Hashable {
     static func == (lhs: Email, rhs: Email) -> Bool {
         lhs.id == rhs.id &&
         lhs.isRead == rhs.isRead &&
         lhs.isStarred == rhs.isStarred &&
         lhs.gmailLabelIDs == rhs.gmailLabelIDs
     }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
     let id: UUID
     var sender: Contact
     var recipients: [Contact]

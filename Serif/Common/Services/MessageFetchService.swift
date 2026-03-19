@@ -15,10 +15,8 @@ final class MessageFetchService {
 
     /// Called to convert a GmailMessage into an Email for background analysis.
     var makeEmail: ((GmailMessage) -> Email)?
-    #if os(macOS)
     /// Reference to the attachment indexer (if configured).
     var attachmentIndexer: AttachmentIndexer?
-    #endif
 
     // MARK: - Internal cache state
 
@@ -240,14 +238,12 @@ final class MessageFetchService {
     func analyzeInBackground(_ msgs: [GmailMessage]) {
         guard !msgs.isEmpty, let makeEmail = makeEmail else { return }
         SubscriptionsStore.shared.analyze(msgs.map { makeEmail($0) })
-        #if os(macOS)
         if let indexer = attachmentIndexer {
             let withAttachments = msgs.filter { $0.hasPartsWithFilenames }
             if !withAttachments.isEmpty {
                 Task { await indexer.registerFromMetadata(messages: withAttachments) }
             }
         }
-        #endif
     }
 
     // MARK: - Reset (for account switch)

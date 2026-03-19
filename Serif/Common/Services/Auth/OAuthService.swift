@@ -2,6 +2,9 @@ import Foundation
 import AppAuth
 #if os(macOS)
 import AppKit
+#elseif os(iOS)
+import AuthenticationServices
+import CryptoKit
 #endif
 
 /// Handles Google OAuth 2.0 using AppAuth (loopback HTTP redirect flow).
@@ -86,9 +89,103 @@ final class OAuthService: NSObject {
         }
     }
     #else
-    /// OAuth authorization is not yet implemented on iOS.
+    /// Runs the full OAuth flow on iOS using ASWebAuthenticationSession with PKCE.
     func authorize() async throws -> AuthToken {
-        throw OAuthError.listenerFailed
+        // 1. Generate PKCE code verifier and challenge
+        let codeVerifier = Self.generateCodeVerifier()
+        let codeChallenge = Self.sha256Base64URL(codeVerifier)
+
+        // 2. Build the Google OAuth authorization URL
+        let scopeString = GoogleCredentialsiOS.scopes.joined(separator: " ")
+        var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        components.queryItems = [
+            URLQueryItem(name: "client_id",             value: GoogleCredentialsiOS.clientID),
+            URLQueryItem(name: "redirect_uri",          value: GoogleCredentialsiOS.redirectURI),
+            URLQueryItem(name: "response_type",         value: "code"),
+            URLQueryItem(name: "scope",                 value: scopeString),
+            URLQueryItem(name: "access_type",           value: "offline"),
+            URLQueryItem(name: "prompt",                value: "consent"),
+            URLQueryItem(name: "code_challenge",        value: codeChallenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256")
+        ]
+
+        guard let authURL = components.url else { throw OAuthError.invalidURL }
+
+        // Extract the URL scheme from the redirect URI (everything before ":")
+        let callbackScheme = GoogleCredentialsiOS.redirectURI.components(separatedBy: ":").first ?? ""
+
+        // 3. Present ASWebAuthenticationSession and await the callback
+        let callbackURL: URL = try await withCheckedThrowingContinuation { continuation in
+            let session = ASWebAuthenticationSession(
+                url: authURL,
+                callbackURLScheme: callbackScheme
+            ) { url, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard let url = url else {
+                    continuation.resume(throwing: OAuthError.noAuthCode)
+                    return
+                }
+                continuation.resume(returning: url)
+            }
+            session.prefersEphemeralWebBrowserSession = false
+            session.presentationContextProvider = self
+            session.start()
+        }
+
+        // 4. Extract the authorization code from the callback URL
+        guard
+            let urlComponents = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+            let code = urlComponents.queryItems?.first(where: { $0.name == "code" })?.value
+        else {
+            throw OAuthError.noAuthCode
+        }
+
+        // 5. Exchange the authorization code for tokens (PKCE — no client_secret)
+        let tokenParams: [String: String] = [
+            "client_id":     GoogleCredentialsiOS.clientID,
+            "code":          code,
+            "redirect_uri":  GoogleCredentialsiOS.redirectURI,
+            "grant_type":    "authorization_code",
+            "code_verifier": codeVerifier
+        ]
+
+        let response: TokenResponse = try await postForm(to: "https://oauth2.googleapis.com/token", params: tokenParams)
+
+        // 6. Return AuthToken
+        return AuthToken(
+            accessToken:  response.accessToken,
+            refreshToken: response.refreshToken,
+            expiresIn:    response.expiresIn,
+            tokenType:    response.tokenType,
+            scope:        response.scope ?? scopeString
+        )
+    }
+
+    // MARK: - PKCE Helpers
+
+    /// Generates a cryptographically random code verifier (43–128 URL-safe characters).
+    private static func generateCodeVerifier() -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    /// Returns the Base64-URL-encoded SHA-256 hash of the given verifier string.
+    private static func sha256Base64URL(_ input: String) -> String {
+        let data = Data(input.utf8)
+        let hash = SHA256.hash(data: data)
+        return Data(hash)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
     #endif
 
@@ -153,6 +250,22 @@ private struct TokenResponse: Decodable {
         case scope
     }
 }
+
+// MARK: - ASWebAuthenticationPresentationContextProviding (iOS)
+
+#if os(iOS)
+extension OAuthService: ASWebAuthenticationPresentationContextProviding {
+    nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        guard Thread.isMainThread else {
+            return DispatchQueue.main.sync { self.presentationAnchor(for: session) }
+        }
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        return scene?.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    }
+}
+#endif
 
 // MARK: - Errors
 

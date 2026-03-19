@@ -1,0 +1,152 @@
+import SwiftUI
+
+struct iOSFormattingToolbar: View {
+    @ObservedObject var state: WebRichTextEditorState
+    @Environment(\.theme) private var theme
+    @State private var showLinkSheet = false
+    @State private var linkURL = ""
+    @State private var linkText = ""
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 2) {
+                // Bold, Italic, Underline, Strikethrough
+                Group {
+                    toggleButton(icon: "bold", isActive: state.isBold) {
+                        state.toggleBold()
+                    }
+                    toggleButton(icon: "italic", isActive: state.isItalic) {
+                        state.toggleItalic()
+                    }
+                    toggleButton(icon: "underline", isActive: state.isUnderline) {
+                        state.toggleUnderline()
+                    }
+                    toggleButton(icon: "strikethrough", isActive: state.isStrikethrough) {
+                        state.toggleStrikethrough()
+                    }
+                }
+
+                separator
+
+                // Alignment
+                Group {
+                    alignmentButton(icon: "text.alignleft", alignment: .left)
+                    alignmentButton(icon: "text.aligncenter", alignment: .center)
+                    alignmentButton(icon: "text.alignright", alignment: .right)
+                }
+
+                separator
+
+                // Lists
+                Group {
+                    toolbarButton(icon: "list.number") {
+                        state.insertNumberedList()
+                    }
+                    toolbarButton(icon: "list.bullet") {
+                        state.insertBulletList()
+                    }
+                }
+
+                separator
+
+                // Link
+                Button {
+                    linkURL = "https://"
+                    linkText = state.selectedText
+                    showLinkSheet = true
+                } label: {
+                    Image(systemName: "link")
+                        .font(.system(size: 15))
+                        .foregroundColor(theme.textSecondary)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+
+                separator
+
+                // Indentation
+                Group {
+                    toolbarButton(icon: "decrease.indent") {
+                        state.decreaseIndent()
+                    }
+                    toolbarButton(icon: "increase.indent") {
+                        state.increaseIndent()
+                    }
+                }
+
+                separator
+
+                // Remove formatting
+                toolbarButton(icon: "textformat") {
+                    state.removeFormat()
+                }
+            }
+            .padding(.horizontal, 12)
+        }
+        .frame(height: 44)
+        .background(theme.cardBackground)
+        .alert("Insert Link", isPresented: $showLinkSheet) {
+            TextField("URL", text: $linkURL)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+            TextField("Display text (optional)", text: $linkText)
+            Button("Cancel", role: .cancel) {}
+            Button("Insert") {
+                guard !linkURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      linkURL != "https://" else { return }
+                let text = linkText.isEmpty ? nil : linkText
+                state.insertLink(url: linkURL, text: text)
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var separator: some View {
+        Divider()
+            .frame(height: 20)
+            .padding(.horizontal, 4)
+    }
+
+    private func toolbarButton(icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 15))
+                .foregroundColor(theme.textSecondary)
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+    }
+
+    private func toggleButton(icon: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: isActive ? .bold : .regular))
+                .foregroundColor(isActive ? theme.accentPrimary : theme.textSecondary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isActive ? theme.accentPrimary.opacity(0.12) : Color.clear)
+                )
+                .contentShape(Rectangle())
+        }
+    }
+
+    private func alignmentButton(icon: String, alignment: NSTextAlignment) -> some View {
+        let isActive = state.alignment == alignment
+        return Button {
+            state.setAlignment(alignment)
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: isActive ? .bold : .regular))
+                .foregroundColor(isActive ? theme.accentPrimary : theme.textSecondary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isActive ? theme.accentPrimary.opacity(0.12) : Color.clear)
+                )
+                .contentShape(Rectangle())
+        }
+    }
+}

@@ -39,11 +39,9 @@ final class AttachmentStore: ObservableObject {
 
     // MARK: - Dependencies
 
-    #if os(macOS)
     private let database: AttachmentDatabase
     private let searchService: AttachmentSearchService
     var indexer: AttachmentIndexer?
-    #endif
     private var searchTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     var accountID: String = ""
@@ -84,17 +82,11 @@ final class AttachmentStore: ObservableObject {
 
     // MARK: - Init
 
-    #if os(macOS)
     init(database: AttachmentDatabase = .shared) {
         self.database = database
         self.searchService = AttachmentSearchService(database: database)
         setupSearchDebounce()
     }
-    #else
-    init() {
-        setupSearchDebounce()
-    }
-    #endif
 
     // MARK: - Search Debounce
 
@@ -112,7 +104,6 @@ final class AttachmentStore: ObservableObject {
 
     func refresh() {
         loadExclusionRules()
-        #if os(macOS)
         allAttachments = database.allAttachments(limit: 5000, offset: 0, accountID: accountID)
         let raw = database.stats(accountID: accountID)
         stats = IndexingStats(
@@ -121,7 +112,6 @@ final class AttachmentStore: ObservableObject {
             pending: raw.pending,
             failed: raw.failed
         )
-        #endif
     }
 
     // MARK: - Exclusion Rules
@@ -147,18 +137,16 @@ final class AttachmentStore: ObservableObject {
 
     // MARK: - Search
 
-    private func performSearch(query: String) {
+    func performSearch(query: String) {
         searchTask?.cancel()
         searchTask = Task {
             isSearching = true
             defer { isSearching = false }
 
             guard !Task.isCancelled else { return }
-            #if os(macOS)
             let results = searchService.search(query: query, accountID: accountID)
             guard !Task.isCancelled else { return }
             searchResults = results
-            #endif
         }
     }
 }

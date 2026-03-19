@@ -41,9 +41,7 @@ final class AppCoordinator: ObservableObject {
     @Published var trashTotalCount = 0
     @Published var showEmptySpamConfirm = false
     @Published var spamTotalCount = 0
-    #if os(macOS)
     @Published var attachmentIndexer: AttachmentIndexer?
-    #endif
 
     // MARK: - AppStorage
 
@@ -63,11 +61,7 @@ final class AppCoordinator: ObservableObject {
         self.mailboxViewModel = vm
         self.authViewModel = AuthViewModel()
         self.actionCoordinator = EmailActionCoordinator(mailboxViewModel: vm, mailStore: store)
-        #if os(macOS)
         self.attachmentStore = AttachmentStore(database: .shared)
-        #else
-        self.attachmentStore = AttachmentStore()
-        #endif
 
         // Forward child objectWillChange so SwiftUI re-renders when nested models update
         vm.objectWillChange
@@ -247,7 +241,6 @@ final class AppCoordinator: ObservableObject {
             SubscriptionsStore.shared.accountID = account.id
             attachmentStore.accountID = account.id
             loadSignatures(for: account.id)
-            #if os(macOS)
             let indexer = AttachmentIndexer(
                 database: .shared,
                 messageService: .shared,
@@ -255,23 +248,18 @@ final class AppCoordinator: ObservableObject {
             )
             attachmentIndexer = indexer
             mailboxViewModel.attachmentIndexer = indexer
-            #endif
             Task {
-                #if os(macOS)
                 await indexer.setProgressUpdate { [weak attachmentStore] in
                     attachmentStore?.refresh()
                 }
-                #endif
                 await loadCurrentFolder()
                 await mailboxViewModel.loadLabels()
                 await mailboxViewModel.loadSendAs()
                 await mailboxViewModel.loadCategoryUnreadCounts()
                 await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
                 lastRefreshedAt = Date()
-                #if os(macOS)
                 await indexer.resumePending()
                 await indexer.scanForAttachments()
-                #endif
             }
         } else {
             selectedEmail = mailStore.emails(for: .inbox).first
@@ -293,13 +281,11 @@ final class AppCoordinator: ObservableObject {
             templateStore.load(accountID: accountID)
         } else if folder == .attachments {
             attachmentStore.refresh()
-            #if os(macOS)
             if let indexer = attachmentIndexer {
                 Task {
                     await indexer.scanForAttachments()
                 }
             }
-            #endif
         } else if folder == .drafts {
             Task { await mailStore.syncGmailDrafts(accountID: accountID) }
         } else {
@@ -341,7 +327,6 @@ final class AppCoordinator: ObservableObject {
         SubscriptionsStore.shared.accountID = id
         attachmentStore.accountID = id
         attachmentStore.refresh()
-        #if os(macOS)
         let indexer = AttachmentIndexer(
             database: .shared,
             messageService: .shared,
@@ -349,13 +334,10 @@ final class AppCoordinator: ObservableObject {
         )
         attachmentIndexer = indexer
         mailboxViewModel.attachmentIndexer = indexer
-        #endif
         Task {
-            #if os(macOS)
             await indexer.setProgressUpdate { [weak attachmentStore] in
                 attachmentStore?.refresh()
             }
-            #endif
             await mailboxViewModel.switchAccount(id)
             templateStore.load(accountID: id)
             // Load folder, labels, and unread counts in parallel
@@ -365,10 +347,8 @@ final class AppCoordinator: ObservableObject {
             async let unread: Void = mailboxViewModel.loadCategoryUnreadCounts()
             async let photos: Void = GmailProfileService.shared.loadContactPhotos(accountID: id)
             _ = await (folder, labels, sendAs, unread, photos)
-            #if os(macOS)
             await indexer.resumePending()
             await indexer.scanForAttachments()
-            #endif
         }
     }
 

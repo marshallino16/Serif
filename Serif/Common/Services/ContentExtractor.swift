@@ -1,5 +1,9 @@
 import Foundation
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import PDFKit
 import Vision
 import NaturalLanguage
@@ -83,13 +87,31 @@ enum ContentExtractor {
 
     // MARK: - OCR (Vision)
 
+    /// Downsample to max 1440px for performance (especially on iOS).
+    private static func downsampledCGImage(from data: Data, maxDimension: CGFloat = 1440) -> CGImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceShouldCache: false,
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxDimension,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ]
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+
     private static func extractOCR(data: Data) -> ExtractionResult {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.recognitionLanguages = ["fr-FR", "en-US"]
         request.usesLanguageCorrection = true
+        request.revision = VNRecognizeTextRequestRevision3
 
-        let handler = VNImageRequestHandler(data: data, options: [:])
+        let handler: VNImageRequestHandler
+        if let downsampled = downsampledCGImage(from: data) {
+            handler = VNImageRequestHandler(cgImage: downsampled, options: [:])
+        } else {
+            handler = VNImageRequestHandler(data: data, options: [:])
+        }
         do {
             try handler.perform([request])
         } catch {
@@ -110,6 +132,7 @@ enum ContentExtractor {
     // MARK: - Word Documents
 
     private static func extractWordDocument(data: Data, ext: String) -> ExtractionResult {
+        #if os(macOS)
         let tempFile = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + "." + ext)
         do {
@@ -121,6 +144,9 @@ enum ContentExtractor {
         } catch {
             return .unsupported
         }
+        #else
+        return .unsupported
+        #endif
     }
 
     // MARK: - Plain Text
