@@ -6,6 +6,17 @@ struct iOSFormattingToolbar: View {
     @State private var showLinkSheet = false
     @State private var linkURL = ""
     @State private var linkText = ""
+    @State private var showColorPicker = false
+
+    private let textColors: [Color] = [
+        .black, .white,
+        Color(red: 0.8, green: 0.0, blue: 0.0),  // Red
+        Color(red: 0.0, green: 0.6, blue: 0.0),  // Green
+        Color(red: 0.0, green: 0.4, blue: 0.9),  // Blue
+        Color(red: 0.9, green: 0.6, blue: 0.0),  // Orange
+        Color(red: 0.6, green: 0.0, blue: 0.8),  // Purple
+        Color(red: 0.0, green: 0.7, blue: 0.7),  // Teal
+    ]
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -56,6 +67,27 @@ struct iOSFormattingToolbar: View {
                     showLinkSheet = true
                 } label: {
                     Image(systemName: "link")
+                        .font(.system(size: 15))
+                        .foregroundColor(theme.textSecondary)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+
+                separator
+
+                // Text color
+                Menu {
+                    ForEach(Array(textColors.enumerated()), id: \.offset) { _, color in
+                        Button {
+                            let uiColor = UIColor(color)
+                            state.setTextColor(uiColor)
+                        } label: {
+                            Label(colorName(color), systemImage: "circle.fill")
+                                .foregroundColor(color)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "paintbrush.pointed")
                         .font(.system(size: 15))
                         .foregroundColor(theme.textSecondary)
                         .frame(width: 36, height: 36)
@@ -131,6 +163,18 @@ struct iOSFormattingToolbar: View {
                 )
                 .contentShape(Rectangle())
         }
+    }
+
+    private func colorName(_ color: Color) -> String {
+        if color == .black { return "Black" }
+        if color == .white { return "White" }
+        let resolved = color.resolve(in: EnvironmentValues())
+        if resolved.red > 0.7 && resolved.green < 0.2 { return "Red" }
+        if resolved.green > 0.5 && resolved.red < 0.2 { return "Green" }
+        if resolved.blue > 0.7 && resolved.red < 0.2 { return "Blue" }
+        if resolved.red > 0.7 && resolved.green > 0.4 { return "Orange" }
+        if resolved.red > 0.4 && resolved.blue > 0.6 { return "Purple" }
+        return "Teal"
     }
 
     private func alignmentButton(icon: String, alignment: NSTextAlignment) -> some View {

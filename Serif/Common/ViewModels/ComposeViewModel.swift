@@ -36,13 +36,18 @@ final class ComposeViewModel: ObservableObject {
         error     = nil
         defer { isSending = false }
         do {
+            // Sanitize theme colors before sending so text is visible on all email clients
+            let sanitizedBody = isHTML
+                ? HTMLSanitizer.sanitizeForSend(body, themeTextColor: ThemeManager.shared.currentTheme.textPrimary.hexString)
+                : body
+
             _ = try await GmailSendService.shared.send(
                 from:               fromAddress,
                 to:                 splitAddresses(to),
                 cc:                 splitAddresses(cc),
                 bcc:                splitAddresses(bcc),
                 subject:            subject,
-                body:               body,
+                body:               sanitizedBody,
                 isHTML:             isHTML,
                 threadID:           threadID,
                 referencesHeader:   replyToMessageID,
