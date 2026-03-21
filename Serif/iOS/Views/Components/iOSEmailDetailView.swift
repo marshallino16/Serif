@@ -585,7 +585,12 @@ struct iOSEmailDetailView: View {
 
     private var quotedHTML: String {
         let original = detailVM.latestMessage?.htmlBody ?? email.body
-        return "<br><br><blockquote style='border-left:2px solid #ccc;margin-left:4px;padding-left:8px;color:#555;'><p><b>\(email.sender.name)</b> wrote:</p>\(original)</blockquote>"
+        return QuoteFormatter.formatReplyQuote(
+            senderName: email.sender.name,
+            senderEmail: email.sender.email,
+            date: email.date,
+            originalHTML: original
+        )
     }
 
     private func replyMode() -> ComposeMode {
@@ -605,7 +610,16 @@ struct iOSEmailDetailView: View {
 
     private func forwardMode() -> ComposeMode {
         let sub = email.subject.hasPrefix("Fwd:") ? email.subject : "Fwd: \(email.subject)"
-        return .forward(subject: sub, quotedBody: quotedHTML)
+        let original = detailVM.latestMessage?.htmlBody ?? email.body
+        let forwardQuote = QuoteFormatter.formatForwardQuote(
+            senderName: email.sender.name,
+            senderEmail: email.sender.email,
+            date: email.date,
+            to: email.recipients.map(\.email).joined(separator: ", "),
+            subject: email.subject,
+            originalHTML: original
+        )
+        return .forward(subject: sub, quotedBody: forwardQuote)
     }
 
     // MARK: - Print

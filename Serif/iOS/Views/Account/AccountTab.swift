@@ -38,6 +38,7 @@ struct AccountTab: View {
                 signaturesSection
                 contactsSection
                 behaviorSection
+                composeSection
                 aiSection
                 storageSection
                 appearanceSection
@@ -431,6 +432,47 @@ struct AccountTab: View {
         case 600: return "10 minutes"
         case 3600: return "1 hour"
         default: return "\(coordinator.refreshInterval)s"
+        }
+    }
+
+    // MARK: - Compose
+
+    @AppStorage("quoteStyle") private var quoteStyle = "gmail"
+
+    private var composeSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            sectionHeader("Compose")
+
+            settingsCard {
+                settingsRow {
+                    HStack {
+                        Text("Reply quote style")
+                            .font(.system(size: 15))
+                            .foregroundColor(theme.textPrimary)
+                        Spacer()
+                        Menu {
+                            Picker("", selection: $quoteStyle) {
+                                Text("Gmail style").tag("gmail")
+                                Text("Blockquote").tag("blockquote")
+                                Text("No quote").tag("noQuote")
+                            }
+                        } label: {
+                            Text(quoteStyleLabel)
+                                .font(.system(size: 15))
+                                .foregroundColor(theme.textTertiary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var quoteStyleLabel: String {
+        switch quoteStyle {
+        case "gmail": return "Gmail style"
+        case "blockquote": return "Blockquote"
+        case "noQuote": return "No quote"
+        default: return "Gmail style"
         }
     }
 
