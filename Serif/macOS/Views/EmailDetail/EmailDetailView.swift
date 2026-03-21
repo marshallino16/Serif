@@ -37,6 +37,7 @@ struct EmailDetailView: View {
     @State private var showOriginalInviteEmail = false
     @State private var showQuotedMain = false
     @State private var labelSuggestions: [LabelSuggestion] = []
+    @State private var showForwardAttachmentAlert = false
     @AppStorage("aiLabelSuggestions") private var aiLabelSuggestionsEnabled = true
     @Environment(\.theme) private var theme
 
@@ -155,7 +156,13 @@ struct EmailDetailView: View {
                 onMarkUnread: onMarkUnread,
                 onReply: onReply,
                 onReplyAll: onReplyAll,
-                onForward: onForward,
+                onForward: { mode in
+                    if email.hasAttachments {
+                        showForwardAttachmentAlert = true
+                    } else {
+                        onForward?(mode)
+                    }
+                },
                 onShowOriginal: onShowOriginal,
                 onDownloadMessage: onDownloadMessage,
                 onUnsubscribe: onUnsubscribe,
@@ -314,6 +321,18 @@ struct EmailDetailView: View {
             }
         }
         .background(theme.detailBackground)
+        .alert("Forward Attachments?", isPresented: $showForwardAttachmentAlert) {
+            Button("Include Attachments") {
+                // TODO: Download and attach — for now forward without
+                onForward?(forwardMode())
+            }
+            Button("Without Attachments") {
+                onForward?(forwardMode())
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This email has attachments. Would you like to include them in the forward?")
+        }
         .onAppear { loadThread() }
     }
 
