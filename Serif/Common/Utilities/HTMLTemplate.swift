@@ -24,7 +24,7 @@ enum HTMLTemplate {
         <html>
         <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
         <style>
         :root {
             --text-color: \(textColor);
@@ -42,6 +42,7 @@ enum HTMLTemplate {
             font-size: \(fontSize)px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
+            -webkit-text-size-adjust: none;
         }
         #editor {
             min-height: 100%;

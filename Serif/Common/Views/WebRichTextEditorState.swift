@@ -112,6 +112,10 @@ final class WebRichTextEditorState: ObservableObject {
 
     func focus() { eval("focusEditor()") }
 
+    func moveCursorToTop() {
+        eval("var r = document.createRange(); var s = window.getSelection(); r.setStart(document.getElementById('editor'), 0); r.collapse(true); s.removeAllRanges(); s.addRange(r);")
+    }
+
     // MARK: - Images
 
     func insertImage(from url: URL) {

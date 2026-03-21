@@ -166,18 +166,7 @@ struct iOSComposeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Menu {
-                        Button("Save Draft") {
-                            Task { await saveDraftAndDismiss() }
-                        }
-                        Button("Discard", role: .destructive) {
-                            saveTask?.cancel()
-                            Task { await composeVM.discardDraft() }
-                            onDismiss()
-                        }
-                    } label: {
-                        Text("Cancel")
-                    } primaryAction: {
+                    Button("Cancel") {
                         if hasContent {
                             showDiscardAlert = true
                         } else {
@@ -373,6 +362,10 @@ struct iOSComposeView: View {
         if !fields.bodyHTML.isEmpty {
             bodyHTML = fields.bodyHTML
             editorState.setHTML(fields.bodyHTML)
+            // Move cursor to top so user types above signature/quoted content
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                editorState.moveCursorToTop()
+            }
         }
         if let tid = fields.threadID { composeVM.threadID = tid }
         if let mid = fields.replyToMessageID { composeVM.replyToMessageID = mid }

@@ -23,6 +23,15 @@ struct iOSWebRichTextEditorRepresentable: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+
+        NotificationCenter.default.addObserver(
+            forName: UIResponder.keyboardWillHideNotification,
+            object: nil, queue: .main
+        ) { _ in
+            webView.setNeedsLayout()
+            webView.layoutIfNeeded()
+        }
 
         let html = HTMLTemplate.editorHTML(
             textColor: theme.textPrimary.hexString,

@@ -608,7 +608,7 @@ struct iOSEmailDetailView: View {
     // MARK: - Compose Helpers
 
     private var quotedHTML: String {
-        let original = detailVM.latestMessage?.htmlBody ?? email.body
+        let original = detailVM.resolvedHTML ?? detailVM.latestMessage?.htmlBody ?? email.body
         return QuoteFormatter.formatReplyQuote(
             senderName: email.sender.name,
             senderEmail: email.sender.email,
@@ -653,7 +653,7 @@ struct iOSEmailDetailView: View {
 
     private func forwardMode() -> ComposeMode {
         let sub = email.subject.hasPrefix("Fwd:") ? email.subject : "Fwd: \(email.subject)"
-        let original = detailVM.latestMessage?.htmlBody ?? email.body
+        let original = detailVM.resolvedHTML ?? detailVM.latestMessage?.htmlBody ?? email.body
         let forwardQuote = QuoteFormatter.formatForwardQuote(
             senderName: email.sender.name,
             senderEmail: email.sender.email,
