@@ -6,6 +6,7 @@ struct iOSQuickReplyView: View {
     let accountID: String
     let fromAddress: String
     let mailStore: MailStore
+    @ObservedObject var coordinator: AppCoordinator
     @Binding var expandTrigger: Bool
 
     @State private var replyText = ""
@@ -30,11 +31,12 @@ struct iOSQuickReplyView: View {
     @StateObject private var editorState = WebRichTextEditorState()
     @Environment(\.theme) private var theme
 
-    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, expandTrigger: Binding<Bool>) {
+    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, coordinator: AppCoordinator, expandTrigger: Binding<Bool>) {
         self.email = email
         self.accountID = accountID
         self.fromAddress = fromAddress
         self.mailStore = mailStore
+        self._coordinator = ObservedObject(wrappedValue: coordinator)
         self._expandTrigger = expandTrigger
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
@@ -464,8 +466,6 @@ struct iOSQuickReplyView: View {
     }
 
     private func sendReply() async {
-        isSending = true
-        sendError = nil
         saveTask?.cancel()
 
         // Recover draft ID so we can delete it after sending
@@ -474,14 +474,8 @@ struct iOSQuickReplyView: View {
            let saved = mailStore.replyDrafts[threadID] {
             composeVM.gmailDraftID = saved.gmailDraftID
         }
-        let draftIDToDelete = composeVM.gmailDraftID
 
         let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
-        composeVM.to = replyToAddress
-        composeVM.cc = replyCcAddress
-        composeVM.subject = sub
-
-        // Append quoted original below reply (Gmail behavior)
         let replyBody = replyHTML.isEmpty ? replyText : replyHTML
         let quotedOriginal = QuoteFormatter.formatReplyQuote(
             senderName: email.sender.name,
@@ -489,26 +483,37 @@ struct iOSQuickReplyView: View {
             date: email.date,
             originalHTML: email.body
         )
-        composeVM.body = replyBody + quotedOriginal
-        composeVM.isHTML = true
-        composeVM.replyToMessageID = email.gmailMessageID
-        composeVM.attachmentURLs = attachments
-        await composeVM.send()
-        isSending = false
+        let fullBody = replyBody + quotedOriginal
+        let sanitized = HTMLSanitizer.sanitizeForSend(
+            fullBody,
+            themeTextColor: ThemeManager.shared.currentTheme.textPrimary.hexString
+        )
 
-        if composeVM.isSent {
-            if let threadID = email.gmailThreadID {
-                mailStore.replyDrafts.removeValue(forKey: threadID)
-                mailStore.saveReplyDrafts()
-            }
-            if let gid = draftIDToDelete {
-                mailStore.gmailDrafts.removeAll { $0.gmailDraftID == gid }
-            }
-            ToastManager.shared.show(message: "Reply sent", type: .success)
-            collapse()
-        } else {
-            sendError = composeVM.error
+        let pending = PendingSend(
+            from: fromAddress, to: replyToAddress, cc: replyCcAddress, bcc: "",
+            subject: sub, bodyHTML: fullBody, attachmentURLs: attachments,
+            sanitizedBody: sanitized, isHTML: true,
+            threadID: email.gmailThreadID, replyToMessageID: email.gmailMessageID,
+            inlineImages: composeVM.inlineImages, gmailDraftID: composeVM.gmailDraftID,
+            accountID: accountID
+        )
+
+        // Clean up draft references
+        if let threadID = email.gmailThreadID {
+            mailStore.replyDrafts.removeValue(forKey: threadID)
+            mailStore.saveReplyDrafts()
         }
+        if let gid = composeVM.gmailDraftID {
+            mailStore.gmailDrafts.removeAll { $0.gmailDraftID == gid }
+        }
+
+        collapse()
+
+        UndoActionManager.shared.schedule(
+            label: "Reply sent",
+            onConfirm: { Task { await pending.performSend() } },
+            onUndo: { [weak coordinator] in coordinator?.reopenSendUndo(pending) }
+        )
     }
 
     private func loadExistingDraft() {

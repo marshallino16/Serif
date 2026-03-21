@@ -73,6 +73,7 @@ struct DetailPaneView: View {
     private func composeView(draftId: UUID) -> some View {
         ComposeView(
             mailStore: mailStore,
+            coordinator: coordinator,
             draftId: draftId,
             accountID: accountID,
             fromAddress: fromAddress,
@@ -147,6 +148,7 @@ struct DetailPaneView: View {
             fromAddress: fromAddress
         )
         view.mailStore = mailStore
+        view.coordinator = coordinator
         view.onOpenLink = { url in panelCoordinator.openInAppBrowser(url: url) }
         return view.id(email.id)
     }

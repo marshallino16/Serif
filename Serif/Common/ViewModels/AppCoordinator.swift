@@ -42,6 +42,8 @@ final class AppCoordinator: ObservableObject {
     @Published var showEmptySpamConfirm = false
     @Published var spamTotalCount = 0
     @Published var attachmentIndexer: AttachmentIndexer?
+    @Published var pendingSendRestore: PendingSend?
+    @Published var showSendRestoreCompose = false
 
     // MARK: - AppStorage
 
@@ -183,6 +185,15 @@ final class AppCoordinator: ObservableObject {
         composeMode = .new
         mailStore.deleteDraft(id: id)
         selectedEmail = nil
+    }
+
+    func reopenSendUndo(_ data: PendingSend) {
+        pendingSendRestore = data
+        #if os(macOS)
+        composeNewEmail()
+        #else
+        showSendRestoreCompose = true
+        #endif
     }
 
     // MARK: - Per-Account Signatures

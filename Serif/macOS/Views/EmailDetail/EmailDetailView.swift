@@ -29,6 +29,7 @@ struct EmailDetailView: View {
     var onOpenLink: ((URL) -> Void)?
     var fromAddress: String = ""
     var mailStore: MailStore?
+    var coordinator: AppCoordinator?
 
     @StateObject private var detailVM: EmailDetailViewModel
     @State private var emailBodyHeight: CGFloat = 100
@@ -127,11 +128,11 @@ struct EmailDetailView: View {
         return email.attachments
     }
 
-    /// Older messages in the thread (everything except the latest). Empty for single messages.
+    /// Reply messages in the thread (everything after the original). Empty for single messages.
     private var olderThreadMessages: [GmailMessage] {
         let all = detailVM.messages
         guard all.count > 1 else { return [] }
-        return Array(all.dropLast())
+        return Array(all.dropFirst())
     }
 
     private var currentLabelIDs: [String] {
@@ -255,7 +256,7 @@ struct EmailDetailView: View {
                                 .padding(.bottom, 12)
                             }
 
-                            // Latest message: full HTML rendering with quote stripping
+                            // Original message: full HTML rendering with quote stripping
                             if detailVM.calendarInvite == nil || showOriginalInviteEmail {
                                 let rawHTML = detailVM.resolvedHTML ?? detailVM.displayHTML ?? detailVM.latestMessage?.htmlBody ?? ""
                                 let fullHTML = rawHTML.isEmpty
@@ -294,7 +295,7 @@ struct EmailDetailView: View {
                                     .padding(.bottom, 20)
                             }
 
-                            // Older thread messages as chat bubbles
+                            // Thread replies as chat bubbles (chronological order)
                             if !olderThreadMessages.isEmpty {
                                 conversationSection
                                     .padding(.horizontal, 24)
@@ -315,7 +316,7 @@ struct EmailDetailView: View {
                 }
 
                 // Floating reply bar
-                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress, mailStore: mailStore ?? MailStore(), onOpenLink: onOpenLink)
+                ReplyBarView(email: email, accountID: accountID, fromAddress: fromAddress, mailStore: mailStore ?? MailStore(), coordinator: coordinator ?? AppCoordinator(), onOpenLink: onOpenLink)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }

@@ -55,12 +55,12 @@ final class EmailDetailViewModel: ObservableObject {
             thread = fresh
             analyzeTrackers()
             detectCalendarInvite()
-            if let latest = fresh.messages?.last {
-                await resolveInlineImages(for: latest)
+            if let first = fresh.messages?.first {
+                await resolveInlineImages(for: first)
             }
-            // Resolve inline images for older thread messages
+            // Resolve inline images for reply messages (everything after the original)
             if let allMessages = fresh.messages, allMessages.count > 1 {
-                await resolveInlineImagesForOlderMessages(Array(allMessages.dropLast()))
+                await resolveInlineImagesForOlderMessages(Array(allMessages.dropFirst()))
             }
             MailCacheStore.shared.saveThread(fresh, accountID: accountID)
             // Passive attachment registration from full-format messages
@@ -279,5 +279,8 @@ final class EmailDetailViewModel: ObservableObject {
     // MARK: - Convenience
 
     var messages: [GmailMessage] { thread?.messages ?? [] }
-    var latestMessage: GmailMessage? { messages.last }
+    /// The original message that started the thread (first received).
+    var originalMessage: GmailMessage? { messages.first }
+    /// Alias kept for compatibility.
+    var latestMessage: GmailMessage? { originalMessage }
 }

@@ -104,6 +104,7 @@ struct iOSEmailRow: View {
             }
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
         .task(id: email.sender.email) {
             await loadAvatar()
         }

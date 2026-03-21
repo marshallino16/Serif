@@ -156,7 +156,7 @@ struct iOSEmailDetailView: View {
     private var olderThreadMessages: [GmailMessage] {
         let all = detailVM.messages
         guard all.count > 1 else { return [] }
-        return Array(all.dropLast())
+        return Array(all.dropFirst())
     }
 
     private var attachmentPairs: [(Attachment, GmailMessagePart?)] {
@@ -298,7 +298,7 @@ struct iOSEmailDetailView: View {
                             .padding(.bottom, 12)
                         }
 
-                        // HTML body
+                        // HTML body (original message)
                         if detailVM.calendarInvite == nil || showOriginalInviteEmail {
                             let rawHTML = detailVM.resolvedHTML ?? detailVM.displayHTML ?? detailVM.latestMessage?.htmlBody ?? ""
                             let fullHTML = rawHTML.isEmpty
@@ -337,7 +337,7 @@ struct iOSEmailDetailView: View {
                                 .padding(.bottom, 16)
                         }
 
-                        // Older thread messages
+                        // Thread replies as chat bubbles (chronological order)
                         if !olderThreadMessages.isEmpty {
                             conversationSection
                                 .padding(.horizontal, 16)
@@ -355,6 +355,7 @@ struct iOSEmailDetailView: View {
                     accountID: coordinator.accountID,
                     fromAddress: coordinator.fromAddress,
                     mailStore: coordinator.mailStore,
+                    coordinator: coordinator,
                     expandTrigger: $expandQuickReply
                 )
                 .padding(.horizontal, 12)
@@ -507,6 +508,7 @@ struct iOSEmailDetailView: View {
         )) {
             if let mode = composeModeToPresent {
                 iOSComposeView(
+                    coordinator: coordinator,
                     accountID: coordinator.accountID,
                     fromAddress: coordinator.fromAddress,
                     mode: mode,

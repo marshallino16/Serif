@@ -30,11 +30,13 @@ struct iOSDocumentPicker: UIViewControllerRepresentable {
 // MARK: - Compose View
 
 struct iOSComposeView: View {
+    @ObservedObject var coordinator: AppCoordinator
     let accountID: String
     let fromAddress: String
     let mode: ComposeMode
     let draftEmail: Email?
     let initialAttachmentURLs: [URL]
+    let restoreData: PendingSend?
     let onDismiss: () -> Void
     @Environment(\.theme) private var theme
 
@@ -61,12 +63,14 @@ struct iOSComposeView: View {
     @StateObject private var composeVM: ComposeViewModel
     @StateObject private var editorState = WebRichTextEditorState()
 
-    init(accountID: String, fromAddress: String, mode: ComposeMode = .new, draftEmail: Email? = nil, initialAttachmentURLs: [URL] = [], onDismiss: @escaping () -> Void) {
+    init(coordinator: AppCoordinator, accountID: String, fromAddress: String, mode: ComposeMode = .new, draftEmail: Email? = nil, initialAttachmentURLs: [URL] = [], restoreData: PendingSend? = nil, onDismiss: @escaping () -> Void) {
+        self._coordinator = ObservedObject(wrappedValue: coordinator)
         self.accountID = accountID
         self.fromAddress = fromAddress
         self.mode = mode
         self.draftEmail = draftEmail
         self.initialAttachmentURLs = initialAttachmentURLs
+        self.restoreData = restoreData
         self.onDismiss = onDismiss
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
@@ -176,11 +180,27 @@ struct iOSComposeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        if hasContent {
-                            showDiscardAlert = true
-                        } else {
-                            onDismiss()
+                    if isEditingDraft {
+                        // Draft: X button, auto-save on close
+                        Button {
+                            saveTask?.cancel()
+                            if hasContent {
+                                Task { await saveDraftAndDismiss() }
+                            } else {
+                                onDismiss()
+                            }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                    } else {
+                        // New compose: Cancel with save/discard alert
+                        Button("Cancel") {
+                            if hasContent {
+                                showDiscardAlert = true
+                            } else {
+                                onDismiss()
+                            }
                         }
                     }
                 }
@@ -256,7 +276,19 @@ struct iOSComposeView: View {
             }
         }
         .onAppear {
-            if let draft = draftEmail {
+            if let restore = restoreData {
+                to = restore.to
+                cc = restore.cc
+                bcc = restore.bcc
+                subject = restore.subject
+                bodyHTML = restore.bodyHTML
+                attachments = restore.attachmentURLs
+                showCc = !restore.cc.isEmpty
+                showBcc = !restore.bcc.isEmpty
+                composeVM.threadID = restore.threadID
+                composeVM.replyToMessageID = restore.replyToMessageID
+                composeVM.fromAddress = restore.from
+            } else if let draft = draftEmail {
                 loadDraftEmail(draft)
             } else {
                 applyMode()
@@ -354,6 +386,10 @@ struct iOSComposeView: View {
         }
     }
 
+    private var isEditingDraft: Bool {
+        draftEmail != nil || restoreData != nil
+    }
+
     private var hasContent: Bool {
         !to.isEmpty || !cc.isEmpty || !bcc.isEmpty || !subject.isEmpty
             || !bodyHTML.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -441,22 +477,29 @@ struct iOSComposeView: View {
 
     private func sendEmail() async {
         guard !to.isEmpty else { return }
-        isSending = true
-        sendError = nil
-        composeVM.to = to
-        composeVM.cc = cc
-        composeVM.bcc = bcc
-        composeVM.subject = subject
-        composeVM.body = bodyHTML
-        composeVM.isHTML = true
-        composeVM.attachmentURLs = attachments
-        await composeVM.send()
-        isSending = false
-        if composeVM.isSent {
-            onDismiss()
-        } else {
-            sendError = composeVM.error
-        }
+
+        let sanitized = HTMLSanitizer.sanitizeForSend(
+            bodyHTML,
+            themeTextColor: theme.textPrimary.hexString
+        )
+
+        let pending = PendingSend(
+            from: fromAddress, to: to, cc: cc, bcc: bcc,
+            subject: subject, bodyHTML: bodyHTML, attachmentURLs: attachments,
+            sanitizedBody: sanitized, isHTML: true,
+            threadID: composeVM.threadID, replyToMessageID: composeVM.replyToMessageID,
+            inlineImages: composeVM.inlineImages, gmailDraftID: composeVM.gmailDraftID,
+            accountID: accountID
+        )
+
+        saveTask?.cancel()
+        onDismiss()
+
+        UndoActionManager.shared.schedule(
+            label: "Email sent",
+            onConfirm: { Task { await pending.performSend() } },
+            onUndo: { [weak coordinator] in coordinator?.reopenSendUndo(pending) }
+        )
     }
 }
 

@@ -24,8 +24,12 @@ struct InboxTab: View {
                 }
 
                 iOSEmailListView(
-                    emails: coordinator.mailboxViewModel.emails,
-                    isLoading: coordinator.mailboxViewModel.isLoading,
+                    emails: currentFolder == .drafts
+                        ? coordinator.mailStore.emails(for: .drafts)
+                        : coordinator.mailboxViewModel.emails,
+                    isLoading: currentFolder == .drafts
+                        ? coordinator.mailStore.isLoadingGmailDrafts
+                        : coordinator.mailboxViewModel.isLoading,
                     selectedEmail: $selectedEmail,
                     onRefresh: {
                         await loadCurrentFolder()
@@ -118,14 +122,20 @@ struct InboxTab: View {
         }
         .sheet(isPresented: $showCompose) {
             iOSComposeView(
+                coordinator: coordinator,
                 accountID: coordinator.accountID,
                 fromAddress: coordinator.fromAddress,
                 mode: .new,
-                onDismiss: { showCompose = false }
+                restoreData: coordinator.pendingSendRestore,
+                onDismiss: {
+                    showCompose = false
+                    coordinator.pendingSendRestore = nil
+                }
             )
         }
         .sheet(item: $draftToEdit) { draft in
             iOSComposeView(
+                coordinator: coordinator,
                 accountID: coordinator.accountID,
                 fromAddress: coordinator.fromAddress,
                 mode: .new,
@@ -135,6 +145,12 @@ struct InboxTab: View {
                     Task { await loadCurrentFolder() }
                 }
             )
+        }
+        .onChange(of: coordinator.showSendRestoreCompose) { _, show in
+            if show {
+                showCompose = true
+                coordinator.showSendRestoreCompose = false
+            }
         }
         .onChange(of: selectedEmail) { _, email in
             if currentFolder == .drafts, let email {
@@ -150,9 +166,13 @@ struct InboxTab: View {
             guard !coordinator.mailboxViewModel.accountID.isEmpty else { return }
             Task { await loadCurrentFolder() }
         }
-        .onChange(of: currentFolder) { _, _ in
+        .onChange(of: currentFolder) { oldFolder, newFolder in
             selectedLabel = nil
-            coordinator.mailboxViewModel.messages = []
+            // Don't clear mailboxViewModel when switching to/from drafts
+            // (drafts use mailStore, not mailboxViewModel)
+            if newFolder != .drafts && oldFolder != .drafts {
+                coordinator.mailboxViewModel.messages = []
+            }
             Task { await loadCurrentFolder() }
         }
         .onChange(of: selectedLabel) { _, label in
@@ -174,7 +194,9 @@ struct InboxTab: View {
     }
 
     private func loadCurrentFolder() async {
-        if currentFolder == .inbox {
+        if currentFolder == .drafts {
+            await coordinator.mailStore.syncGmailDrafts(accountID: coordinator.accountID)
+        } else if currentFolder == .inbox {
             await coordinator.mailboxViewModel.refreshCurrentFolder(
                 labelIDs: selectedCategory.gmailLabelIDs
             )

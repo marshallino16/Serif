@@ -46,6 +46,16 @@ final class AvatarCache {
                 memoryCache.setObject(img, forKey: key)
                 return img
             }
+            #if os(iOS)
+            // UIImage can't load SVG — rasterize cached SVG to PNG
+            if let data = try? Data(contentsOf: fileURL), isSVGData(data),
+               let img = await SVGRenderer.render(svgData: data) {
+                // Replace SVG cache with rasterized PNG
+                if let pngData = img.pngData() { try? pngData.write(to: fileURL) }
+                memoryCache.setObject(img, forKey: key)
+                return img
+            }
+            #endif
             return nil
         }
 
@@ -59,6 +69,20 @@ final class AvatarCache {
             negativeCacheKeys.setObject(NSNull(), forKey: key)
             return nil
         }
+
+        #if os(iOS)
+        // BIMI logos are SVG — UIImage can't load them, rasterize to PNG
+        if isSVGData(data) {
+            if let img = await SVGRenderer.render(svgData: data) {
+                if let pngData = img.pngData() {
+                    try? pngData.write(to: fileURL) // cache as PNG
+                }
+                memoryCache.setObject(img, forKey: key)
+                return img
+            }
+            return nil
+        }
+        #endif
 
         try? data.write(to: fileURL)
         if let img = PlatformImage(contentsOfFile: fileURL.path) {
@@ -80,5 +104,10 @@ final class AvatarCache {
         var hash: UInt64 = 5381
         for byte in urlString.utf8 { hash = (hash &* 33) &+ UInt64(byte) }
         return "\(hash)"
+    }
+
+    private func isSVGData(_ data: Data) -> Bool {
+        guard let prefix = String(data: data.prefix(256), encoding: .utf8) else { return false }
+        return prefix.contains("<svg") || prefix.contains("<?xml")
     }
 }

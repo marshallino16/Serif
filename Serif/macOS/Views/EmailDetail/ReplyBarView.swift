@@ -5,6 +5,7 @@ struct ReplyBarView: View {
     let accountID: String
     let fromAddress: String
     let mailStore: MailStore
+    @ObservedObject var coordinator: AppCoordinator
     var onOpenLink: ((URL) -> Void)?
 
     @State private var replyHTML = ""
@@ -26,8 +27,9 @@ struct ReplyBarView: View {
     @State private var showRecipients = false
     @Environment(\.theme) private var theme
 
-    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, onOpenLink: ((URL) -> Void)? = nil) {
+    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, coordinator: AppCoordinator, onOpenLink: ((URL) -> Void)? = nil) {
         self.email = email
+        self._coordinator = ObservedObject(wrappedValue: coordinator)
         self.accountID = accountID
         self.fromAddress = fromAddress
         self.mailStore = mailStore
@@ -438,8 +440,6 @@ struct ReplyBarView: View {
     }
 
     private func sendReply() async {
-        isSending = true
-        sendError = nil
         saveTask?.cancel()
 
         // Recover draft ID so we can delete it after sending
@@ -448,45 +448,47 @@ struct ReplyBarView: View {
            let saved = mailStore.replyDrafts[threadID] {
             composeVM.gmailDraftID = saved.gmailDraftID
         }
-        let draftIDToDelete = composeVM.gmailDraftID
 
         let (processedHTML, images) = InlineImageProcessor.extractInlineImages(from: replyHTML)
+        let allImages = images + editorState.pendingInlineImages
         let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
-
-        composeVM.to = replyToAddress
-        composeVM.cc = replyCcAddress
-        composeVM.subject = sub
-
-        // Append quoted original below reply (Gmail behavior)
         let quotedOriginal = QuoteFormatter.formatReplyQuote(
             senderName: email.sender.name,
             senderEmail: email.sender.email,
             date: email.date,
             originalHTML: email.body
         )
-        composeVM.body = processedHTML + quotedOriginal
-        composeVM.isHTML = true
-        composeVM.inlineImages = images + editorState.pendingInlineImages
-        composeVM.replyToMessageID = email.gmailMessageID
-        composeVM.attachmentURLs = attachments
+        let fullBody = processedHTML + quotedOriginal
+        let sanitized = HTMLSanitizer.sanitizeForSend(
+            fullBody,
+            themeTextColor: theme.textPrimary.hexString
+        )
 
-        await composeVM.send()
-        isSending = false
+        let pending = PendingSend(
+            from: fromAddress, to: replyToAddress, cc: replyCcAddress, bcc: "",
+            subject: sub, bodyHTML: replyHTML, attachmentURLs: attachments,
+            sanitizedBody: sanitized, isHTML: true,
+            threadID: email.gmailThreadID, replyToMessageID: email.gmailMessageID,
+            inlineImages: allImages, gmailDraftID: composeVM.gmailDraftID,
+            accountID: accountID
+        )
 
-        if composeVM.isSent {
-            if let threadID = email.gmailThreadID {
-                mailStore.replyDrafts.removeValue(forKey: threadID)
-                mailStore.saveReplyDrafts()
-            }
-            // Remove draft from local store so it disappears from Drafts folder
-            if let gid = draftIDToDelete {
-                mailStore.gmailDrafts.removeAll { $0.gmailDraftID == gid }
-            }
-            ToastManager.shared.show(message: "Reply sent", type: .success)
-            collapse()
-        } else {
-            sendError = composeVM.error
+        // Clean up draft references
+        if let threadID = email.gmailThreadID {
+            mailStore.replyDrafts.removeValue(forKey: threadID)
+            mailStore.saveReplyDrafts()
         }
+        if let gid = composeVM.gmailDraftID {
+            mailStore.gmailDrafts.removeAll { $0.gmailDraftID == gid }
+        }
+
+        collapse()
+
+        UndoActionManager.shared.schedule(
+            label: "Reply sent",
+            onConfirm: { Task { await pending.performSend() } },
+            onUndo: { [weak coordinator] in coordinator?.reopenSendUndo(pending) }
+        )
     }
 
     private func handleFileDrop(_ url: URL) {

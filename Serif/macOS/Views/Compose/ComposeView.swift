@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ComposeView: View {
     @ObservedObject var mailStore: MailStore
+    @ObservedObject var coordinator: AppCoordinator
     let draftId: UUID
     let accountID: String
     let fromAddress: String
@@ -39,6 +40,7 @@ struct ComposeView: View {
 
     init(
         mailStore: MailStore,
+        coordinator: AppCoordinator,
         draftId: UUID,
         accountID: String,
         fromAddress: String,
@@ -52,6 +54,7 @@ struct ComposeView: View {
         onOpenLink: ((URL) -> Void)? = nil
     ) {
         self._mailStore        = ObservedObject(wrappedValue: mailStore)
+        self._coordinator      = ObservedObject(wrappedValue: coordinator)
         self.draftId           = draftId
         self.accountID         = accountID
         self.fromAddress       = fromAddress
@@ -192,6 +195,28 @@ struct ComposeView: View {
     // MARK: - Draft
 
     private func loadDraft() {
+        // Restore from undo-send if available
+        if let restore = coordinator.pendingSendRestore {
+            coordinator.pendingSendRestore = nil
+            to = restore.to
+            cc = restore.cc
+            bcc = restore.bcc
+            subject = restore.subject
+            bodyHTML = restore.bodyHTML
+            attachments = restore.attachmentURLs
+            showCc = !restore.cc.isEmpty
+            showBcc = !restore.bcc.isEmpty
+            composeVM.threadID = restore.threadID
+            composeVM.replyToMessageID = restore.replyToMessageID
+            composeVM.fromAddress = restore.from
+            selectedAliasEmail = restore.from
+            didApplyMode = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                isInitialLoad = false
+            }
+            return
+        }
+
         let existingDraft = draft
         let hasExistingContent = !(existingDraft?.body.isEmpty ?? true)
 
@@ -270,27 +295,32 @@ struct ComposeView: View {
 
     private func sendEmail() async {
         guard !to.isEmpty, !subject.isEmpty else { return }
-        isSending = true
-        sendError = nil
 
         // Extract inline images from HTML (data: → cid:)
         let (processedHTML, images) = InlineImageProcessor.extractInlineImages(from: bodyHTML)
-        composeVM.to             = to
-        composeVM.cc             = cc
-        composeVM.bcc            = bcc
-        composeVM.subject        = subject
-        composeVM.body           = processedHTML
-        composeVM.isHTML         = true
-        composeVM.inlineImages   = images + editorState.pendingInlineImages
-        composeVM.attachmentURLs = attachments
-        await composeVM.send()
-        isSending = false
-        if composeVM.isSent {
-            saveTask?.cancel()
-            onDiscard()
-        } else {
-            sendError = composeVM.error
-        }
+        let allImages = images + editorState.pendingInlineImages
+        let sanitized = HTMLSanitizer.sanitizeForSend(
+            processedHTML,
+            themeTextColor: theme.textPrimary.hexString
+        )
+
+        let pending = PendingSend(
+            from: selectedAliasEmail, to: to, cc: cc, bcc: bcc,
+            subject: subject, bodyHTML: bodyHTML, attachmentURLs: attachments,
+            sanitizedBody: sanitized, isHTML: true,
+            threadID: composeVM.threadID, replyToMessageID: composeVM.replyToMessageID,
+            inlineImages: allImages, gmailDraftID: composeVM.gmailDraftID,
+            accountID: accountID
+        )
+
+        saveTask?.cancel()
+        onDiscard()
+
+        UndoActionManager.shared.schedule(
+            label: "Email sent",
+            onConfirm: { Task { await pending.performSend() } },
+            onUndo: { [weak coordinator] in coordinator?.reopenSendUndo(pending) }
+        )
     }
 
     // MARK: - File Drop
