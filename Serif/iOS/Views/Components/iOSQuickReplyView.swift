@@ -24,7 +24,7 @@ struct iOSQuickReplyView: View {
     @State private var isLoadingReplies = false
     @State private var visibleChipCount = 0
     @State private var gradientRotation: Double = 0
-    @State private var isReplyAll = false
+    @State private var isReplyAll = true
     @State private var showRecipients = false
     @StateObject private var composeVM: ComposeViewModel
     @StateObject private var editorState = WebRichTextEditorState()
@@ -247,6 +247,7 @@ struct iOSQuickReplyView: View {
                             .foregroundColor(theme.textTertiary)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 6)
                 .transition(.opacity.combined(with: .move(edge: .top)))
