@@ -92,10 +92,16 @@ struct iOSAttachmentCardView: View {
             Divider()
 
             Button {
+                onAddExclusionRule?(result.attachment.filename)
+            } label: {
+                Label("Hide \"\(result.attachment.filename)\"", systemImage: "eye.slash")
+            }
+
+            Button {
                 let ext = (result.attachment.filename as NSString).pathExtension.lowercased()
                 onAddExclusionRule?("*.\(ext)")
             } label: {
-                Label("Hide *.\((result.attachment.filename as NSString).pathExtension.lowercased()) files", systemImage: "eye.slash")
+                Label("Hide all *.\((result.attachment.filename as NSString).pathExtension.lowercased()) files", systemImage: "eye.slash.circle")
             }
         }
     }
@@ -320,10 +326,16 @@ struct iOSAttachmentListRow: View {
             Divider()
 
             Button {
+                onAddExclusionRule?(result.attachment.filename)
+            } label: {
+                Label("Hide \"\(result.attachment.filename)\"", systemImage: "eye.slash")
+            }
+
+            Button {
                 let ext = (result.attachment.filename as NSString).pathExtension.lowercased()
                 onAddExclusionRule?("*.\(ext)")
             } label: {
-                Label("Hide *.\((result.attachment.filename as NSString).pathExtension.lowercased()) files", systemImage: "eye.slash")
+                Label("Hide all *.\((result.attachment.filename as NSString).pathExtension.lowercased()) files", systemImage: "eye.slash.circle")
             }
         }
     }
