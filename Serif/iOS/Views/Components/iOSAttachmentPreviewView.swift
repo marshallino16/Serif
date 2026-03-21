@@ -1,5 +1,6 @@
 import SwiftUI
 import PDFKit
+import AVKit
 
 struct iOSAttachmentPreviewView: View {
     let data: Data
@@ -40,6 +41,8 @@ struct iOSAttachmentPreviewView: View {
         switch fileType {
         case .image:
             imagePreview
+        case .video:
+            videoPreview
         case .pdf:
             pdfPreview
         case .code:
@@ -110,6 +113,12 @@ struct iOSAttachmentPreviewView: View {
         .background(.ultraThinMaterial)
         .clipShape(Capsule())
         .foregroundColor(theme.textPrimary)
+    }
+
+    // MARK: - Video
+
+    private var videoPreview: some View {
+        iOSVideoPlayerView(data: data, fileName: fileName)
     }
 
     // MARK: - PDF
@@ -209,8 +218,35 @@ private struct iOSPDFView: UIViewRepresentable {
 extension Attachment.FileType {
     var isPreviewable: Bool {
         switch self {
-        case .image, .pdf, .code: return true
+        case .image, .video, .pdf, .code: return true
         default: return false
         }
+    }
+}
+
+// MARK: - Video Player
+
+private struct iOSVideoPlayerView: View {
+    let data: Data
+    let fileName: String
+    @State private var player: AVPlayer?
+
+    var body: some View {
+        Group {
+            if let player {
+                VideoPlayer(player: player)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ProgressView("Loading video...")
+            }
+        }
+        .onAppear { loadVideo() }
+        .onDisappear { player?.pause() }
+    }
+
+    private func loadVideo() {
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try? data.write(to: tempURL)
+        player = AVPlayer(url: tempURL)
     }
 }

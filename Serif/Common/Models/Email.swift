@@ -164,6 +164,7 @@ struct Attachment: Identifiable {
         case document = "doc.fill"
         case pdf = "doc.richtext.fill"
         case image = "photo.fill"
+        case video = "film.fill"
         case spreadsheet = "tablecells.fill"
         case archive = "archivebox.fill"
         case presentation = "play.rectangle.fill"
@@ -174,6 +175,7 @@ struct Attachment: Identifiable {
             case .document: return "Document"
             case .pdf: return "PDF"
             case .image: return "Image"
+            case .video: return "Video"
             case .spreadsheet: return "Spreadsheet"
             case .archive: return "Archive"
             case .presentation: return "Presentation"
@@ -185,6 +187,7 @@ struct Attachment: Identifiable {
             switch ext.lowercased() {
             case "pdf":                                         return .pdf
             case "jpg", "jpeg", "png", "gif", "webp", "heic":  return .image
+            case "mp4", "mov", "avi", "mkv", "m4v", "webm":    return .video
             case "xls", "xlsx", "csv":                          return .spreadsheet
             case "zip", "gz", "tar", "rar", "7z":               return .archive
             case "ppt", "pptx", "key":                          return .presentation

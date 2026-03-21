@@ -24,6 +24,7 @@ struct AttachmentCardView: View {
     private var iconBackgroundColor: Color {
         switch fileType {
         case .image:        return .blue.opacity(0.15)
+        case .video:        return .pink.opacity(0.15)
         case .pdf:          return .red.opacity(0.15)
         case .spreadsheet:  return .green.opacity(0.15)
         case .document:     return .indigo.opacity(0.15)
@@ -36,6 +37,7 @@ struct AttachmentCardView: View {
     private var iconForegroundColor: Color {
         switch fileType {
         case .image:        return .blue
+        case .video:        return .pink
         case .pdf:          return .red
         case .spreadsheet:  return .green
         case .document:     return .indigo

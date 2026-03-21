@@ -23,6 +23,7 @@ struct iOSAttachmentCardView: View {
     private var typeColor: Color {
         switch fileType {
         case .image:        return .blue
+        case .video:        return .pink
         case .pdf:          return .red
         case .spreadsheet:  return .green
         case .document:     return .orange
@@ -200,6 +201,7 @@ struct iOSAttachmentListRow: View {
     private var typeColor: Color {
         switch fileType {
         case .image:        return .blue
+        case .video:        return .pink
         case .pdf:          return .red
         case .spreadsheet:  return .green
         case .document:     return .orange
