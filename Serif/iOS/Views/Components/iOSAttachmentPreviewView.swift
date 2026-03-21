@@ -41,7 +41,7 @@ struct iOSAttachmentPreviewView: View {
         switch fileType {
         case .image:
             imagePreview
-        case .video:
+        case .video, .audio:
             videoPreview
         case .pdf:
             pdfPreview
@@ -218,7 +218,7 @@ private struct iOSPDFView: UIViewRepresentable {
 extension Attachment.FileType {
     var isPreviewable: Bool {
         switch self {
-        case .image, .video, .pdf, .code: return true
+        case .image, .video, .audio, .pdf, .code: return true
         default: return false
         }
     }

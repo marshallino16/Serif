@@ -49,12 +49,12 @@ struct iOSAttachmentExplorerView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Filter chips below the title (matches InboxTab category picker pattern)
-                if !store.displayedAttachments.isEmpty || store.isIndexing {
+                if !store.allAttachments.isEmpty || store.isIndexing {
                     filterBar
                     Divider().foregroundColor(theme.divider)
                 }
 
-                if store.displayedAttachments.isEmpty && !store.isIndexing {
+                if store.allAttachments.isEmpty && !store.isIndexing {
                     emptyState
                 } else if store.isIndexing && store.allAttachments.isEmpty {
                     indexingState
@@ -133,6 +133,12 @@ struct iOSAttachmentExplorerView: View {
         .sheet(isPresented: $showExclusionRules) {
             exclusionRulesSheet
                 .environment(\.theme, theme)
+        }
+        .sheet(item: $emailToView) { email in
+            NavigationStack {
+                iOSEmailDetailView(email: email, coordinator: coordinator)
+            }
+            .environment(\.theme, theme)
         }
         .overlay {
             if isLoadingPreview {
@@ -310,7 +316,10 @@ struct iOSAttachmentExplorerView: View {
                         accountID: accountID,
                         onTap: { loadAndPreview(result.attachment) },
                         onShare: { downloadAndShare(result.attachment) },
-                        onViewMessage: { navigateToEmail(result.attachment.messageId) }
+                        onViewMessage: { navigateToEmail(result.attachment.messageId) },
+                        onAddExclusionRule: { pattern in
+                            store.addExclusionRule(pattern)
+                        }
                     )
                 }
 
@@ -337,7 +346,10 @@ struct iOSAttachmentExplorerView: View {
                         accountID: accountID,
                         onTap: { loadAndPreview(result.attachment) },
                         onShare: { downloadAndShare(result.attachment) },
-                        onViewMessage: { navigateToEmail(result.attachment.messageId) }
+                        onViewMessage: { navigateToEmail(result.attachment.messageId) },
+                        onAddExclusionRule: { pattern in
+                            store.addExclusionRule(pattern)
+                        }
                     )
 
                     Divider()
@@ -631,15 +643,16 @@ struct iOSAttachmentExplorerView: View {
         showShareSheet = true
     }
 
+    @State private var emailToView: Email?
+
     private func navigateToEmail(_ messageId: String) {
-        // Navigate to the email via coordinator
         Task {
             do {
                 let message = try await GmailMessageService.shared.getMessage(
                     id: messageId, accountID: accountID, format: "full"
                 )
                 let email = coordinator.mailboxViewModel.makeEmail(from: message)
-                coordinator.panelCoordinator.showEmail(email, accountID: accountID)
+                await MainActor.run { emailToView = email }
             } catch {
                 print("[iOSAttachmentExplorer] Navigate to email failed: \(error)")
             }

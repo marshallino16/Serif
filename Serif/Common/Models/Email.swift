@@ -165,6 +165,7 @@ struct Attachment: Identifiable {
         case pdf = "doc.richtext.fill"
         case image = "photo.fill"
         case video = "film.fill"
+        case audio = "waveform.circle.fill"
         case spreadsheet = "tablecells.fill"
         case archive = "archivebox.fill"
         case presentation = "play.rectangle.fill"
@@ -176,6 +177,7 @@ struct Attachment: Identifiable {
             case .pdf: return "PDF"
             case .image: return "Image"
             case .video: return "Video"
+            case .audio: return "Audio"
             case .spreadsheet: return "Spreadsheet"
             case .archive: return "Archive"
             case .presentation: return "Presentation"
@@ -188,6 +190,7 @@ struct Attachment: Identifiable {
             case "pdf":                                         return .pdf
             case "jpg", "jpeg", "png", "gif", "webp", "heic":  return .image
             case "mp4", "mov", "avi", "mkv", "m4v", "webm":    return .video
+            case "mp3", "wav", "m4a", "aac", "ogg", "flac":    return .audio
             case "xls", "xlsx", "csv":                          return .spreadsheet
             case "zip", "gz", "tar", "rar", "7z":               return .archive
             case "ppt", "pptx", "key":                          return .presentation

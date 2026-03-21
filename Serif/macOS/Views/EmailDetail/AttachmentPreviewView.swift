@@ -272,7 +272,7 @@ extension Attachment.FileType {
     /// True for types we can render inline.
     var isPreviewable: Bool {
         switch self {
-        case .image, .video, .pdf, .code: return true
+        case .image, .video, .audio, .pdf, .code: return true
         default: return false
         }
     }

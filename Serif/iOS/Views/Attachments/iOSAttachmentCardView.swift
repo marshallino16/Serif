@@ -7,6 +7,7 @@ struct iOSAttachmentCardView: View {
     var onTap: (() -> Void)?
     var onShare: (() -> Void)?
     var onViewMessage: (() -> Void)?
+    var onAddExclusionRule: ((String) -> Void)?
     @ObservedObject private var thumbCache = ThumbnailCache.shared
     @Environment(\.theme) private var theme
 
@@ -24,6 +25,7 @@ struct iOSAttachmentCardView: View {
         switch fileType {
         case .image:        return .blue
         case .video:        return .pink
+        case .audio:        return .indigo
         case .pdf:          return .red
         case .spreadsheet:  return .green
         case .document:     return .orange
@@ -85,6 +87,15 @@ struct iOSAttachmentCardView: View {
                 onViewMessage?()
             } label: {
                 Label("View Email", systemImage: "envelope")
+            }
+
+            Divider()
+
+            Button {
+                let ext = (result.attachment.filename as NSString).pathExtension.lowercased()
+                onAddExclusionRule?("*.\(ext)")
+            } label: {
+                Label("Hide *.\((result.attachment.filename as NSString).pathExtension.lowercased()) files", systemImage: "eye.slash")
             }
         }
     }
@@ -191,6 +202,7 @@ struct iOSAttachmentListRow: View {
     var onTap: (() -> Void)?
     var onShare: (() -> Void)?
     var onViewMessage: (() -> Void)?
+    var onAddExclusionRule: ((String) -> Void)?
     @ObservedObject private var thumbCache = ThumbnailCache.shared
     @Environment(\.theme) private var theme
 
@@ -202,6 +214,7 @@ struct iOSAttachmentListRow: View {
         switch fileType {
         case .image:        return .blue
         case .video:        return .pink
+        case .audio:        return .indigo
         case .pdf:          return .red
         case .spreadsheet:  return .green
         case .document:     return .orange
@@ -302,6 +315,15 @@ struct iOSAttachmentListRow: View {
                 onViewMessage?()
             } label: {
                 Label("View Email", systemImage: "envelope")
+            }
+
+            Divider()
+
+            Button {
+                let ext = (result.attachment.filename as NSString).pathExtension.lowercased()
+                onAddExclusionRule?("*.\(ext)")
+            } label: {
+                Label("Hide *.\((result.attachment.filename as NSString).pathExtension.lowercased()) files", systemImage: "eye.slash")
             }
         }
     }
