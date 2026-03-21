@@ -24,6 +24,8 @@ struct iOSQuickReplyView: View {
     @State private var isLoadingReplies = false
     @State private var visibleChipCount = 0
     @State private var gradientRotation: Double = 0
+    @State private var isReplyAll = false
+    @State private var showRecipients = false
     @StateObject private var composeVM: ComposeViewModel
     @StateObject private var editorState = WebRichTextEditorState()
     @Environment(\.theme) private var theme
@@ -186,8 +188,72 @@ struct iOSQuickReplyView: View {
 
     // MARK: - Expanded
 
+    private var replyToAddress: String {
+        if isReplyAll {
+            let extras = email.recipients.map(\.email).filter { $0 != fromAddress }
+            return ([email.sender.email] + extras).joined(separator: ", ")
+        }
+        return email.sender.email
+    }
+
+    private var replyCcAddress: String {
+        isReplyAll ? email.cc.map(\.email).joined(separator: ", ") : ""
+    }
+
     private var expandedContent: some View {
         VStack(spacing: 0) {
+            // Reply mode toggle + recipients
+            HStack(spacing: 8) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { isReplyAll.toggle() }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: isReplyAll ? "arrowshape.turn.up.left.2.fill" : "arrowshape.turn.up.left.fill")
+                            .font(.system(size: 11))
+                        Text(isReplyAll ? "Reply All" : "Reply")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(theme.accentPrimary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(theme.accentPrimary.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { showRecipients.toggle() }
+                } label: {
+                    Text("To: \(email.sender.name.isEmpty ? email.sender.email : email.sender.name)\(isReplyAll && !email.cc.isEmpty ? " +\(email.cc.count)" : "")")
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.textSecondary)
+                        .lineLimit(1)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+
+            if showRecipients {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("To: \(replyToAddress)")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.textTertiary)
+                    if isReplyAll && !replyCcAddress.isEmpty {
+                        Text("Cc: \(replyCcAddress)")
+                            .font(.system(size: 11))
+                            .foregroundColor(theme.textTertiary)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            Divider().background(theme.divider)
+
             // Quick reply chips
             if !quickReplies.isEmpty {
                 quickReplyChips
@@ -410,10 +476,20 @@ struct iOSQuickReplyView: View {
         let draftIDToDelete = composeVM.gmailDraftID
 
         let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
-        composeVM.to = email.sender.email
+        composeVM.to = replyToAddress
+        composeVM.cc = replyCcAddress
         composeVM.subject = sub
-        composeVM.body = replyHTML.isEmpty ? replyText : replyHTML
-        composeVM.isHTML = !replyHTML.isEmpty
+
+        // Append quoted original below reply (Gmail behavior)
+        let replyBody = replyHTML.isEmpty ? replyText : replyHTML
+        let quotedOriginal = QuoteFormatter.formatReplyQuote(
+            senderName: email.sender.name,
+            senderEmail: email.sender.email,
+            date: email.date,
+            originalHTML: email.body
+        )
+        composeVM.body = replyBody + quotedOriginal
+        composeVM.isHTML = true
         composeVM.replyToMessageID = email.gmailMessageID
         composeVM.attachmentURLs = attachments
         await composeVM.send()
@@ -488,7 +564,8 @@ struct iOSQuickReplyView: View {
                 composeVM.gmailDraftID = saved.gmailDraftID
             }
             let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
-            composeVM.to = email.sender.email
+            composeVM.to = replyToAddress
+            composeVM.cc = replyCcAddress
             composeVM.subject = sub
             composeVM.body = replyHTML.isEmpty ? replyText : replyHTML
             composeVM.isHTML = !replyHTML.isEmpty
