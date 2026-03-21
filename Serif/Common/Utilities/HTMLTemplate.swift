@@ -49,6 +49,26 @@ enum HTMLTemplate {
             padding: 10px 12px;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            overflow-x: hidden;
+            max-width: 100%;
+            white-space: pre-wrap;
+        }
+        #editor * {
+            max-width: 100% !important;
+            overflow-x: hidden;
+        }
+        #editor table {
+            table-layout: fixed;
+            width: 100% !important;
+        }
+        #editor img {
+            max-width: 100% !important;
+            height: auto !important;
+        }
+        #editor blockquote {
+            overflow-x: hidden;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         #editor {
             position: relative;

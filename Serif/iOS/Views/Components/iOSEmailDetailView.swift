@@ -109,6 +109,8 @@ struct iOSEmailDetailView: View {
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
     @State private var composeModeToPresent: ComposeMode?
+    @State private var showForwardAttachmentAlert = false
+    @State private var forwardAttachmentURLs: [URL] = []
     @State private var showLabelSheet = false
     @State private var expandQuickReply = false
     @State private var labelSuggestions: [LabelSuggestion] = []
@@ -381,7 +383,11 @@ struct iOSEmailDetailView: View {
                         Label("Reply All", systemImage: "arrowshape.turn.up.left.2")
                     }
                     Button {
-                        composeModeToPresent = forwardMode()
+                        if email.hasAttachments {
+                            showForwardAttachmentAlert = true
+                        } else {
+                            composeModeToPresent = forwardMode()
+                        }
                     } label: {
                         Label("Forward", systemImage: "arrowshape.turn.up.right")
                     }
@@ -491,7 +497,11 @@ struct iOSEmailDetailView: View {
                     accountID: coordinator.accountID,
                     fromAddress: coordinator.fromAddress,
                     mode: mode,
-                    onDismiss: { composeModeToPresent = nil }
+                    initialAttachmentURLs: forwardAttachmentURLs,
+                    onDismiss: {
+                        composeModeToPresent = nil
+                        forwardAttachmentURLs = []
+                    }
                 )
             }
         }
@@ -521,6 +531,18 @@ struct iOSEmailDetailView: View {
                 )
                 .environment(\.theme, theme)
             }
+        }
+        .alert("Forward Attachments?", isPresented: $showForwardAttachmentAlert) {
+            Button("Include Attachments") {
+                Task { await forwardWithAttachments() }
+            }
+            Button("Without Attachments") {
+                forwardAttachmentURLs = []
+                composeModeToPresent = forwardMode()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This email has attachments. Would you like to include them in the forward?")
         }
         .onAppear { loadThread() }
         .task(id: email.id) {
@@ -608,6 +630,25 @@ struct iOSEmailDetailView: View {
         return .replyAll(to: toField, cc: email.cc.map(\.email).joined(separator: ", "),
                          subject: sub, quotedBody: quotedHTML,
                          replyToMessageID: email.gmailMessageID ?? "", threadID: email.gmailThreadID ?? "")
+    }
+
+    private func forwardWithAttachments() async {
+        var urls: [URL] = []
+        if let msgID = detailVM.latestMessage?.id {
+            for (att, part) in attachmentPairs {
+                guard let part else { continue }
+                do {
+                    let data = try await detailVM.downloadAttachment(messageID: msgID, part: part)
+                    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(att.name)
+                    try data.write(to: tempURL)
+                    urls.append(tempURL)
+                } catch {}
+            }
+        }
+        await MainActor.run {
+            forwardAttachmentURLs = urls
+            composeModeToPresent = forwardMode()
+        }
     }
 
     private func forwardMode() -> ComposeMode {

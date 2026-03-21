@@ -34,6 +34,7 @@ struct iOSComposeView: View {
     let fromAddress: String
     let mode: ComposeMode
     let draftEmail: Email?
+    let initialAttachmentURLs: [URL]
     let onDismiss: () -> Void
     @Environment(\.theme) private var theme
 
@@ -60,11 +61,12 @@ struct iOSComposeView: View {
     @StateObject private var composeVM: ComposeViewModel
     @StateObject private var editorState = WebRichTextEditorState()
 
-    init(accountID: String, fromAddress: String, mode: ComposeMode = .new, draftEmail: Email? = nil, onDismiss: @escaping () -> Void) {
+    init(accountID: String, fromAddress: String, mode: ComposeMode = .new, draftEmail: Email? = nil, initialAttachmentURLs: [URL] = [], onDismiss: @escaping () -> Void) {
         self.accountID = accountID
         self.fromAddress = fromAddress
         self.mode = mode
         self.draftEmail = draftEmail
+        self.initialAttachmentURLs = initialAttachmentURLs
         self.onDismiss = onDismiss
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
@@ -259,6 +261,9 @@ struct iOSComposeView: View {
                 loadDraftEmail(draft)
             } else {
                 applyMode()
+            }
+            if !initialAttachmentURLs.isEmpty {
+                attachments = initialAttachmentURLs
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 isInitialLoad = false
