@@ -29,8 +29,13 @@ struct iOSWebRichTextEditorRepresentable: UIViewRepresentable {
             forName: UIResponder.keyboardWillHideNotification,
             object: nil, queue: .main
         ) { _ in
+            // Force the webview scroll insets to reset after keyboard dismissal
+            webView.scrollView.contentInset = .zero
+            webView.scrollView.scrollIndicatorInsets = .zero
             webView.setNeedsLayout()
             webView.layoutIfNeeded()
+            // Invalidate intrinsic content size to trigger SwiftUI re-layout
+            webView.invalidateIntrinsicContentSize()
         }
 
         let html = HTMLTemplate.editorHTML(

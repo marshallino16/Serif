@@ -77,8 +77,11 @@ struct iOSComposeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 0) {
+                        Color.clear.frame(height: 0).id("composeTop")
+
                         // To
                         iOSContactAutocompleteField(
                             label: "To", placeholder: "Recipients",
@@ -123,6 +126,12 @@ struct iOSComposeView: View {
                         .frame(minHeight: 250)
                     }
                 }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        withAnimation { proxy.scrollTo("composeTop", anchor: .top) }
+                    }
+                }
+                } // ScrollViewReader
 
                 // Attachments bar
                 if !attachments.isEmpty {

@@ -113,7 +113,18 @@ final class WebRichTextEditorState: ObservableObject {
     func focus() { eval("focusEditor()") }
 
     func moveCursorToTop() {
-        eval("var r = document.createRange(); var s = window.getSelection(); r.setStart(document.getElementById('editor'), 0); r.collapse(true); s.removeAllRanges(); s.addRange(r);")
+        eval("""
+        var r = document.createRange();
+        var s = window.getSelection();
+        var ed = document.getElementById('editor');
+        if (ed && ed.firstChild) { r.setStartBefore(ed.firstChild); }
+        else if (ed) { r.setStart(ed, 0); }
+        r.collapse(true);
+        s.removeAllRanges();
+        s.addRange(r);
+        window.scrollTo(0, 0);
+        ed.scrollTop = 0;
+        """)
     }
 
     // MARK: - Images
