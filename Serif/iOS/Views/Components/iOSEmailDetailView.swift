@@ -136,6 +136,10 @@ struct iOSEmailDetailView: View {
 
     // MARK: - Derived content
 
+    private var hasMultipleRecipients: Bool {
+        email.recipients.count > 1 || !email.cc.isEmpty
+    }
+
     private var isMailingList: Bool {
         detailVM.latestMessage?.isFromMailingList ?? email.isFromMailingList
             || detailVM.latestMessage?.unsubscribeURL != nil
@@ -375,12 +379,21 @@ struct iOSEmailDetailView: View {
                     Button {
                         expandQuickReply = true
                     } label: {
-                        Label("Reply", systemImage: "arrowshape.turn.up.left")
+                        Label(hasMultipleRecipients ? "Reply All" : "Reply",
+                              systemImage: hasMultipleRecipients ? "arrowshape.turn.up.left.2" : "arrowshape.turn.up.left")
                     }
-                    Button {
-                        composeModeToPresent = replyAllMode()
-                    } label: {
-                        Label("Reply All", systemImage: "arrowshape.turn.up.left.2")
+                    if hasMultipleRecipients {
+                        Button {
+                            composeModeToPresent = replyMode()
+                        } label: {
+                            Label("Reply", systemImage: "arrowshape.turn.up.left")
+                        }
+                    } else {
+                        Button {
+                            composeModeToPresent = replyAllMode()
+                        } label: {
+                            Label("Reply All", systemImage: "arrowshape.turn.up.left.2")
+                        }
                     }
                     Button {
                         if email.hasAttachments {
@@ -392,7 +405,7 @@ struct iOSEmailDetailView: View {
                         Label("Forward", systemImage: "arrowshape.turn.up.right")
                     }
                 } label: {
-                    Image(systemName: "arrowshape.turn.up.left")
+                    Image(systemName: hasMultipleRecipients ? "arrowshape.turn.up.left.2" : "arrowshape.turn.up.left")
                 }
 
                 Menu {
