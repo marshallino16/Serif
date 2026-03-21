@@ -25,17 +25,16 @@ struct iOSWebRichTextEditorRepresentable: UIViewRepresentable {
         webView.scrollView.backgroundColor = .clear
         webView.scrollView.contentInsetAdjustmentBehavior = .never
 
+        // Fix: WKWebView keeps bottom inset after keyboard dismissal
         NotificationCenter.default.addObserver(
-            forName: UIResponder.keyboardWillHideNotification,
+            forName: UIResponder.keyboardDidHideNotification,
             object: nil, queue: .main
         ) { _ in
-            // Force the webview scroll insets to reset after keyboard dismissal
-            webView.scrollView.contentInset = .zero
-            webView.scrollView.scrollIndicatorInsets = .zero
-            webView.setNeedsLayout()
-            webView.layoutIfNeeded()
-            // Invalidate intrinsic content size to trigger SwiftUI re-layout
-            webView.invalidateIntrinsicContentSize()
+            // Delay to let the keyboard animation finish
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                webView.scrollView.contentInset.bottom = 0
+                webView.scrollView.verticalScrollIndicatorInsets.bottom = 0
+            }
         }
 
         let html = HTMLTemplate.editorHTML(

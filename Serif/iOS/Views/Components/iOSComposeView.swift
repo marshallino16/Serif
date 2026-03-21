@@ -126,6 +126,7 @@ struct iOSComposeView: View {
                         .frame(minHeight: 250)
                     }
                 }
+                .scrollDismissesKeyboard(.interactively)
                 .onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                         withAnimation { proxy.scrollTo("composeTop", anchor: .top) }
