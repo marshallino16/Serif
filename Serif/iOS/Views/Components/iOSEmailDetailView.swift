@@ -108,8 +108,7 @@ struct iOSEmailDetailView: View {
     @State private var avatarImage: PlatformImage?
     @State private var shareItems: [Any] = []
     @State private var showShareSheet = false
-    @State private var showComposeSheet = false
-    @State private var composeMode: ComposeMode = .new
+    @State private var composeModeToPresent: ComposeMode?
     @State private var showLabelSheet = false
     @State private var expandQuickReply = false
     @State private var labelSuggestions: [LabelSuggestion] = []
@@ -377,14 +376,12 @@ struct iOSEmailDetailView: View {
                         Label("Reply", systemImage: "arrowshape.turn.up.left")
                     }
                     Button {
-                        composeMode = replyAllMode()
-                        showComposeSheet = true
+                        composeModeToPresent = replyAllMode()
                     } label: {
                         Label("Reply All", systemImage: "arrowshape.turn.up.left.2")
                     }
                     Button {
-                        composeMode = forwardMode()
-                        showComposeSheet = true
+                        composeModeToPresent = forwardMode()
                     } label: {
                         Label("Forward", systemImage: "arrowshape.turn.up.right")
                     }
@@ -485,13 +482,18 @@ struct iOSEmailDetailView: View {
         .sheet(isPresented: $showShareSheet) {
             iOSShareSheet(items: shareItems)
         }
-        .sheet(isPresented: $showComposeSheet) {
-            iOSComposeView(
-                accountID: coordinator.accountID,
-                fromAddress: coordinator.fromAddress,
-                mode: composeMode,
-                onDismiss: { showComposeSheet = false }
-            )
+        .sheet(isPresented: Binding(
+            get: { composeModeToPresent != nil },
+            set: { if !$0 { composeModeToPresent = nil } }
+        )) {
+            if let mode = composeModeToPresent {
+                iOSComposeView(
+                    accountID: coordinator.accountID,
+                    fromAddress: coordinator.fromAddress,
+                    mode: mode,
+                    onDismiss: { composeModeToPresent = nil }
+                )
+            }
         }
         .sheet(isPresented: $showLabelSheet) {
             iOSLabelManagementSheet(
