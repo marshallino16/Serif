@@ -450,7 +450,7 @@ struct iOSAttachmentExplorerView: View {
                 Text(label)
                     .font(.system(size: 13, weight: .medium))
             }
-            .foregroundColor(isSelected ? .white : theme.textSecondary)
+            .foregroundColor(isSelected ? theme.textInverse : theme.textSecondary)
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
             .background(Capsule().fill(isSelected ? theme.accentPrimary : theme.cardBackground))

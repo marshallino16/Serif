@@ -448,7 +448,7 @@ struct AccountTab: View {
                                 .font(.system(size: 15))
                                 .foregroundColor(theme.textPrimary)
                         }
-                        .tint(theme.accentPrimary)
+                        .tint(theme.isLight ? theme.accentPrimary : .green)
 
                         Text("Suggest labels for emails using on-device AI")
                             .font(.system(size: 12))
