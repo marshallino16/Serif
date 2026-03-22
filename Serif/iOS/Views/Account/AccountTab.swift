@@ -748,12 +748,20 @@ struct iOSSignatureEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var signatureHTML: String = ""
     @State private var isSaving = false
+    @StateObject private var editorState = WebRichTextEditorState()
 
     var body: some View {
         VStack(spacing: 0) {
-            TextEditor(text: $signatureHTML)
-                .font(.system(size: 14))
-                .padding()
+            iOSFormattingToolbar(state: editorState)
+
+            Divider()
+
+            iOSWebRichTextEditor(
+                state: editorState,
+                htmlContent: $signatureHTML,
+                placeholder: "Enter your signature…",
+                autoFocus: false
+            )
         }
         .background(theme.detailBackground)
         .navigationTitle(alias.displayName ?? alias.sendAsEmail)
@@ -775,9 +783,10 @@ struct iOSSignatureEditorView: View {
 
     private func saveSignature() async {
         isSaving = true
+        let html = await editorState.getHTMLAsync()
         _ = try? await GmailProfileService.shared.updateSignature(
             sendAsEmail: alias.sendAsEmail,
-            signature: signatureHTML,
+            signature: html,
             accountID: accountID
         )
         isSaving = false

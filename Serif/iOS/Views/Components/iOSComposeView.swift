@@ -396,11 +396,12 @@ struct iOSComposeView: View {
     }
 
     private func applyMode() {
+        let aliases = coordinator.mailboxViewModel.sendAsAliases
         let fields = ComposeModeInitializer.apply(
             mode: mode,
-            signatureForNew: SignatureResolver.resolve(preferredEmail: fromAddress, aliases: []),
-            signatureForReply: SignatureResolver.resolve(preferredEmail: fromAddress, aliases: []),
-            aliases: []
+            signatureForNew: coordinator.signatureForNew,
+            signatureForReply: coordinator.signatureForReply,
+            aliases: aliases
         )
         if !fields.to.isEmpty { to = fields.to }
         if !fields.cc.isEmpty { cc = fields.cc; showCc = true }

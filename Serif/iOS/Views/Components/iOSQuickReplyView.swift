@@ -477,13 +477,20 @@ struct iOSQuickReplyView: View {
 
         let sub = email.subject.hasPrefix("Re:") ? email.subject : "Re: \(email.subject)"
         let replyBody = replyHTML.isEmpty ? replyText : replyHTML
+        let aliases = coordinator.mailboxViewModel.sendAsAliases
+        let sig = SignatureResolver.resolveHTML(
+            preferredEmail: coordinator.signatureForReply,
+            aliases: aliases
+        )
         let quotedOriginal = QuoteFormatter.formatReplyQuote(
             senderName: email.sender.name,
             senderEmail: email.sender.email,
             date: email.date,
             originalHTML: email.body
         )
-        let fullBody = replyBody + quotedOriginal
+        let fullBody = sig.isEmpty
+            ? replyBody + quotedOriginal
+            : replyBody + "<br>" + sig + quotedOriginal
         let sanitized = HTMLSanitizer.sanitizeForSend(
             fullBody,
             themeTextColor: ThemeManager.shared.currentTheme.textPrimary.hexString
