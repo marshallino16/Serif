@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 struct PendingUndoAction: Identifiable {
     let id = UUID()
@@ -78,6 +78,7 @@ final class UndoActionManager: ObservableObject {
     func undo() {
         countdownTask?.cancel()
         countdownTask = nil
+        withAnimation(.none) { progress = 0 }
         guard let action = pendingActions.popLast() else { return }
         action.onUndo()
 
@@ -89,6 +90,7 @@ final class UndoActionManager: ObservableObject {
     func confirm() {
         countdownTask?.cancel()
         countdownTask = nil
+        withAnimation(.none) { progress = 0 }
         guard let action = pendingActions.popLast() else { return }
         action.onConfirm()
 
@@ -101,6 +103,7 @@ final class UndoActionManager: ObservableObject {
     func confirmAll() {
         countdownTask?.cancel()
         countdownTask = nil
+        withAnimation(.none) { progress = 0 }
         let actions = pendingActions
         pendingActions.removeAll()
         for action in actions { action.onConfirm() }
@@ -112,17 +115,25 @@ final class UndoActionManager: ObservableObject {
         let stored = UserDefaults.standard.integer(forKey: "undoDuration")
         let duration = Double([5, 10, 20, 30].contains(stored) ? stored : 5)
 
-        progress = 1.0
+        // Reset progress without animation, then animate to 0 (GPU-driven)
+        withAnimation(.none) { progress = 1.0 }
         timeRemaining = duration
+
+        // Kick off the smooth animation on the next frame
+        Task { @MainActor in
+            withAnimation(.linear(duration: duration)) {
+                self.progress = 0.0
+            }
+        }
 
         countdownTask = Task { [weak self] in
             guard let self else { return }
-            let totalSteps = Int(duration * 20) // 50ms intervals
-            for step in (0..<totalSteps).reversed() {
-                try? await Task.sleep(nanoseconds: 50_000_000)
+            // Update timeRemaining once per second (label only)
+            let seconds = Int(duration)
+            for i in 1...seconds {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 guard !Task.isCancelled else { return }
-                self.progress = Double(step) / Double(totalSteps)
-                self.timeRemaining = Double(step) / 20.0
+                self.timeRemaining = duration - Double(i)
             }
             guard !Task.isCancelled else { return }
             self.confirm()

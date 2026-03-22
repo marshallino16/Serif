@@ -86,7 +86,6 @@ struct iOSToastOverlay: View {
                     Rectangle()
                         .fill(theme.accentPrimary.opacity(0.7))
                         .frame(width: geo.size.width * undoMgr.progress)
-                        .animation(.linear(duration: 0.06), value: undoMgr.progress)
                 }
             }
             .frame(height: 3)

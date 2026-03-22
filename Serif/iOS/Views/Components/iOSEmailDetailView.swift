@@ -848,7 +848,7 @@ struct iOSEmailDetailView: View {
 
     // MARK: - Helpers
 
-    private static func plainToHTML(_ text: String) -> String {
+    static func plainToHTML(_ text: String) -> String {
         text
             .replacingOccurrences(of: "&", with: "&amp;")
             .replacingOccurrences(of: "<", with: "&lt;")
@@ -973,6 +973,7 @@ struct iOSHTMLEmailView: UIViewRepresentable {
         function fixDarkModeColors() {
             if (!window.matchMedia('(prefers-color-scheme: dark)').matches) return;
 
+            var DARK_BG = [28, 28, 30]; // #1c1c1e
             var BG_LUM = 0.015;
             var MIN_CR = 4.0;
 
@@ -982,10 +983,6 @@ struct iOSHTMLEmailView: UIViewRepresentable {
             }
             function relativeLum(r, g, b) {
                 return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
-            }
-            function contrastWith(lum) {
-                var hi = Math.max(lum, BG_LUM), lo = Math.min(lum, BG_LUM);
-                return (hi + 0.05) / (lo + 0.05);
             }
             function parseRgb(s) {
                 var i = s.indexOf('(');
@@ -1001,7 +998,7 @@ struct iOSHTMLEmailView: UIViewRepresentable {
                 if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
                 return p;
             }
-            function lightenToContrast(r, g, b) {
+            function rgbToHsl(r, g, b) {
                 r /= 255; g /= 255; b /= 255;
                 var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
                 var h = 0, s = 0, l = (mx + mn) / 2;
@@ -1013,21 +1010,60 @@ struct iOSHTMLEmailView: UIViewRepresentable {
                     else               h = (r - g) / d + 4;
                     h /= 6;
                 }
-                for (var tl = Math.max(l + 0.1, 0.55); tl <= 1.0; tl += 0.04) {
-                    var q2 = tl < 0.5 ? tl * (1 + s) : tl + s - tl * s;
-                    var p2 = 2 * tl - q2;
-                    var nr = Math.round(hue2rgb(p2, q2, h + 1/3) * 255);
-                    var ng = Math.round(hue2rgb(p2, q2, h)       * 255);
-                    var nb = Math.round(hue2rgb(p2, q2, h - 1/3) * 255);
-                    if (contrastWith(relativeLum(nr, ng, nb)) >= MIN_CR)
-                        return 'rgb(' + nr + ',' + ng + ',' + nb + ')';
+                return [h, s, l];
+            }
+            function hslToRgb(h, s, l) {
+                if (s === 0) { var v = Math.round(l * 255); return [v, v, v]; }
+                var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                var p = 2 * l - q;
+                return [
+                    Math.round(hue2rgb(p, q, h + 1/3) * 255),
+                    Math.round(hue2rgb(p, q, h)       * 255),
+                    Math.round(hue2rgb(p, q, h - 1/3) * 255)
+                ];
+            }
+
+            // --- Pass 1: Invert light backgrounds to dark ---
+            function invertBg(el) {
+                var cs = window.getComputedStyle(el);
+                var bg = cs.backgroundColor;
+                var rgb = parseRgb(bg);
+                if (!rgb) return;
+                var parts = bg.slice(bg.indexOf('(') + 1).split(',');
+                var alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+                if (alpha < 0.1) return;
+                var lum = relativeLum(rgb[0], rgb[1], rgb[2]);
+                if (lum < 0.5) return; // already dark, skip
+                var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+                // Invert lightness: map 0.5-1.0 → 0.18-0.05
+                var newL = 0.18 - (hsl[2] - 0.5) * 0.26;
+                newL = Math.max(0.05, Math.min(0.18, newL));
+                // Desaturate slightly for dark bg
+                var newS = hsl[1] * 0.6;
+                var newRgb = hslToRgb(hsl[0], newS, newL);
+                var darkColor = 'rgb(' + newRgb[0] + ',' + newRgb[1] + ',' + newRgb[2] + ')';
+                el.style.setProperty('background-color', darkColor, 'important');
+                // Also clear bgcolor attribute
+                if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
+            }
+
+            document.querySelectorAll(
+                'table,td,th,div,body,section,article,header,footer,main,aside,tr'
+            ).forEach(invertBg);
+
+            // --- Pass 2: Fix text colors for contrast on now-dark backgrounds ---
+            function lightenToContrast(r, g, b) {
+                var hsl = rgbToHsl(r, g, b);
+                for (var tl = Math.max(hsl[2] + 0.1, 0.55); tl <= 1.0; tl += 0.04) {
+                    var c = hslToRgb(hsl[0], hsl[1], tl);
+                    if (((relativeLum(c[0], c[1], c[2]) + 0.05) / (BG_LUM + 0.05)) >= MIN_CR)
+                        return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
                 }
                 return THEME_TEXT;
             }
 
             function isAchromatic(r, g, b) {
-                var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-                return (mx - mn) < 30 && mx < 80;
+                return (Math.max(r, g, b) - Math.min(r, g, b)) < 30 && Math.max(r, g, b) < 80;
             }
 
             function effectiveBgLum(el) {
@@ -1037,8 +1073,8 @@ struct iOSHTMLEmailView: UIViewRepresentable {
                     var rgba = parseRgb(bg);
                     if (rgba) {
                         var parts = bg.slice(bg.indexOf('(') + 1).split(',');
-                        var alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
-                        if (alpha > 0.1) return relativeLum(rgba[0], rgba[1], rgba[2]);
+                        var a = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+                        if (a > 0.1) return relativeLum(rgba[0], rgba[1], rgba[2]);
                     }
                     node = node.parentElement;
                 }
@@ -1050,7 +1086,7 @@ struct iOSHTMLEmailView: UIViewRepresentable {
                 var rgb = parseRgb(c);
                 if (!rgb) return;
                 var bgLum = effectiveBgLum(el);
-                if (bgLum > 0.4) return;
+                // Now backgrounds are dark, so skip high-bgLum check
                 var textLum = relativeLum(rgb[0], rgb[1], rgb[2]);
                 var hi = Math.max(textLum, bgLum), lo = Math.min(textLum, bgLum);
                 var cr = (hi + 0.05) / (lo + 0.05);
@@ -1213,9 +1249,11 @@ struct iOSThreadMessageView: View {
     private var fullHTML: String {
         if let resolved = resolvedHTML, !resolved.isEmpty { return resolved }
         if let html = message.htmlBody, !html.isEmpty { return html }
-        if let plain = message.plainBody, !plain.isEmpty { return "<p>\(plain)</p>" }
+        if let plain = message.plainBody, !plain.isEmpty {
+            return "<p>\(iOSEmailDetailView.plainToHTML(plain))</p>"
+        }
         let body = message.body
-        return body.isEmpty ? "" : "<p>\(body)</p>"
+        return body.isEmpty ? "" : "<p>\(iOSEmailDetailView.plainToHTML(body))</p>"
     }
 
     private var htmlParts: (original: String, quoted: String?) {

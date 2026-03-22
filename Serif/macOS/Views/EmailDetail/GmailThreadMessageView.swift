@@ -20,9 +20,11 @@ struct GmailThreadMessageView: View {
     private var fullHTML: String {
         if let resolved = resolvedHTML, !resolved.isEmpty { return resolved }
         if let html = message.htmlBody, !html.isEmpty { return html }
-        if let plain = message.plainBody, !plain.isEmpty { return "<p>\(plain)</p>" }
+        if let plain = message.plainBody, !plain.isEmpty {
+            return "<p>\(Self.escapeAndBreak(plain))</p>"
+        }
         let body = message.body
-        return body.isEmpty ? "" : "<p>\(body)</p>"
+        return body.isEmpty ? "" : "<p>\(Self.escapeAndBreak(body))</p>"
     }
 
     /// Split the HTML into original content and (optional) quoted tail.
@@ -99,6 +101,14 @@ struct GmailThreadMessageView: View {
     }
 
     // MARK: - HTML quote stripping
+
+    /// Escapes HTML entities and converts newlines to `<br>` for plain-text display.
+    static func escapeAndBreak(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\n", with: "<br>")
+    }
 
     /// Removes quoted/replied content from HTML, returning (original, quoted?).
     /// Detects Gmail, Outlook, Apple Mail, and generic patterns.
