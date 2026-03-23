@@ -38,6 +38,7 @@ struct AccountTab: View {
                 signaturesSection
                 contactsSection
                 behaviorSection
+                notificationsSection
                 composeSection
                 aiSection
                 storageSection
@@ -432,6 +433,55 @@ struct AccountTab: View {
         case 600: return "10 minutes"
         case 3600: return "1 hour"
         default: return "\(coordinator.refreshInterval)s"
+        }
+    }
+
+    // MARK: - Notifications
+
+    @ObservedObject private var pushService = PushNotificationService.shared
+
+    private var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            sectionHeader("Notifications")
+
+            settingsCard {
+                if !pushService.notificationsEnabled {
+                    settingsRow {
+                        HStack {
+                            Image(systemName: "bell.slash")
+                                .foregroundColor(theme.textTertiary)
+                            Text("Notifications disabled")
+                                .font(.system(size: 15))
+                                .foregroundColor(theme.textSecondary)
+                            Spacer()
+                            Button("Open Settings") {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(theme.accentPrimary)
+                        }
+                    }
+                } else {
+                    ForEach(PushNotificationService.allCategories, id: \.id) { category in
+                        settingsRow {
+                            HStack {
+                                Text(category.name)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(theme.textPrimary)
+                                Spacer()
+                                Toggle("", isOn: Binding(
+                                    get: { pushService.notifyCategories.contains(category.id) },
+                                    set: { _ in Task { await pushService.toggleCategory(category.id) } }
+                                ))
+                                .tint(.green)
+                            }
+                        }
+                    }
+                }
+            }
+
         }
     }
 

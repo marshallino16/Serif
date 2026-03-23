@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9E94A6C92F70ACF90051E2A7 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 9E94A6C82F70ACF90051E2A7 /* FirebaseFirestore */; };
+		9E94A6CB2F70ACF90051E2A7 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 9E94A6CA2F70ACF90051E2A7 /* FirebaseMessaging */; };
+		9E94A8FD2F71F8DA0051E2A7 /* SerifNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 9E94A8F62F71F8DA0051E2A7 /* SerifNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		9EBEBCE92F5B21B400145F71 /* serif_icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 9EBEBCE82F5B21B400145F71 /* serif_icon.icon */; };
 		A10001010000000000000082 /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000001 /* AppAuth */; };
 		A10001010000000000000102 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A10090010000000000000002 /* Sparkle */; };
@@ -27,6 +30,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		9E94A8FB2F71F8DA0051E2A7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10008010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9E94A8F52F71F8DA0051E2A7;
+			remoteInfo = SerifNotificationService;
+		};
 		B10005010000000000000003 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A10008010000000000000001 /* Project object */;
@@ -36,7 +46,23 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		9E94A8FE2F71F8DA0051E2A7 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				9E94A8FD2F71F8DA0051E2A7 /* SerifNotificationService.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		9E94A6D22F70ADA10051E2A7 /* Serif-iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Serif-iOS-Info.plist"; sourceTree = "<group>"; };
+		9E94A8F62F71F8DA0051E2A7 /* SerifNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SerifNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9EBEBCE82F5B21B400145F71 /* serif_icon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = serif_icon.icon; sourceTree = "<group>"; };
 		A10002010000000000000099 /* Serif.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Serif.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10002010000000000000001 /* GmailModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailModelsTests.swift; sourceTree = "<group>"; };
@@ -85,8 +111,16 @@
 				iOS/Views/Mail/InboxTab.swift,
 				iOS/Views/Mail/SearchTab.swift,
 				iOS/Views/MainTabView.swift,
+				"Resources/iOS/GoogleService-Info.plist",
 			);
 			target = A10005010000000000000001 /* Serif */;
+		};
+		9E94A9022F71F8DA0051E2A7 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9E94A8F52F71F8DA0051E2A7 /* SerifNotificationService */;
 		};
 		D10003010000000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -154,6 +188,7 @@
 				macOS/Views/Sidebar/SidebarView.swift,
 				macOS/Views/Templates/TemplateEditorView.swift,
 				macOS/Views/Templates/TemplateListView.swift,
+				"Resources/macOS/GoogleService-Info.plist",
 			);
 			target = D10005010000000000000001 /* Serif iOS */;
 		};
@@ -161,9 +196,17 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9E160AA62F60CC08004784BD /* Serif */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (9E160B282F60CC08004784BD /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D10003010000000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Serif; sourceTree = "<group>"; };
+		9E94A8F72F71F8DA0051E2A7 /* SerifNotificationService */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (9E94A9022F71F8DA0051E2A7 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SerifNotificationService; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		9E94A8F32F71F8DA0051E2A7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A10003010000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -185,8 +228,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9E94A6CB2F70ACF90051E2A7 /* FirebaseMessaging in Frameworks */,
 				D10001010000000000000001 /* AppAuth in Frameworks */,
 				D10001010000000000000002 /* BlossomColorPicker in Frameworks */,
+				9E94A6C92F70ACF90051E2A7 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -196,8 +241,10 @@
 		A10004010000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				9E94A6D22F70ADA10051E2A7 /* Serif-iOS-Info.plist */,
 				9E160AA62F60CC08004784BD /* Serif */,
 				B10004010000000000000001 /* SerifTests */,
+				9E94A8F72F71F8DA0051E2A7 /* SerifNotificationService */,
 				A10004010000000000000099 /* Products */,
 				9EBEBCE82F5B21B400145F71 /* serif_icon.icon */,
 			);
@@ -209,6 +256,7 @@
 				A10002010000000000000099 /* Serif.app */,
 				D10002010000000000000099 /* Serif iOS.app */,
 				B10002010000000000000099 /* SerifTests.xctest */,
+				9E94A8F62F71F8DA0051E2A7 /* SerifNotificationService.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -234,6 +282,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		9E94A8F52F71F8DA0051E2A7 /* SerifNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E94A9012F71F8DA0051E2A7 /* Build configuration list for PBXNativeTarget "SerifNotificationService" */;
+			buildPhases = (
+				9E94A8F22F71F8DA0051E2A7 /* Sources */,
+				9E94A8F32F71F8DA0051E2A7 /* Frameworks */,
+				9E94A8F42F71F8DA0051E2A7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				9E94A8F72F71F8DA0051E2A7 /* SerifNotificationService */,
+			);
+			name = SerifNotificationService;
+			packageProductDependencies = (
+			);
+			productName = SerifNotificationService;
+			productReference = 9E94A8F62F71F8DA0051E2A7 /* SerifNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		A10005010000000000000001 /* Serif */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A10007010000000000000001 /* Build configuration list for PBXNativeTarget "Serif" */;
@@ -283,10 +353,12 @@
 				D10006010000000000000001 /* Sources */,
 				D10006010000000000000003 /* Resources */,
 				D10003010000000000000002 /* Frameworks */,
+				9E94A8FE2F71F8DA0051E2A7 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				9E94A8FC2F71F8DA0051E2A7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				9E160AA62F60CC08004784BD /* Serif */,
@@ -295,6 +367,8 @@
 			packageProductDependencies = (
 				D10090010000000000000001 /* AppAuth */,
 				D10090010000000000000002 /* BlossomColorPicker */,
+				9E94A6C82F70ACF90051E2A7 /* FirebaseFirestore */,
+				9E94A6CA2F70ACF90051E2A7 /* FirebaseMessaging */,
 			);
 			productName = "Serif iOS";
 			productReference = D10002010000000000000099 /* Serif iOS.app */;
@@ -307,9 +381,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1540;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					9E94A8F52F71F8DA0051E2A7 = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					A10005010000000000000001 = {
 						CreatedOnToolsVersion = 15.4;
 					};
@@ -335,6 +412,7 @@
 				A10091010000000000000001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
 				A10091010000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				A10091010000000000000003 /* XCRemoteSwiftPackageReference "BlossomColorPicker" */,
+				9E94A6C72F70ACF90051E2A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = A10004010000000000000099 /* Products */;
 			projectDirPath = "";
@@ -343,11 +421,19 @@
 				A10005010000000000000001 /* Serif */,
 				D10005010000000000000001 /* Serif iOS */,
 				B10005010000000000000001 /* SerifTests */,
+				9E94A8F52F71F8DA0051E2A7 /* SerifNotificationService */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		9E94A8F42F71F8DA0051E2A7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A10006010000000000000002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -366,6 +452,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		9E94A8F22F71F8DA0051E2A7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A10006010000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -401,6 +494,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		9E94A8FC2F71F8DA0051E2A7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9E94A8F52F71F8DA0051E2A7 /* SerifNotificationService */;
+			targetProxy = 9E94A8FB2F71F8DA0051E2A7 /* PBXContainerItemProxy */;
+		};
 		B10005010000000000000002 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A10005010000000000000001 /* Serif */;
@@ -409,6 +507,71 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		9E94A8FF2F71F8DA0051E2A7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QC35MT888M;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SerifNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SerifNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.genyus.serif.mobile.SerifNotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9E94A9002F71F8DA0051E2A7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QC35MT888M;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SerifNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SerifNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.genyus.serif.mobile.SerifNotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		A10009010000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -651,6 +814,7 @@
 				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Serif-iOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Serif;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -685,6 +849,7 @@
 				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Serif-iOS-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Serif;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -710,6 +875,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		9E94A9012F71F8DA0051E2A7 /* Build configuration list for PBXNativeTarget "SerifNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E94A8FF2F71F8DA0051E2A7 /* Debug */,
+				9E94A9002F71F8DA0051E2A7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A10007010000000000000001 /* Build configuration list for PBXNativeTarget "Serif" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -749,6 +923,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		9E94A6C72F70ACF90051E2A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.11.0;
+			};
+		};
 		A10091010000000000000001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/openid/AppAuth-iOS";
@@ -776,6 +958,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		9E94A6C82F70ACF90051E2A7 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9E94A6C72F70ACF90051E2A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		9E94A6CA2F70ACF90051E2A7 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9E94A6C72F70ACF90051E2A7 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
 		A10090010000000000000001 /* AppAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A10091010000000000000001 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */;

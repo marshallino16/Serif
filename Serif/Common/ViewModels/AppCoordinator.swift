@@ -269,6 +269,17 @@ final class AppCoordinator: ObservableObject {
                 await mailboxViewModel.loadCategoryUnreadCounts()
                 await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
                 lastRefreshedAt = Date()
+                // Push notifications: check state and re-register if needed
+                #if os(iOS)
+                if let token = try? TokenStore.shared.retrieve(for: account.id),
+                   let refreshToken = token.refreshToken {
+                    await PushNotificationService.shared.checkAndReregisterIfNeeded(
+                        email: account.email,
+                        refreshToken: refreshToken,
+                        accountID: account.id
+                    )
+                }
+                #endif
                 await indexer.resumePending()
                 await indexer.scanForAttachments()
             }

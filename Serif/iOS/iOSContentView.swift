@@ -52,5 +52,18 @@ struct iOSContentView: View {
         // (empty) cache from init time. Reload it so handleAppear() finds the account.
         coordinator.authViewModel.reloadAccounts()
         coordinator.handleAppear()
+
+        // First sign-in: request notification permission and register for push
+        if let account = coordinator.authViewModel.primaryAccount,
+           let token = try? TokenStore.shared.retrieve(for: account.id),
+           let refreshToken = token.refreshToken {
+            Task {
+                await PushNotificationService.shared.requestPermissionAndRegister(
+                    email: account.email,
+                    refreshToken: refreshToken,
+                    accountID: account.id
+                )
+            }
+        }
     }
 }

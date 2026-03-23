@@ -2,7 +2,9 @@
 .claude/*
 .xcodebuildmcp/*
 Serif/macOS/GoogleCredentials.swift
+Serif/Resources/macOS/GoogleService-Info.plist
 Serif/iOS/GoogleCredentialsiOS.swift
+Serif/Resources/iOS/GoogleService-Info.plist
 
 ## User settings
 xcuserdata/
@@ -20,3 +22,8 @@ timeline.xctimeline
 playground.xcworkspace
 
 .build/
+
+firebase*
+firestore*
+functions/*
+.firebaserc

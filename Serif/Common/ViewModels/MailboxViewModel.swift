@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import UserNotifications
+#endif
 
 /// Drives the email list for a given account and folder.
 @MainActor
@@ -218,7 +221,34 @@ final class MailboxViewModel: ObservableObject {
             fetchService.messageCache[message.id] = messages[idx]
         }
         try? await api.markAsRead(id: message.id, accountID: accountID)
+        #if os(iOS)
+        // Update app badge to reflect real unread count
+        Task {
+            let unreadCount = await loadInboxUnreadCount()
+            try? await UNUserNotificationCenter.current().setBadgeCount(unreadCount)
+        }
+        #endif
     }
+
+    #if os(iOS)
+    /// Total unread count across ALL connected accounts.
+    private func loadInboxUnreadCount() async -> Int {
+        let allAccountIDs = TokenStore.shared.allAccountIDs()
+        var total = 0
+        for id in allAccountIDs {
+            do {
+                let label: GmailLabel = try await GmailAPIClient.shared.request(
+                    path: "/users/me/labels/INBOX",
+                    accountID: id
+                )
+                total += label.messagesUnread ?? 0
+            } catch {
+                continue
+            }
+        }
+        return total
+    }
+    #endif
 
     func markAsUnread(_ messageID: String) async {
         if let idx = messages.firstIndex(where: { $0.id == messageID }) {

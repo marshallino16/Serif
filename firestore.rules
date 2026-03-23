@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection: allow read/write for now (app uses Google OAuth, not Firebase Auth)
+    // TODO: add Cloud Function validation or migrate to Firebase Auth
+    match /users/{email} {
+      allow read, write: if true;
+    }
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
