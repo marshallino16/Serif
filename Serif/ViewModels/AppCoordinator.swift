@@ -88,8 +88,13 @@ class AppCoordinator: ObservableObject {
         IMAPIdleService.shared.onNewMail = { [weak self] accountID in
             guard let self else { return }
             if accountID == self.accountID && self.selectedFolder == .inbox {
-                // User is viewing this account's inbox — full UI refresh
-                Task { await self.mailboxViewModel.refreshCurrentFolder(labelIDs: ["INBOX"]) }
+                // User is viewing this account's inbox — full UI refresh + badge
+                Task {
+                    await self.mailboxViewModel.refreshCurrentFolder(labelIDs: ["INBOX"])
+                    await self.mailboxViewModel.loadCategoryUnreadCounts()
+                    let unread = self.mailboxViewModel.categoryUnreadCounts[.all] ?? 0
+                    NotificationService.shared.updateBadge(unreadCount: unread)
+                }
             } else {
                 // Not viewing this account's inbox — lightweight history sync for notifications
                 let isActiveAccount = accountID == self.accountID
