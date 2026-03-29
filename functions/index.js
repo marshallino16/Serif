@@ -158,6 +158,7 @@ exports.gmailPush = onRequest(async (req, res) => {
     let subject = "";
     let snippet = "";
     let date = "";
+    let threadId = "";
     let msgLabels = [];
     try {
       const msg = await gmail.users.messages.get({
@@ -178,6 +179,7 @@ exports.gmailPush = onRequest(async (req, res) => {
         .replace(/&#39;/g, "'")
         .replace(/&quot;/g, '"');
       msgLabels = msg.data.labelIds || [];
+      threadId = msg.data.threadId || "";
 
       // Parse "Name <email>" format
       const emailMatch = rawFrom.match(/<([^>]+)>/);
@@ -229,6 +231,7 @@ exports.gmailPush = onRequest(async (req, res) => {
       notification: { title: from, body: subject },
       data: {
         messageId: latestMsgId,
+        threadId,
         emailAddress,
         type: "new_email",
         senderName: from,
@@ -244,6 +247,7 @@ exports.gmailPush = onRequest(async (req, res) => {
             sound: "default",
             badge: unreadCount,
             "mutable-content": 1,
+            category: "com.serif.email",
           },
         },
       },

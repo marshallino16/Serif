@@ -194,11 +194,17 @@ struct Theme: Identifiable, Equatable {
 extension Color {
     /// Converts this Color to a hex string (#RRGGBB).
     var hexString: String {
+        #if os(iOS)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: nil)
+        return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
+        #else
         let resolved = self.resolve(in: EnvironmentValues())
         let r = Int(max(0, min(1, resolved.red)) * 255)
         let g = Int(max(0, min(1, resolved.green)) * 255)
         let b = Int(max(0, min(1, resolved.blue)) * 255)
         return String(format: "#%02X%02X%02X", r, g, b)
+        #endif
     }
 
     init(hex: String) {

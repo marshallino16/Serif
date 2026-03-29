@@ -64,9 +64,21 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Sign Out
 
     func signOut(_ account: GmailAccount) {
+        // Unregister from push notifications before removing the account
+        #if os(iOS)
+        Task {
+            await PushNotificationService.shared.unregister(email: account.email)
+        }
+        #endif
+
         AttachmentDatabase.shared.deleteByAccountID(account.email)
         AccountStore.shared.remove(id: account.id)
         accounts = AccountStore.shared.accounts
+
+        // If no accounts remain, clear the signed-in flag to return to onboarding
+        if accounts.isEmpty {
+            UserDefaults.standard.set(false, forKey: "isSignedIn")
+        }
     }
 
     // MARK: - Helpers

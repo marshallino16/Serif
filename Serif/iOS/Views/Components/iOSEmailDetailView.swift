@@ -101,7 +101,7 @@ struct iOSEmailDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @StateObject private var detailVM: EmailDetailViewModel
-    @State private var emailBodyHeight: CGFloat = 100
+    @State private var emailBodyHeight: CGFloat = 1
     @State private var showSenderInfoSheet = false
     @State private var showOriginalInviteEmail = false
     @State private var showQuotedMain = false
@@ -307,7 +307,7 @@ struct iOSEmailDetailView: View {
                             let parts = HTMLQuoteStripper.stripQuotedHTML(fullHTML)
                             let htmlToRender = (showQuotedMain || parts.quoted == nil) ? fullHTML : parts.original
 
-                            iOSHTMLEmailView(html: htmlToRender, contentHeight: $emailBodyHeight, theme: theme)
+                            iOSHTMLEmailView(html: htmlToRender, contentHeight: $emailBodyHeight, theme: theme, backgroundColor: theme.detailBackground.hexString)
                                 .frame(height: emailBodyHeight)
                                 .padding(.horizontal, 16)
                                 .padding(.bottom, parts.quoted != nil ? 4 : 16)
@@ -871,6 +871,7 @@ struct iOSHTMLEmailView: UIViewRepresentable {
     let html: String
     @Binding var contentHeight: CGFloat
     let theme: Theme
+    var backgroundColor: String = "transparent"
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -894,7 +895,7 @@ struct iOSHTMLEmailView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         let textHex = theme.textPrimary.hexString
-        let cacheKey = "\(html)|\(textHex)"
+        let cacheKey = "\(html)|\(textHex)|\(backgroundColor)"
         guard context.coordinator.lastCacheKey != cacheKey else { return }
         context.coordinator.lastCacheKey = cacheKey
 
@@ -921,7 +922,7 @@ struct iOSHTMLEmailView: UIViewRepresentable {
             font-size: \(baseFontSize)px;
             line-height: 1.6;
             color: \(textHex);
-            background-color: transparent;
+            background-color: \(backgroundColor);
             word-wrap: break-word;
             overflow-wrap: break-word;
             -webkit-text-size-adjust: 100%;
@@ -969,11 +970,11 @@ struct iOSHTMLEmailView: UIViewRepresentable {
         </style>
         <script>
         var THEME_TEXT = '\(textHex)';
+        var THEME_BG = '\(backgroundColor)';
 
         function fixDarkModeColors() {
             if (!window.matchMedia('(prefers-color-scheme: dark)').matches) return;
 
-            var DARK_BG = [28, 28, 30]; // #1c1c1e
             var BG_LUM = 0.015;
             var MIN_CR = 4.0;
 
@@ -989,6 +990,10 @@ struct iOSHTMLEmailView: UIViewRepresentable {
                 if (i < 0) return null;
                 var parts = s.slice(i + 1).split(',');
                 return parts.length >= 3 ? [parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])] : null;
+            }
+            function parseHex(h) {
+                h = h.replace('#', '');
+                return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16)];
             }
             function hue2rgb(p, q, t) {
                 if (t < 0) t += 1;
@@ -1023,35 +1028,59 @@ struct iOSHTMLEmailView: UIViewRepresentable {
                 ];
             }
 
-            // --- Pass 1: Invert light backgrounds to dark ---
-            function invertBg(el) {
-                var cs = window.getComputedStyle(el);
-                var bg = cs.backgroundColor;
-                var rgb = parseRgb(bg);
-                if (!rgb) return;
-                var parts = bg.slice(bg.indexOf('(') + 1).split(',');
-                var alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
-                if (alpha < 0.1) return;
-                var lum = relativeLum(rgb[0], rgb[1], rgb[2]);
-                if (lum < 0.5) return; // already dark, skip
-                var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
-                // Invert lightness: map 0.5-1.0 → 0.18-0.05
-                var newL = 0.18 - (hsl[2] - 0.5) * 0.26;
-                newL = Math.max(0.05, Math.min(0.18, newL));
-                // Desaturate slightly for dark bg
-                var newS = hsl[1] * 0.6;
-                var newRgb = hslToRgb(hsl[0], newS, newL);
-                var darkColor = 'rgb(' + newRgb[0] + ',' + newRgb[1] + ',' + newRgb[2] + ')';
-                el.style.setProperty('background-color', darkColor, 'important');
-                // Also clear bgcolor attribute
-                if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
+            // Check if the EMAIL CONTENT (not our wrapper) has dark mode support
+            function emailSupportsDarkMode() {
+                var el = document.getElementById('emailContent');
+                if (!el) return false;
+                var styles = el.querySelectorAll('style');
+                for (var i = 0; i < styles.length; i++) {
+                    var text = styles[i].textContent || '';
+                    if (text.indexOf('prefers-color-scheme') !== -1) return true;
+                }
+                var metas = el.querySelectorAll('meta[name="color-scheme"], meta[name="supported-color-schemes"]');
+                for (var j = 0; j < metas.length; j++) {
+                    var content = metas[j].getAttribute('content') || '';
+                    if (content.indexOf('dark') !== -1) return true;
+                }
+                // Also check the email's raw HTML string for inline style blocks
+                var html = el.innerHTML;
+                if (html.indexOf('prefers-color-scheme') !== -1) return true;
+                return false;
             }
 
-            document.querySelectorAll(
-                'table,td,th,div,body,section,article,header,footer,main,aside,tr'
-            ).forEach(invertBg);
+            var emailHasDarkMode = emailSupportsDarkMode();
 
-            // --- Pass 2: Fix text colors for contrast on now-dark backgrounds ---
+            // --- Adapt backgrounds for emails without dark mode support ---
+            if (!emailHasDarkMode && THEME_BG !== 'transparent') {
+                var themeBgRgb = parseHex(THEME_BG);
+                var themeBgCss = 'rgb(' + themeBgRgb[0] + ',' + themeBgRgb[1] + ',' + themeBgRgb[2] + ')';
+                document.querySelectorAll(
+                    'table,td,th,div,body,section,article,header,footer,main,aside,tr'
+                ).forEach(function(el) {
+                    var cs = window.getComputedStyle(el);
+                    var bg = cs.backgroundColor;
+                    var rgb = parseRgb(bg);
+                    if (!rgb) return;
+                    var parts = bg.slice(bg.indexOf('(') + 1).split(',');
+                    var alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+                    if (alpha < 0.1) return;
+                    var lum = relativeLum(rgb[0], rgb[1], rgb[2]);
+                    if (lum < 0.5) return; // already dark, skip
+                    el.style.setProperty('background-color', themeBgCss, 'important');
+                    if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
+                    // Adapt light borders to subtle dark borders
+                    ['border', 'borderTop', 'borderBottom', 'borderLeft', 'borderRight'].forEach(function(prop) {
+                        var bColor = cs[prop + 'Color'];
+                        var bRgb = parseRgb(bColor);
+                        if (bRgb && relativeLum(bRgb[0], bRgb[1], bRgb[2]) > 0.4) {
+                            el.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase() + '-color',
+                                'rgba(' + themeBgRgb[0] + ',' + themeBgRgb[1] + ',' + themeBgRgb[2] + ',0.3)', 'important');
+                        }
+                    });
+                });
+            }
+
+            // --- Fix text colors for contrast ---
             function lightenToContrast(r, g, b) {
                 var hsl = rgbToHsl(r, g, b);
                 for (var tl = Math.max(hsl[2] + 0.1, 0.55); tl <= 1.0; tl += 0.04) {
@@ -1086,7 +1115,8 @@ struct iOSHTMLEmailView: UIViewRepresentable {
                 var rgb = parseRgb(c);
                 if (!rgb) return;
                 var bgLum = effectiveBgLum(el);
-                // Now backgrounds are dark, so skip high-bgLum check
+                // If email has dark mode AND bg is light, email handles it — skip
+                if (emailHasDarkMode && bgLum > 0.4) return;
                 var textLum = relativeLum(rgb[0], rgb[1], rgb[2]);
                 var hi = Math.max(textLum, bgLum), lo = Math.min(textLum, bgLum);
                 var cr = (hi + 0.05) / (lo + 0.05);
@@ -1102,59 +1132,57 @@ struct iOSHTMLEmailView: UIViewRepresentable {
             ).forEach(processEl);
         }
 
-        // Force mobile-friendly layout on inline-styled elements
-        function fixMobileLayout() {
+        // If email is wider than viewport, scale it down proportionally
+        function fitToViewport() {
             var vw = document.documentElement.clientWidth || window.innerWidth;
-            // Shrink elements wider than viewport
-            document.querySelectorAll('table, td, th, div').forEach(function(el) {
-                var w = el.getAttribute('width');
-                if (w && parseInt(w) > vw) {
-                    el.removeAttribute('width');
-                    el.style.maxWidth = '100%';
-                }
-                if (el.style.width && parseInt(el.style.width) > vw) {
-                    el.style.width = '100%';
-                }
-                if (el.style.minWidth && parseInt(el.style.minWidth) > vw) {
-                    el.style.minWidth = '0';
-                }
-            });
-            // Ensure images respect viewport
-            document.querySelectorAll('img').forEach(function(img) {
-                var w = img.getAttribute('width');
-                if (w && parseInt(w) > vw) {
-                    img.removeAttribute('width');
-                    img.removeAttribute('height');
-                }
-                img.style.maxWidth = '100%';
-                img.style.height = 'auto';
-            });
+            var el = document.getElementById('emailContent');
+            var wrapper = document.getElementById('emailWrapper');
+            if (!el || !wrapper) return;
+            el.style.transform = '';
+            el.style.transformOrigin = '';
+            el.style.width = '';
+            wrapper.style.height = '';
+            var sw = el.scrollWidth;
+            if (sw > vw + 2) {
+                var scale = vw / sw;
+                el.style.transformOrigin = 'top left';
+                el.style.transform = 'scale(' + scale + ')';
+                el.style.width = sw + 'px';
+                wrapper.style.height = Math.ceil(el.scrollHeight * scale) + 'px';
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            fixMobileLayout();
-        });
+        function showContent() {
+            fitToViewport();
+            document.body.style.visibility = 'visible';
+            window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
+        }
 
         window.addEventListener('load', function() {
-            fixMobileLayout();
             fixDarkModeColors();
 
             var imgs = document.querySelectorAll('img');
+            var pending = 0;
             imgs.forEach(function(img) {
-                if (!img.complete) {
-                    img.addEventListener('load', function() {
-                        window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
-                    });
-                }
-                img.addEventListener('error', function() {
-                    this.style.display = 'none';
-                    window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
-                });
+                if (!img.complete) pending++;
             });
+
+            if (pending === 0) {
+                showContent();
+            } else {
+                imgs.forEach(function(img) {
+                    if (!img.complete) {
+                        img.addEventListener('load', function() { if (--pending <= 0) showContent(); });
+                        img.addEventListener('error', function() { this.style.display='none'; if (--pending <= 0) showContent(); });
+                    }
+                });
+                // Safety: show after 5s max even if images are still loading
+                setTimeout(function() { if (document.body.style.visibility !== 'visible') showContent(); }, 5000);
+            }
         });
         </script>
         </head>
-        <body><div id="emailContent" style="padding-bottom:16px">\(html)</div></body>
+        <body style="visibility:hidden"><div id="emailWrapper" style="overflow:hidden"><div id="emailContent" style="padding-bottom:16px">\(html)</div></div></body>
         </html>
         """
         webView.loadHTMLString(fullHTML, baseURL: URL(string: "https://mail.google.com/"))
@@ -1191,19 +1219,20 @@ struct iOSHTMLEmailView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             webViewRef = webView
-            measureHeight(webView)
-            for delay in [0.5, 1.5, 3.0] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak webView] in
-                    guard let webView else { return }
-                    self?.measureHeight(webView)
-                }
-            }
+            // JS load handler will call fitToViewport → REMEASURE
         }
 
         private func measureHeight(_ webView: WKWebView) {
-            webView.evaluateJavaScript(
-                "(function() { var el = document.getElementById('emailContent'); if (!el) return 0; return Math.ceil(Math.max(el.offsetHeight, el.scrollHeight, el.getBoundingClientRect().height)); })()"
-            ) { [weak self] result, _ in
+            let js = """
+            (function() {
+                var wrapper = document.getElementById('emailWrapper');
+                var el = document.getElementById('emailContent');
+                if (!wrapper || !el) return 0;
+                if (wrapper.style.height) return parseInt(wrapper.style.height);
+                return Math.ceil(Math.max(el.offsetHeight, el.scrollHeight, el.getBoundingClientRect().height));
+            })()
+            """
+            webView.evaluateJavaScript(js) { [weak self] result, _ in
                 DispatchQueue.main.async {
                     if let h = result as? CGFloat, h > 0 {
                         self?.parent.contentHeight = h

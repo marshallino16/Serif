@@ -6,33 +6,46 @@ struct iOSEmailRow: View {
     @Environment(\.theme) private var theme
     @State private var avatarImage: PlatformImage?
 
+    private var hasRealAvatar: Bool { avatarImage != nil }
+
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Unread indicator
-            Circle()
-                .fill(email.isRead ? Color.clear : theme.accentPrimary)
-                .frame(width: 8, height: 8)
-                .padding(.top, 6)
+        HStack(alignment: .top, spacing: 10) {
+            // Avatar with unread badge overlay
+            ZStack(alignment: .topTrailing) {
+                ZStack {
+                    if hasRealAvatar {
+                        // No colored bubble when we have a real image
+                    } else {
+                        Circle()
+                            .fill(Color(hex: email.sender.avatarColor))
+                    }
 
-            // Avatar
-            ZStack {
-                Circle()
-                    .fill(Color(hex: email.sender.avatarColor))
-                    .frame(width: 36, height: 36)
+                    if let img = avatarImage {
+                        platformImage(img)
+                            .resizable()
+                            .scaledToFill()
+                            .clipShape(Circle())
+                    } else {
+                        Text(email.sender.initials)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .frame(width: 38, height: 38)
 
-                if let img = avatarImage {
-                    platformImage(img)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 36, height: 36)
-                        .clipShape(Circle())
-                } else {
-                    Text(email.sender.initials)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
+                // Unread indicator on top-right of avatar
+                if !email.isRead {
+                    Circle()
+                        .fill(theme.accentPrimary)
+                        .frame(width: 10, height: 10)
+                        .overlay(
+                            Circle()
+                                .stroke(theme.detailBackground, lineWidth: 2)
+                        )
+                        .offset(x: 2, y: -2)
                 }
             }
-            .frame(width: 36, height: 36)
+            .frame(width: 38, height: 38)
 
             // Content
             VStack(alignment: .leading, spacing: 3) {
@@ -46,6 +59,12 @@ struct iOSEmailRow: View {
                         Image(systemName: "star.fill")
                             .font(.system(size: 10))
                             .foregroundColor(.yellow)
+                    }
+
+                    if email.hasAttachments {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 10))
+                            .foregroundColor(theme.textTertiary)
                     }
 
                     Spacer()
@@ -65,26 +84,16 @@ struct iOSEmailRow: View {
                     .foregroundColor(theme.textSecondary)
                     .lineLimit(2)
 
-                // Labels
-                if !email.labels.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 4) {
-                            ForEach(email.labels) { label in
-                                LabelChipView(label: label)
+                // Labels + thread count
+                HStack(spacing: 6) {
+                    if !email.labels.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 4) {
+                                ForEach(email.labels) { label in
+                                    LabelChipView(label: label)
+                                }
                             }
                         }
-                    }
-                }
-
-                HStack(spacing: 6) {
-                    if email.hasAttachments {
-                        HStack(spacing: 3) {
-                            Image(systemName: "paperclip")
-                                .font(.system(size: 10))
-                            Text("Attachment")
-                                .font(.system(size: 11))
-                        }
-                        .foregroundColor(theme.textTertiary)
                     }
 
                     if email.threadMessageCount > 1 {
@@ -110,16 +119,13 @@ struct iOSEmailRow: View {
         }
     }
 
-    // MARK: - Avatar Loading (same pipeline as macOS AvatarView)
+    // MARK: - Avatar Loading
 
     private func loadAvatar() async {
-        // 1. Contact photo / Gravatar (already resolved in Contact.avatarURL)
         if let url = email.sender.avatarURL, let img = await AvatarCache.shared.image(for: url) {
             avatarImage = img
             return
         }
-
-        // 2. BIMI logo for organization domains
         if let domain = email.sender.domain {
             if let bimiURL = await BIMIService.shared.logoURL(for: domain),
                let img = await AvatarCache.shared.image(for: bimiURL) {

@@ -288,12 +288,24 @@ final class MailboxViewModel: ObservableObject {
         }
     }
 
-    func trash(_ messageID: String) async {
+    func trash(_ messageID: String, threadID: String? = nil) async {
         do {
-            try await api.trashMessage(id: messageID, accountID: accountID)
-            messages.removeAll { $0.id == messageID }   // no-op if already removed optimistically
-            fetchService.messageCache[messageID] = nil
-            fetchService.allCachedMessages.removeAll { $0.id == messageID }
+            if let threadID {
+                // Trash entire thread (all messages in the conversation)
+                try await api.trashThread(id: threadID, accountID: accountID)
+                // Remove all messages belonging to this thread from UI + cache
+                let threadMsgIDs = messages.filter { $0.threadId == threadID }.map(\.id)
+                messages.removeAll { $0.threadId == threadID }
+                for id in threadMsgIDs {
+                    fetchService.messageCache[id] = nil
+                }
+                fetchService.allCachedMessages.removeAll { $0.threadId == threadID }
+            } else {
+                try await api.trashMessage(id: messageID, accountID: accountID)
+                messages.removeAll { $0.id == messageID }
+                fetchService.messageCache[messageID] = nil
+                fetchService.allCachedMessages.removeAll { $0.id == messageID }
+            }
             saveCacheToDisk()
         } catch { self.error = error.localizedDescription }
     }
@@ -504,7 +516,7 @@ final class MailboxViewModel: ObservableObject {
             date:           message.date ?? Date(),
             isRead:         !message.isUnread,
             isStarred:      message.isStarred,
-            hasAttachments: !message.attachmentParts.isEmpty,
+            hasAttachments: message.hasPartsWithFilenames || !message.attachmentParts.isEmpty,
             attachments:    message.attachmentParts.map { GmailDataTransformer.makeAttachment(from: $0, messageId: message.id) },
             folder:         GmailDataTransformer.folderFor(labelIDs: msgLabelIDs),
             labels:         emailLabels,

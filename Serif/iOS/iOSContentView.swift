@@ -34,6 +34,11 @@ struct iOSContentView: View {
         .onAppear {
             if isSignedIn { initializeCoordinator() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .pushNotificationTapped)) { notification in
+            guard isSignedIn,
+                  let messageId = notification.userInfo?["messageId"] as? String else { return }
+            coordinator.navigateToMessage(gmailMessageID: messageId)
+        }
     }
 
     private func initializeCoordinator() {

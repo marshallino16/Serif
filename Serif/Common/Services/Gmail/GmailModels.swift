@@ -418,8 +418,9 @@ extension GmailMessage {
     private func collectAttachments(from part: GmailMessagePart?) -> [GmailMessagePart] {
         guard let part = part else { return [] }
         var result: [GmailMessagePart] = []
+        let isInlineImage = part.contentID != nil && (part.mimeType ?? "").hasPrefix("image/")
         if let filename = part.filename, !filename.isEmpty, part.body?.attachmentId != nil,
-           part.contentID == nil {
+           !isInlineImage {
             result.append(part)
         }
         for sub in part.parts ?? [] { result += collectAttachments(from: sub) }

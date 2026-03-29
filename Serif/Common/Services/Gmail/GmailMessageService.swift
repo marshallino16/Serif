@@ -116,6 +116,14 @@ final class GmailMessageService {
         )
     }
 
+    func trashThread(id: String, accountID: String) async throws {
+        let _: GmailThread = try await client.request(
+            path: "/users/me/threads/\(id)/trash",
+            method: "POST",
+            accountID: accountID
+        )
+    }
+
     func archiveMessage(id: String, accountID: String) async throws {
         struct ModifyRequest: Encodable { let removeLabelIds: [String] }
         let body = try JSONEncoder().encode(ModifyRequest(removeLabelIds: ["INBOX"]))

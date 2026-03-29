@@ -151,9 +151,22 @@ struct AccountTab: View {
                 settingsRow {
                     Button {
                         Task {
+                            let accountsBefore = Set(coordinator.authViewModel.accounts.map(\.id))
                             await coordinator.authViewModel.signIn()
                             coordinator.authViewModel.reloadAccounts()
                             await loadAccountAvatars()
+
+                            // Register the newly added account for push notifications
+                            let accountsAfter = coordinator.authViewModel.accounts
+                            if let newAccount = accountsAfter.first(where: { !accountsBefore.contains($0.id) }),
+                               let token = try? TokenStore.shared.retrieve(for: newAccount.id),
+                               let refreshToken = token.refreshToken {
+                                await PushNotificationService.shared.requestPermissionAndRegister(
+                                    email: newAccount.email,
+                                    refreshToken: refreshToken,
+                                    accountID: newAccount.id
+                                )
+                            }
                         }
                     } label: {
                         HStack {

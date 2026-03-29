@@ -33,8 +33,14 @@ struct iOSOnboardingView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // Logo: Ser [icon] f
-                VStack(spacing: 8) {
+                // "there's a new Ser[icon]f in town"
+                VStack(spacing: 4) {
+                    Text("there's a new")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .opacity(showTaglineTop ? 1 : 0)
+                        .offset(y: showTaglineTop ? 0 : -8)
+
                     HStack(alignment: .center, spacing: 0) {
                         Text("Ser")
                             .font(.system(size: 56, weight: .bold))
@@ -59,12 +65,11 @@ struct iOSOnboardingView: View {
                             .offset(x: showF ? 0 : -20)
                     }
 
-                    Text("THERE'S A NEW SHERIFF IN TOWN")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.5))
-                        .tracking(3)
+                    Text("in town")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
                         .opacity(showTaglineBottom ? 1 : 0)
-                        .offset(y: showTaglineBottom ? 0 : -8)
+                        .offset(y: showTaglineBottom ? 0 : 8)
                 }
 
                 Spacer().frame(height: 60)

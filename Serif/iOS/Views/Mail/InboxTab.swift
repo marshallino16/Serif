@@ -119,6 +119,12 @@ struct InboxTab: View {
             .navigationDestination(item: $selectedEmail) { email in
                 iOSEmailDetailView(email: email, coordinator: coordinator)
             }
+            .onChange(of: coordinator.pushNavigationEmail) { _, email in
+                if let email {
+                    selectedEmail = email
+                    coordinator.pushNavigationEmail = nil
+                }
+            }
         }
         .sheet(isPresented: $showCompose) {
             iOSComposeView(

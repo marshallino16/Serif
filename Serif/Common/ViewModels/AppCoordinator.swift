@@ -149,15 +149,25 @@ final class AppCoordinator: ObservableObject {
         selectedEmail = nil
     }
 
+    /// Navigate to a specific message. On macOS uses panel, on iOS sets pushNavigationEmail.
     func navigateToMessage(gmailMessageID: String) {
         Task {
             guard let msg = try? await GmailMessageService.shared.getMessage(
                 id: gmailMessageID, accountID: accountID, format: "full"
             ) else { return }
             let email = mailboxViewModel.makeEmail(from: msg)
+            #if os(macOS)
             panelCoordinator.showEmail(email, accountID: accountID)
+            #else
+            pushNavigationEmail = email
+            #endif
         }
     }
+
+    /// Set by push notification tap on iOS — InboxTab observes this to navigate.
+    #if os(iOS)
+    @Published var pushNavigationEmail: Email?
+    #endif
 
     func composeNewEmail() {
         composeMode = .new
@@ -269,15 +279,17 @@ final class AppCoordinator: ObservableObject {
                 await mailboxViewModel.loadCategoryUnreadCounts()
                 await GmailProfileService.shared.loadContactPhotos(accountID: account.id)
                 lastRefreshedAt = Date()
-                // Push notifications: check state and re-register if needed
+                // Push notifications: check state and re-register ALL connected accounts
                 #if os(iOS)
-                if let token = try? TokenStore.shared.retrieve(for: account.id),
-                   let refreshToken = token.refreshToken {
-                    await PushNotificationService.shared.checkAndReregisterIfNeeded(
-                        email: account.email,
-                        refreshToken: refreshToken,
-                        accountID: account.id
-                    )
+                for acct in self.authViewModel.accounts {
+                    if let token = try? TokenStore.shared.retrieve(for: acct.id),
+                       let refreshToken = token.refreshToken {
+                        await PushNotificationService.shared.checkAndReregisterIfNeeded(
+                            email: acct.email,
+                            refreshToken: refreshToken,
+                            accountID: acct.id
+                        )
+                    }
                 }
                 #endif
                 await indexer.resumePending()

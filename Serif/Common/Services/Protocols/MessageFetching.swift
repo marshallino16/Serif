@@ -10,6 +10,7 @@ protocol MessageFetching {
     func markAsRead(id: String, accountID: String) async throws
     func setStarred(_ starred: Bool, id: String, accountID: String) async throws
     func trashMessage(id: String, accountID: String) async throws
+    func trashThread(id: String, accountID: String) async throws
     func archiveMessage(id: String, accountID: String) async throws
     func markAsUnread(id: String, accountID: String) async throws
     func untrashMessage(id: String, accountID: String) async throws

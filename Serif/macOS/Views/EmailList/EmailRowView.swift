@@ -20,20 +20,29 @@ struct EmailRowView: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                // Unread indicator
-                Circle()
-                    .fill(email.isRead ? Color.clear : theme.unreadIndicator)
-                    .frame(width: 6, height: 6)
+            HStack(spacing: 10) {
+                // Avatar with unread badge overlay
+                ZStack(alignment: .topTrailing) {
+                    AvatarView(
+                        initials: email.sender.initials,
+                        color: email.sender.avatarColor,
+                        size: 36,
+                        avatarURL: email.sender.avatarURL,
+                        senderDomain: email.sender.domain
+                    )
 
-                // Avatar
-                AvatarView(
-                    initials: email.sender.initials,
-                    color: email.sender.avatarColor,
-                    size: 36,
-                    avatarURL: email.sender.avatarURL,
-                    senderDomain: email.sender.domain
-                )
+                    if !email.isRead {
+                        Circle()
+                            .fill(theme.unreadIndicator)
+                            .frame(width: 8, height: 8)
+                            .overlay(
+                                Circle()
+                                    .stroke(theme.listBackground, lineWidth: 1.5)
+                            )
+                            .offset(x: 1, y: -1)
+                    }
+                }
+                .frame(width: 36, height: 36)
 
                 // Content
                 VStack(alignment: .leading, spacing: 3) {
@@ -49,6 +58,18 @@ struct EmailRowView: View {
                                 .foregroundColor(.white)
                                 .frame(minWidth: 18, minHeight: 18)
                                 .background(Circle().fill(theme.accentPrimary.opacity(0.75)))
+                        }
+
+                        if email.isStarred {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(theme.avatarRing)
+                        }
+
+                        if email.hasAttachments {
+                            Image(systemName: "paperclip")
+                                .font(.system(size: 10))
+                                .foregroundColor(theme.textTertiary)
                         }
 
                         Spacer()
@@ -83,20 +104,6 @@ struct EmailRowView: View {
                             }
                         }
                         .padding(.top, 2)
-                    }
-                }
-
-                // Indicators
-                VStack(spacing: 4) {
-                    if email.isStarred {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(theme.avatarRing)
-                    }
-                    if email.hasAttachments {
-                        Image(systemName: "paperclip")
-                            .font(.system(size: 10))
-                            .foregroundColor(theme.textTertiary)
                     }
                 }
             }

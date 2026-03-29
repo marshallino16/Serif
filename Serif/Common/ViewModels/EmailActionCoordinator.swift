@@ -36,12 +36,13 @@ final class EmailActionCoordinator: ObservableObject {
             return
         }
         guard let msgID = email.gmailMessageID else { return }
+        let threadID = email.gmailThreadID
         let vm = mailboxViewModel
         let removed = vm.removeOptimistically(msgID)
         selectNext(nil)
         UndoActionManager.shared.schedule(
             label: "Moved to Trash",
-            onConfirm: { Task { await vm.trash(msgID) } },
+            onConfirm: { Task { await vm.trash(msgID, threadID: threadID) } },
             onUndo:    { if let msg = removed { vm.restoreOptimistically(msg) } }
         )
     }
@@ -161,11 +162,15 @@ final class EmailActionCoordinator: ObservableObject {
     func bulkDelete(_ emails: [Email], onClear: () -> Void) {
         let vm = mailboxViewModel
         let msgIDs = emails.compactMap(\.gmailMessageID)
+        let pairs = emails.compactMap { e -> (String, String?)? in
+            guard let msgID = e.gmailMessageID else { return nil }
+            return (msgID, e.gmailThreadID)
+        }
         let removed = msgIDs.compactMap { vm.removeOptimistically($0) }
         onClear()
         UndoActionManager.shared.schedule(
-            label: "Trashed \(msgIDs.count) emails",
-            onConfirm: { Task { for id in msgIDs { await vm.trash(id) } } },
+            label: "Trashed \(pairs.count) emails",
+            onConfirm: { Task { for (msgID, threadID) in pairs { await vm.trash(msgID, threadID: threadID) } } },
             onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
         )
     }

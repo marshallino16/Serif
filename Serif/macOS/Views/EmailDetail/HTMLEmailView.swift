@@ -19,6 +19,7 @@ struct HTMLEmailView: NSViewRepresentable {
     let html: String
     @Binding var contentHeight: CGFloat
     var onOpenLink: ((URL) -> Void)?
+    var backgroundColor: String = "transparent"
     @Environment(\.theme) private var theme
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -37,7 +38,7 @@ struct HTMLEmailView: NSViewRepresentable {
 
     func updateNSView(_ webView: WKWebView, context: Context) {
         let textHex = theme.textPrimary.hexString
-        let cacheKey = "\(html)|\(textHex)"
+        let cacheKey = "\(html)|\(textHex)|\(backgroundColor)"
         guard context.coordinator.lastCacheKey != cacheKey else { return }
         context.coordinator.lastCacheKey = cacheKey
         // Defer height reset so SwiftUI processes it after the current render pass.
@@ -62,7 +63,7 @@ struct HTMLEmailView: NSViewRepresentable {
             font-size: 14px;
             line-height: 1.65;
             color: \(textHex);
-            background-color: transparent;
+            background-color: \(backgroundColor);
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
@@ -85,11 +86,11 @@ struct HTMLEmailView: NSViewRepresentable {
         // dark background, and lightens only colours that fall below the threshold
         // while preserving hue and saturation as much as possible.
         var THEME_TEXT = '\(textHex)';
+        var THEME_BG = '\(backgroundColor)';
 
         function fixDarkModeColors() {
             if (!window.matchMedia('(prefers-color-scheme: dark)').matches) return;
 
-            var DARK_BG = [28, 28, 30];
             var BG_LUM = 0.015;
             var MIN_CR = 4.0;
 
@@ -105,6 +106,10 @@ struct HTMLEmailView: NSViewRepresentable {
                 if (i < 0) return null;
                 var parts = s.slice(i + 1).split(',');
                 return parts.length >= 3 ? [parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])] : null;
+            }
+            function parseHex(h) {
+                h = h.replace('#', '');
+                return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16)];
             }
             function hue2rgb(p, q, t) {
                 if (t < 0) t += 1;
@@ -139,32 +144,54 @@ struct HTMLEmailView: NSViewRepresentable {
                 ];
             }
 
-            // --- Pass 1: Invert light backgrounds to dark ---
-            function invertBg(el) {
-                var cs = window.getComputedStyle(el);
-                var bg = cs.backgroundColor;
-                var rgb = parseRgb(bg);
-                if (!rgb) return;
-                var parts = bg.slice(bg.indexOf('(') + 1).split(',');
-                var alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
-                if (alpha < 0.1) return;
-                var lum = relativeLum(rgb[0], rgb[1], rgb[2]);
-                if (lum < 0.5) return;
-                var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
-                var newL = 0.18 - (hsl[2] - 0.5) * 0.26;
-                newL = Math.max(0.05, Math.min(0.18, newL));
-                var newS = hsl[1] * 0.6;
-                var newRgb = hslToRgb(hsl[0], newS, newL);
-                var darkColor = 'rgb(' + newRgb[0] + ',' + newRgb[1] + ',' + newRgb[2] + ')';
-                el.style.setProperty('background-color', darkColor, 'important');
-                if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
+            function emailSupportsDarkMode() {
+                var el = document.getElementById('emailContent');
+                if (!el) return false;
+                var styles = el.querySelectorAll('style');
+                for (var i = 0; i < styles.length; i++) {
+                    var text = styles[i].textContent || '';
+                    if (text.indexOf('prefers-color-scheme') !== -1) return true;
+                }
+                var metas = el.querySelectorAll('meta[name="color-scheme"], meta[name="supported-color-schemes"]');
+                for (var j = 0; j < metas.length; j++) {
+                    var content = metas[j].getAttribute('content') || '';
+                    if (content.indexOf('dark') !== -1) return true;
+                }
+                var html = el.innerHTML;
+                if (html.indexOf('prefers-color-scheme') !== -1) return true;
+                return false;
             }
 
-            document.querySelectorAll(
-                'table,td,th,div,body,section,article,header,footer,main,aside,tr'
-            ).forEach(invertBg);
+            var emailHasDarkMode = emailSupportsDarkMode();
 
-            // --- Pass 2: Fix text colors for contrast ---
+            if (!emailHasDarkMode && THEME_BG !== 'transparent') {
+                var themeBgRgb = parseHex(THEME_BG);
+                var themeBgCss = 'rgb(' + themeBgRgb[0] + ',' + themeBgRgb[1] + ',' + themeBgRgb[2] + ')';
+                document.querySelectorAll(
+                    'table,td,th,div,body,section,article,header,footer,main,aside,tr'
+                ).forEach(function(el) {
+                    var cs = window.getComputedStyle(el);
+                    var bg = cs.backgroundColor;
+                    var rgb = parseRgb(bg);
+                    if (!rgb) return;
+                    var parts = bg.slice(bg.indexOf('(') + 1).split(',');
+                    var alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+                    if (alpha < 0.1) return;
+                    var lum = relativeLum(rgb[0], rgb[1], rgb[2]);
+                    if (lum < 0.5) return;
+                    el.style.setProperty('background-color', themeBgCss, 'important');
+                    if (el.hasAttribute('bgcolor')) el.removeAttribute('bgcolor');
+                    ['border', 'borderTop', 'borderBottom', 'borderLeft', 'borderRight'].forEach(function(prop) {
+                        var bColor = cs[prop + 'Color'];
+                        var bRgb = parseRgb(bColor);
+                        if (bRgb && relativeLum(bRgb[0], bRgb[1], bRgb[2]) > 0.4) {
+                            el.style.setProperty(prop.replace(/([A-Z])/g, '-$1').toLowerCase() + '-color',
+                                'rgba(' + themeBgRgb[0] + ',' + themeBgRgb[1] + ',' + themeBgRgb[2] + ',0.3)', 'important');
+                        }
+                    });
+                });
+            }
+
             function lightenToContrast(r, g, b) {
                 var hsl = rgbToHsl(r, g, b);
                 for (var tl = Math.max(hsl[2] + 0.1, 0.55); tl <= 1.0; tl += 0.04) {
@@ -199,6 +226,7 @@ struct HTMLEmailView: NSViewRepresentable {
                 var rgb = parseRgb(c);
                 if (!rgb) return;
                 var bgLum = effectiveBgLum(el);
+                if (emailHasDarkMode && bgLum > 0.4) return;
                 var textLum = relativeLum(rgb[0], rgb[1], rgb[2]);
                 var hi = Math.max(textLum, bgLum), lo = Math.min(textLum, bgLum);
                 var cr = (hi + 0.05) / (lo + 0.05);
@@ -214,8 +242,43 @@ struct HTMLEmailView: NSViewRepresentable {
             ).forEach(processEl);
         }
 
+        // Auto-link bare URLs in text nodes (macOS WKWebView has no dataDetectorTypes)
+        function autoLinkURLs() {
+            var urlRegex = /(https?:\\/\\/[^\\s<>"']+)/g;
+            var walker = document.createTreeWalker(
+                document.getElementById('emailContent') || document.body,
+                NodeFilter.SHOW_TEXT, null, false
+            );
+            var nodes = [];
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            nodes.forEach(function(node) {
+                if (node.parentElement && node.parentElement.tagName === 'A') return;
+                var text = node.textContent;
+                if (!urlRegex.test(text)) return;
+                urlRegex.lastIndex = 0;
+                var frag = document.createDocumentFragment();
+                var lastIdx = 0;
+                var match;
+                while ((match = urlRegex.exec(text)) !== null) {
+                    if (match.index > lastIdx) {
+                        frag.appendChild(document.createTextNode(text.slice(lastIdx, match.index)));
+                    }
+                    var a = document.createElement('a');
+                    a.href = match[1];
+                    a.textContent = match[1];
+                    frag.appendChild(a);
+                    lastIdx = urlRegex.lastIndex;
+                }
+                if (lastIdx < text.length) {
+                    frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+                }
+                node.parentNode.replaceChild(frag, node);
+            });
+        }
+
         // ── Image monitoring + trigger colour fix on load ────────────────────
         window.addEventListener('load', function() {
+            autoLinkURLs();
             fixDarkModeColors();
 
             var imgs = document.querySelectorAll('img');

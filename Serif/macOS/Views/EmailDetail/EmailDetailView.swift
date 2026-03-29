@@ -260,12 +260,12 @@ struct EmailDetailView: View {
                             if detailVM.calendarInvite == nil || showOriginalInviteEmail {
                                 let rawHTML = detailVM.resolvedHTML ?? detailVM.displayHTML ?? detailVM.latestMessage?.htmlBody ?? ""
                                 let fullHTML = rawHTML.isEmpty
-                                    ? "<p>\(detailVM.latestMessage?.plainBody ?? email.body)</p>"
+                                    ? "<p>\(GmailThreadMessageView.escapeAndBreak(detailVM.latestMessage?.plainBody ?? email.body))</p>"
                                     : rawHTML
                                 let parts = GmailThreadMessageView.stripQuotedHTML(fullHTML)
                                 let htmlToRender = (showQuotedMain || parts.quoted == nil) ? fullHTML : parts.original
 
-                                HTMLEmailView(html: htmlToRender, contentHeight: $emailBodyHeight, onOpenLink: onOpenLink)
+                                HTMLEmailView(html: htmlToRender, contentHeight: $emailBodyHeight, onOpenLink: onOpenLink, backgroundColor: theme.detailBackground.hexString)
                                     .frame(height: emailBodyHeight)
                                     .padding(.horizontal, 24)
                                     .padding(.bottom, parts.quoted != nil ? 4 : 20)
