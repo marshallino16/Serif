@@ -15,6 +15,9 @@ struct SerifiOSApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    /// Stores notification tap data for cold-launch scenario (view may not be observing yet).
+    static var pendingNotification: [String: String]?
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -121,10 +124,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         default:
             // Default tap → open the email in the app
             if let messageId {
+                var info: [String: String] = ["messageId": messageId]
+                if let emailAddress { info["emailAddress"] = emailAddress }
+                // Store for cold-launch (view might not be observing yet)
+                AppDelegate.pendingNotification = info
                 NotificationCenter.default.post(
                     name: .pushNotificationTapped,
                     object: nil,
-                    userInfo: ["messageId": messageId]
+                    userInfo: info
                 )
             }
         }

@@ -149,15 +149,22 @@ final class AppCoordinator: ObservableObject {
         selectedEmail = nil
     }
 
-    /// Navigate to a specific message. On macOS uses panel, on iOS sets pushNavigationEmail.
-    func navigateToMessage(gmailMessageID: String) {
+    /// Navigate to a specific message, optionally switching accounts first.
+    func navigateToMessage(gmailMessageID: String, forAccountID targetAccountID: String? = nil) {
+        let effectiveAccountID = (targetAccountID?.isEmpty == false ? targetAccountID : nil) ?? accountID
+
+        // Switch account if needed
+        if effectiveAccountID != accountID, !effectiveAccountID.isEmpty {
+            selectedAccountID = effectiveAccountID
+        }
+
         Task {
             guard let msg = try? await GmailMessageService.shared.getMessage(
-                id: gmailMessageID, accountID: accountID, format: "full"
+                id: gmailMessageID, accountID: effectiveAccountID, format: "full"
             ) else { return }
             let email = mailboxViewModel.makeEmail(from: msg)
             #if os(macOS)
-            panelCoordinator.showEmail(email, accountID: accountID)
+            panelCoordinator.showEmail(email, accountID: effectiveAccountID)
             #else
             pushNavigationEmail = email
             #endif

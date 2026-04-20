@@ -32,12 +32,21 @@ struct iOSContentView: View {
             if signedIn { initializeAfterSignIn() }
         }
         .onAppear {
-            if isSignedIn { initializeCoordinator() }
+            if isSignedIn {
+                initializeCoordinator()
+                // Cold launch: notification tap may have fired before view was observing
+                if let pending = AppDelegate.pendingNotification {
+                    AppDelegate.pendingNotification = nil
+                    handleNotificationTap(pending)
+                }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .pushNotificationTapped)) { notification in
             guard isSignedIn,
-                  let messageId = notification.userInfo?["messageId"] as? String else { return }
-            coordinator.navigateToMessage(gmailMessageID: messageId)
+                  let info = notification.userInfo as? [String: String],
+                  info["messageId"] != nil else { return }
+            AppDelegate.pendingNotification = nil
+            handleNotificationTap(info)
         }
     }
 
@@ -48,6 +57,20 @@ struct iOSContentView: View {
             async let labels: Void = coordinator.mailboxViewModel.loadLabels()
             async let counts: Void = coordinator.mailboxViewModel.loadCategoryUnreadCounts()
             _ = await (folder, labels, counts)
+        }
+    }
+
+    private func handleNotificationTap(_ info: [String: String]) {
+        guard let messageId = info["messageId"] else { return }
+        let emailAddress = info["emailAddress"]
+        // If coordinator isn't set up yet (cold launch race), delay briefly
+        if coordinator.selectedAccountID == nil {
+            Task {
+                try? await Task.sleep(for: .milliseconds(300))
+                coordinator.navigateToMessage(gmailMessageID: messageId, forAccountID: emailAddress)
+            }
+        } else {
+            coordinator.navigateToMessage(gmailMessageID: messageId, forAccountID: emailAddress)
         }
     }
 

@@ -6,6 +6,35 @@ const { google } = require("googleapis");
 
 admin.initializeApp();
 const db = admin.firestore();
+const dns = require("dns").promises;
+
+// Personal/freemail domains — skip BIMI lookup for these
+const PERSONAL_DOMAINS = new Set([
+  "gmail.com", "googlemail.com",
+  "yahoo.com", "yahoo.fr", "yahoo.co.uk", "yahoo.co.jp",
+  "outlook.com", "outlook.fr", "live.com", "live.fr",
+  "hotmail.com", "hotmail.fr", "hotmail.co.uk",
+  "icloud.com", "me.com", "mac.com",
+  "protonmail.com", "proton.me", "pm.me",
+  "aol.com", "wanadoo.fr", "orange.fr", "sfr.fr", "free.fr",
+  "laposte.net", "bbox.fr", "numericable.fr",
+]);
+
+// Resolve BIMI logo URL via DNS TXT record
+async function resolveBIMI(domain) {
+  if (!domain || PERSONAL_DOMAINS.has(domain.toLowerCase())) return null;
+  try {
+    const records = await dns.resolveTxt(`default._bimi.${domain}`);
+    for (const record of records) {
+      const txt = record.join("");
+      if (txt.includes("v=BIMI1")) {
+        const match = txt.match(/l=([^\s;]+)/);
+        if (match) return match[1];
+      }
+    }
+  } catch (_) {}
+  return null;
+}
 
 // Config param (set via firebase functions:config or .env)
 const GMAIL_CLIENT_ID = defineString("GMAIL_CLIENT_ID");
@@ -197,6 +226,14 @@ exports.gmailPush = onRequest(async (req, res) => {
       .digest("hex");
     const avatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=200&d=404`;
 
+    // Resolve BIMI logo URL for organizational senders
+    const senderDomain = fromEmail.includes("@") ? fromEmail.split("@")[1].toLowerCase() : "";
+    let bimiUrl = "";
+    try {
+      const resolved = await resolveBIMI(senderDomain);
+      if (resolved) bimiUrl = resolved;
+    } catch (_) {}
+
     // Filter by user's notification category preferences
     if (allowedCategories.length > 0) {
       const categoryLabels = msgLabels.filter((l) => l.startsWith("CATEGORY_"));
@@ -228,7 +265,7 @@ exports.gmailPush = onRequest(async (req, res) => {
     // Send FCM to all registered devices
     const tokens = devices.map((d) => d.token);
     const fcmMessage = {
-      notification: { title: from, body: subject },
+      notification: { title: subject || "New email", body: from },
       data: {
         messageId: latestMsgId,
         threadId,
@@ -240,6 +277,7 @@ exports.gmailPush = onRequest(async (req, res) => {
         snippet,
         date,
         avatarUrl,
+        bimiUrl,
       },
       apns: {
         payload: {

@@ -28,38 +28,57 @@ class NotificationService: UNNotificationServiceExtension {
 
         let senderName = userInfo["senderName"] as? String ?? content.title
         let senderEmail = userInfo["senderEmail"] as? String ?? ""
+        let subject = userInfo["subject"] as? String ?? ""
         let snippet = userInfo["snippet"] as? String ?? ""
         let avatarUrl = userInfo["avatarUrl"] as? String
+        let bimiUrl = userInfo["bimiUrl"] as? String
 
-        // Enrich body with snippet (like Gmail: subject + snippet preview)
-        if !snippet.isEmpty {
-            content.body = "\(content.body)\n\(snippet)"
-        }
+        // Title = subject (bold), body = snippet preview, no subtitle (no email)
+        if !subject.isEmpty { content.title = subject }
+        content.body = snippet.isEmpty ? content.body : snippet
 
-        // Subtitle: sender email
-        if !senderEmail.isEmpty {
-            content.subtitle = senderEmail
-        }
+        // Download avatar: try Gravatar first, then BIMI logo as fallback
+        let bimiURL = (bimiUrl?.isEmpty == false) ? URL(string: bimiUrl!) : nil
 
-        // Download avatar and create Communication Notification
-        if let avatarUrl, let url = URL(string: avatarUrl) {
-            downloadImage(from: url) { [weak self] imageData in
-                self?.createCommunicationNotification(
-                    content: content,
-                    senderName: senderName,
-                    senderEmail: senderEmail,
-                    avatarData: imageData,
-                    contentHandler: contentHandler
-                )
-            }
-        } else {
-            createCommunicationNotification(
+        let finalize: (Data?) -> Void = { [weak self] avatarData in
+            self?.createCommunicationNotification(
                 content: content,
                 senderName: senderName,
                 senderEmail: senderEmail,
-                avatarData: nil,
+                avatarData: avatarData,
                 contentHandler: contentHandler
             )
+        }
+
+        if let url = (avatarUrl?.isEmpty == false) ? URL(string: avatarUrl!) : nil {
+            downloadImage(from: url) { [weak self] imageData in
+                guard let self else { finalize(nil); return }
+                if let imageData {
+                    finalize(imageData)
+                } else if let bimiURL {
+                    // Gravatar failed → try BIMI (skip SVG, only use raster)
+                    self.downloadImage(from: bimiURL) { bimiData in
+                        if let bimiData, !self.isSVG(bimiData) {
+                            finalize(bimiData)
+                        } else {
+                            finalize(nil)
+                        }
+                    }
+                } else {
+                    finalize(nil)
+                }
+            }
+        } else if let bimiURL {
+            downloadImage(from: bimiURL) { [weak self] bimiData in
+                guard let self else { finalize(nil); return }
+                if let bimiData, !self.isSVG(bimiData) {
+                    finalize(bimiData)
+                } else {
+                    finalize(nil)
+                }
+            }
+        } else {
+            finalize(nil)
         }
     }
 
@@ -131,5 +150,12 @@ class NotificationService: UNNotificationServiceExtension {
                 completion(nil)
             }
         }.resume()
+    }
+
+    /// Detect SVG data (not usable by INImage — needs raster PNG/JPEG)
+    private func isSVG(_ data: Data) -> Bool {
+        guard data.count >= 5 else { return false }
+        let prefix = String(data: data.prefix(256), encoding: .utf8) ?? ""
+        return prefix.contains("<svg") || prefix.contains("<?xml")
     }
 }

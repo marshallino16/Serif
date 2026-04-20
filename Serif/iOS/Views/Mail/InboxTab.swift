@@ -169,6 +169,11 @@ struct InboxTab: View {
             Task { await loadCurrentFolder() }
         }
         .onAppear {
+            // Cold launch: pushNavigationEmail may already be set before onChange subscribes
+            if let email = coordinator.pushNavigationEmail {
+                selectedEmail = email
+                coordinator.pushNavigationEmail = nil
+            }
             guard !coordinator.mailboxViewModel.accountID.isEmpty else { return }
             Task { await loadCurrentFolder() }
         }
