@@ -4,11 +4,11 @@
     <title>Serif Updates</title>
     <language>en</language>
     <item>
-      <title>Version 1.1.4</title>
-      <pubDate>Sun, 29 Mar 2026 21:30:18 +0000</pubDate>
+      <title>Version 1.1.5</title>
+      <pubDate>Mon, 20 Apr 2026 19:23:21 +0000</pubDate>
       <sparkle:version>11</sparkle:version>
-      <sparkle:shortVersionString>1.1.4</sparkle:shortVersionString>
-      <enclosure url="https://github.com/marshallino16/Serif/releases/download/v1.1.4/Serif-v1.1.4.dmg" length="5904692" type="application/octet-stream" />
+      <sparkle:shortVersionString>1.1.5</sparkle:shortVersionString>
+      <enclosure url="https://github.com/marshallino16/Serif/releases/download/v1.1.5/Serif-v1.1.5.dmg" length="5905372" type="application/octet-stream" />
     </item>
   </channel>
 </rss>
