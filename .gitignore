@@ -22,8 +22,11 @@ timeline.xctimeline
 playground.xcworkspace
 
 .build/
+build/
 
 firebase*
 firestore*
 functions/*
 .firebaserc
+
+cloudflare*
