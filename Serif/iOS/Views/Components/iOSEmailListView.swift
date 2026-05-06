@@ -140,9 +140,12 @@ struct iOSEmailListView: View {
             ForEach(0..<8, id: \.self) { _ in
                 skeletonRow
                     .listRowSeparator(.visible)
+                    .listRowBackground(theme.listBackground)
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(theme.listBackground)
         .redacted(reason: .placeholder)
         .shimmer()
     }

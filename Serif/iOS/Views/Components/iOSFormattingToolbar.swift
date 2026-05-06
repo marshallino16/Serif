@@ -82,8 +82,11 @@ struct iOSFormattingToolbar: View {
                             let uiColor = UIColor(color)
                             state.setTextColor(uiColor)
                         } label: {
-                            Label(colorName(color), systemImage: "circle.fill")
-                                .foregroundColor(color)
+                            HStack {
+                                Image(systemName: "circle.fill")
+                                    .foregroundColor(color)
+                                Text(colorName(color))
+                            }
                         }
                     }
                 } label: {
@@ -92,6 +95,24 @@ struct iOSFormattingToolbar: View {
                         .foregroundColor(theme.textSecondary)
                         .frame(width: 36, height: 36)
                         .contentShape(Rectangle())
+                }
+
+                separator
+
+                // Font size
+                Group {
+                    toolbarButton(icon: "textformat.size.smaller") {
+                        let newSize = max(10, state.fontSize - 2)
+                        state.setFontSize(newSize)
+                    }
+                    Text("\(Int(state.fontSize))")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(theme.textSecondary)
+                        .frame(minWidth: 24)
+                    toolbarButton(icon: "textformat.size.larger") {
+                        let newSize = min(48, state.fontSize + 2)
+                        state.setFontSize(newSize)
+                    }
                 }
 
                 separator

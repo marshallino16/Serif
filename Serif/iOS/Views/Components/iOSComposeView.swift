@@ -86,28 +86,41 @@ struct iOSComposeView: View {
                     VStack(spacing: 0) {
                         Color.clear.frame(height: 0).id("composeTop")
 
-                        // To
-                        iOSContactAutocompleteField(
-                            label: "To", placeholder: "Recipients",
-                            text: $to, contacts: contacts
-                        )
+                        // To + chevron to expand Cc/Bcc
+                        HStack(spacing: 0) {
+                            iOSContactAutocompleteField(
+                                label: "To", placeholder: "Recipients",
+                                text: $to, contacts: contacts
+                            )
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showCc.toggle()
+                                    showBcc = showCc
+                                }
+                            } label: {
+                                Image(systemName: showCc ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(theme.textTertiary)
+                                    .frame(width: 40, height: 40)
+                            }
+                        }
+                        .zIndex(30)
                         Divider().padding(.horizontal, 16)
 
-                        // Cc
+                        // Cc / Bcc (expanded)
                         if showCc {
                             iOSContactAutocompleteField(
-                                label: "Cc", placeholder: "Cc recipients",
+                                label: "Cc", placeholder: "Cc",
                                 text: $cc, contacts: contacts
                             )
+                            .zIndex(20)
                             Divider().padding(.horizontal, 16)
-                        }
 
-                        // Bcc
-                        if showBcc {
                             iOSContactAutocompleteField(
-                                label: "Bcc", placeholder: "Bcc recipients",
+                                label: "Bcc", placeholder: "Bcc",
                                 text: $bcc, contacts: contacts
                             )
+                            .zIndex(15)
                             Divider().padding(.horizontal, 16)
                         }
 
@@ -204,7 +217,14 @@ struct iOSComposeView: View {
                         }
                     }
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    // Attach
+                    Button { showAttachmentPicker = true } label: {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 16))
+                    }
+
+                    // Send
                     Button {
                         Task { await sendEmail() }
                     } label: {
@@ -212,66 +232,37 @@ struct iOSComposeView: View {
                             ProgressView()
                         } else {
                             Image(systemName: "paperplane.fill")
+                                .font(.system(size: 16))
                         }
                     }
                     .disabled(isSending || to.isEmpty)
+
+                    // More menu
+                    Menu {
+                        Button { showTemplatePicker = true } label: {
+                            Label("Insert Template", systemImage: "doc.on.doc")
+                        }
+                        Button { Task { await saveDraftAndDismiss() } } label: {
+                            Label("Save Draft", systemImage: "square.and.arrow.down.on.square")
+                        }
+                        Button {
+                            templateName = ""
+                            showSaveTemplateAlert = true
+                        } label: {
+                            Label("Save as Template", systemImage: "square.and.arrow.down")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 16))
+                    }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 16) {
-                            // Cc toggle
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) { showCc.toggle() }
-                            } label: {
-                                Text("Cc")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(showCc ? theme.accentPrimary : theme.textSecondary)
-                            }
-
-                            // Bcc toggle
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) { showBcc.toggle() }
-                            } label: {
-                                Text("Bcc")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(showBcc ? theme.accentPrimary : theme.textSecondary)
-                            }
-
-                            // Attach
-                            Button { showAttachmentPicker = true } label: {
-                                Image(systemName: "paperclip")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(theme.textSecondary)
-                            }
-
-                            // Template
-                            Button { showTemplatePicker = true } label: {
-                                Image(systemName: "doc.on.doc")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(theme.textSecondary)
-                            }
-
-                            // Save draft
-                            Button {
-                                Task { await saveDraftAndDismiss() }
-                            } label: {
-                                Image(systemName: "square.and.arrow.down.on.square")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(theme.textSecondary)
-                            }
-
-                            // Save as template
-                            Button {
-                                templateName = ""
-                                showSaveTemplateAlert = true
-                            } label: {
-                                Image(systemName: "square.and.arrow.down")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(theme.textSecondary)
-                            }
-                        }
-                    }
                     Spacer()
+                    Button { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } label: {
+                        Image(systemName: "keyboard.chevron.compact.down")
+                            .font(.system(size: 14))
+                            .foregroundColor(theme.textSecondary)
+                    }
                 }
             }
         }
@@ -358,20 +349,14 @@ struct iOSComposeView: View {
     // MARK: - Fields
 
     private func composeField(label: String, text: Binding<String>, placeholder: String) -> some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(theme.textTertiary)
-                .frame(width: 55, alignment: .leading)
-            TextField(placeholder, text: text)
-                .font(.system(size: 15))
-                .foregroundColor(theme.textPrimary)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(label != "Subject")
-                .keyboardType(label == "Subject" ? .default : .emailAddress)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        TextField(placeholder, text: text)
+            .font(.system(size: 15))
+            .foregroundColor(theme.textPrimary)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled(label != "Subject")
+            .keyboardType(label == "Subject" ? .default : .emailAddress)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
     }
 
     // MARK: - Mode

@@ -35,21 +35,15 @@ struct iOSContactAutocompleteField: View {
     private static let rowHeight: CGFloat = 45
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(theme.textTertiary)
-                .frame(width: 55, alignment: .leading)
-            TextField(placeholder, text: $text)
-                .font(.system(size: 15))
-                .foregroundColor(theme.textPrimary)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .keyboardType(.emailAddress)
-                .focused($isFocused)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        TextField(placeholder, text: $text)
+            .font(.system(size: 15))
+            .foregroundColor(theme.textPrimary)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .keyboardType(.emailAddress)
+            .focused($isFocused)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         .background(
             GeometryReader { geo in
                 Color.clear.preference(key: FieldHeightPrefKey.self, value: geo.size.height)
