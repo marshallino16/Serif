@@ -38,18 +38,23 @@ final class GmailMessageService {
     }
 
     /// Fetches a batch of message IDs in groups of 5 to avoid "too many concurrent requests".
+    /// Individual message failures are skipped rather than failing the entire batch.
     func getMessages(ids: [String], accountID: String, format: String = "metadata") async throws -> [GmailMessage] {
         let batchSize = 5
         var all: [GmailMessage] = []
         var offset = 0
         while offset < ids.count {
             let batch = Array(ids[offset..<min(offset + batchSize, ids.count)])
-            let batchResult = try await withThrowingTaskGroup(of: GmailMessage.self) { group in
+            let batchResult = await withTaskGroup(of: GmailMessage?.self) { group in
                 for id in batch {
-                    group.addTask { try await self.getMessage(id: id, accountID: accountID, format: format) }
+                    group.addTask {
+                        try? await self.getMessage(id: id, accountID: accountID, format: format)
+                    }
                 }
                 var msgs: [GmailMessage] = []
-                for try await msg in group { msgs.append(msg) }
+                for await msg in group {
+                    if let msg { msgs.append(msg) }
+                }
                 return msgs
             }
             all.append(contentsOf: batchResult)
@@ -62,6 +67,67 @@ final class GmailMessageService {
 
     func getThread(id: String, accountID: String) async throws -> GmailThread {
         try await client.request(path: "/users/me/threads/\(id)?format=full", accountID: accountID)
+    }
+
+    /// Lists thread refs for a given search query. Returns one ref per thread.
+    func listThreads(
+        accountID: String,
+        query: String,
+        pageToken: String? = nil,
+        maxResults: Int = 50
+    ) async throws -> GmailThreadListResponse {
+        var path = "/users/me/threads?maxResults=\(maxResults)"
+        path += "&q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)"
+        if let token = pageToken { path += "&pageToken=\(token)" }
+        return try await client.request(path: path, accountID: accountID)
+    }
+
+    /// Searches via threads.list and returns the most recent message from each thread.
+    /// Batches thread metadata fetches in groups of 5 to avoid rate limiting.
+    func searchByThreads(
+        accountID: String,
+        query: String,
+        pageToken: String? = nil,
+        maxResults: Int = 50
+    ) async throws -> (messages: [GmailMessage], nextPageToken: String?) {
+        let listResponse = try await listThreads(
+            accountID: accountID,
+            query: query,
+            pageToken: pageToken,
+            maxResults: maxResults
+        )
+        let threadRefs = listResponse.threads ?? []
+        guard !threadRefs.isEmpty else { return ([], nil) }
+
+        // Batch fetch thread metadata in groups of 5 to avoid rate limiting
+        let batchSize = 5
+        var allMessages: [GmailMessage] = []
+        var offset = 0
+        while offset < threadRefs.count {
+            let batch = Array(threadRefs[offset..<min(offset + batchSize, threadRefs.count)])
+            let batchResults = await withTaskGroup(of: GmailMessage?.self) { group in
+                for ref in batch {
+                    group.addTask {
+                        guard let thread = try? await self.client.request(
+                            path: "/users/me/threads/\(ref.id)?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date&metadataHeaders=List-Unsubscribe&metadataHeaders=List-Unsubscribe-Post",
+                            accountID: accountID
+                        ) as GmailThread else { return nil }
+                        return thread.messages?.last
+                    }
+                }
+                var msgs: [GmailMessage] = []
+                for await msg in group {
+                    if let msg { msgs.append(msg) }
+                }
+                return msgs
+            }
+            allMessages.append(contentsOf: batchResults)
+            offset += batchSize
+        }
+        return (
+            allMessages.sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) },
+            listResponse.nextPageToken
+        )
     }
 
     // MARK: - History

@@ -130,6 +130,11 @@ struct iOSEmailRow: View {
             if let bimiURL = await BIMIService.shared.logoURL(for: domain),
                let img = await AvatarCache.shared.image(for: bimiURL) {
                 avatarImage = img
+                return
+            }
+            let logoDevURL = "https://img.logo.dev/\(domain)?token=pk_FOE8O0atTB6nht6rIwyp1Q&size=200&format=png"
+            if let img = await AvatarCache.shared.image(for: logoDevURL) {
+                avatarImage = img
             }
         }
     }

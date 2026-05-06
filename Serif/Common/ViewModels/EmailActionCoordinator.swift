@@ -38,13 +38,24 @@ final class EmailActionCoordinator: ObservableObject {
         guard let msgID = email.gmailMessageID else { return }
         let threadID = email.gmailThreadID
         let vm = mailboxViewModel
-        let removed = vm.removeOptimistically(msgID)
-        selectNext(nil)
-        UndoActionManager.shared.schedule(
-            label: "Moved to Trash",
-            onConfirm: { Task { await vm.trash(msgID, threadID: threadID) } },
-            onUndo:    { if let msg = removed { vm.restoreOptimistically(msg) } }
-        )
+        // Remove the entire thread optimistically so the row disappears immediately
+        if let threadID {
+            let removedThread = vm.removeThreadOptimistically(threadID)
+            selectNext(nil)
+            UndoActionManager.shared.schedule(
+                label: "Moved to Trash",
+                onConfirm: { Task { await vm.trash(msgID, threadID: threadID) } },
+                onUndo:    { for msg in removedThread { vm.restoreOptimistically(msg) } }
+            )
+        } else {
+            let removed = vm.removeOptimistically(msgID)
+            selectNext(nil)
+            UndoActionManager.shared.schedule(
+                label: "Moved to Trash",
+                onConfirm: { Task { await vm.trash(msgID, threadID: nil) } },
+                onUndo:    { if let msg = removed { vm.restoreOptimistically(msg) } }
+            )
+        }
     }
 
     func toggleStarEmail(_ email: Email) {
@@ -161,16 +172,31 @@ final class EmailActionCoordinator: ObservableObject {
 
     func bulkDelete(_ emails: [Email], onClear: () -> Void) {
         let vm = mailboxViewModel
-        let msgIDs = emails.compactMap(\.gmailMessageID)
         let pairs = emails.compactMap { e -> (String, String?)? in
             guard let msgID = e.gmailMessageID else { return nil }
             return (msgID, e.gmailThreadID)
         }
-        let removed = msgIDs.compactMap { vm.removeOptimistically($0) }
+        // Remove entire threads optimistically, deduplicating by threadID
+        var removed: [GmailMessage] = []
+        var seenThreadIDs: Set<String> = []
+        for email in emails {
+            if let threadID = email.gmailThreadID, !seenThreadIDs.contains(threadID) {
+                seenThreadIDs.insert(threadID)
+                removed.append(contentsOf: vm.removeThreadOptimistically(threadID))
+            } else if email.gmailThreadID == nil, let msgID = email.gmailMessageID {
+                if let msg = vm.removeOptimistically(msgID) { removed.append(msg) }
+            }
+        }
         onClear()
+        // Deduplicate API calls by threadID
+        var apiSeenThreads: Set<String> = []
+        let dedupedPairs = pairs.filter { (_, threadID) in
+            guard let tid = threadID else { return true }
+            return apiSeenThreads.insert(tid).inserted
+        }
         UndoActionManager.shared.schedule(
-            label: "Trashed \(pairs.count) emails",
-            onConfirm: { Task { for (msgID, threadID) in pairs { await vm.trash(msgID, threadID: threadID) } } },
+            label: "Trashed \(dedupedPairs.count) emails",
+            onConfirm: { Task { for (msgID, threadID) in dedupedPairs { await vm.trash(msgID, threadID: threadID) } } },
             onUndo:    { for msg in removed { vm.restoreOptimistically(msg) } }
         )
     }

@@ -226,6 +226,32 @@ exports.gmailPush = onRequest(async (req, res) => {
       .digest("hex");
     const avatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=200&d=404`;
 
+    // Resolve sender's Google Contact photo via People API
+    let contactPhotoUrl = "";
+    try {
+      const searchRes = await fetch(
+        `https://people.googleapis.com/v1/otherContacts:search?query=${encodeURIComponent(fromEmail)}&readMask=photos&pageSize=1`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const photo = searchData.results?.[0]?.person?.photos?.find((p) => !p.default);
+        if (photo?.url) contactPhotoUrl = photo.url;
+      }
+      // Also try saved contacts if otherContacts didn't find it
+      if (!contactPhotoUrl) {
+        const connRes = await fetch(
+          `https://people.googleapis.com/v1/people:searchContacts?query=${encodeURIComponent(fromEmail)}&readMask=photos&pageSize=1`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        if (connRes.ok) {
+          const connData = await connRes.json();
+          const photo = connData.results?.[0]?.person?.photos?.find((p) => !p.default);
+          if (photo?.url) contactPhotoUrl = photo.url;
+        }
+      }
+    } catch (_) {}
+
     // Resolve BIMI logo URL for organizational senders
     const senderDomain = fromEmail.includes("@") ? fromEmail.split("@")[1].toLowerCase() : "";
     let bimiUrl = "";
@@ -233,6 +259,10 @@ exports.gmailPush = onRequest(async (req, res) => {
       const resolved = await resolveBIMI(senderDomain);
       if (resolved) bimiUrl = resolved;
     } catch (_) {}
+
+    // Logo.dev URL for company logos (returns 404 for unknown domains)
+    const logoDevUrl = senderDomain && !PERSONAL_DOMAINS.has(senderDomain)
+      ? `https://img.logo.dev/${senderDomain}?token=pk_FOE8O0atTB6nht6rIwyp1Q&size=200&format=png` : "";
 
     // Filter by user's notification category preferences
     if (allowedCategories.length > 0) {
@@ -278,6 +308,8 @@ exports.gmailPush = onRequest(async (req, res) => {
         date,
         avatarUrl,
         bimiUrl,
+        contactPhotoUrl,
+        logoDevUrl,
       },
       apns: {
         payload: {

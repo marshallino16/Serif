@@ -168,8 +168,12 @@ struct iOSEmailDetailView: View {
         return email.attachments.map { ($0, nil) }
     }
 
+    private var currentLabelIDs: [String] {
+        detailVM.latestMessage?.labelIds ?? liveEmail.gmailLabelIDs
+    }
+
     private var currentUserLabels: [GmailLabel] {
-        let ids = Set(email.gmailLabelIDs)
+        let ids = Set(currentLabelIDs)
         return coordinator.mailboxViewModel.labels.filter { !$0.isSystemLabel && ids.contains($0.id) }
     }
 
@@ -212,7 +216,7 @@ struct iOSEmailDetailView: View {
                                             label: emailLabel(from: label),
                                             isRemovable: true
                                         ) {
-                                            let newIDs = email.gmailLabelIDs.filter { $0 != label.id }
+                                            let newIDs = currentLabelIDs.filter { $0 != label.id }
                                             detailVM.updateLabelIDs(newIDs)
                                             if let msgID = email.gmailMessageID {
                                                 Task {
@@ -615,6 +619,11 @@ struct iOSEmailDetailView: View {
         if let domain = email.sender.domain {
             if let bimiURL = await BIMIService.shared.logoURL(for: domain),
                let img = await AvatarCache.shared.image(for: bimiURL) {
+                avatarImage = img
+                return
+            }
+            let logoDevURL = "https://img.logo.dev/\(domain)?token=pk_FOE8O0atTB6nht6rIwyp1Q&size=200&format=png"
+            if let img = await AvatarCache.shared.image(for: logoDevURL) {
                 avatarImage = img
             }
         }

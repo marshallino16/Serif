@@ -8,12 +8,13 @@ struct SearchTab: View {
     @State private var isSearching = false
     @State private var searchResults: [Email] = []
     @State private var hasSearched = false
+    @State private var nextPageToken: String?
+    @State private var isLoadingMore = false
 
     var body: some View {
         NavigationStack {
             Group {
                 if !hasSearched && searchResults.isEmpty && !isSearching {
-                    // Initial state — no search performed yet
                     VStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 40))
@@ -24,7 +25,6 @@ struct SearchTab: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if hasSearched && searchResults.isEmpty && !isSearching {
-                    // Search performed but no results
                     VStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 40))
@@ -39,7 +39,9 @@ struct SearchTab: View {
                         emails: searchResults,
                         isLoading: isSearching,
                         selectedEmail: $selectedEmail,
-                        onRefresh: { await performSearch() }
+                        onRefresh: { await performSearch() },
+                        onLoadMore: nextPageToken != nil ? { Task { await loadMore() } } : nil,
+                        isLoadingMore: isLoadingMore
                     )
                     .navigationDestination(item: $selectedEmail) { email in
                         iOSEmailDetailView(email: email, coordinator: coordinator)
@@ -57,6 +59,7 @@ struct SearchTab: View {
                 if newValue.isEmpty {
                     hasSearched = false
                     searchResults = []
+                    nextPageToken = nil
                 }
             }
         }
@@ -65,31 +68,39 @@ struct SearchTab: View {
     private func performSearch() async {
         guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         isSearching = true
+        searchResults = []
+        nextPageToken = nil
         do {
-            let listResponse = try await GmailMessageService.shared.listMessages(
-                accountID: coordinator.accountID,
-                labelIDs: [],
-                query: query,
-                maxResults: 50
-            )
-            let refs = listResponse.messages ?? []
-            guard !refs.isEmpty else {
-                searchResults = []
-                hasSearched = true
-                isSearching = false
-                return
-            }
-            let fullMessages = try await GmailMessageService.shared.getMessages(
-                ids: refs.map(\.id),
-                accountID: coordinator.accountID,
-                format: "metadata"
-            )
-            searchResults = fullMessages.map { coordinator.mailboxViewModel.makeEmail(from: $0) }
+            let results = try await fetchPage(pageToken: nil)
+            searchResults = results
         } catch {
             print("[SearchTab] Search failed: \(error)")
             searchResults = []
         }
         hasSearched = true
         isSearching = false
+    }
+
+    private func loadMore() async {
+        guard let token = nextPageToken, !isLoadingMore else { return }
+        isLoadingMore = true
+        do {
+            let results = try await fetchPage(pageToken: token)
+            searchResults.append(contentsOf: results)
+        } catch {
+            print("[SearchTab] Load more failed: \(error)")
+        }
+        isLoadingMore = false
+    }
+
+    private func fetchPage(pageToken: String?) async throws -> [Email] {
+        let result = try await GmailMessageService.shared.searchByThreads(
+            accountID: coordinator.accountID,
+            query: query,
+            pageToken: pageToken,
+            maxResults: 50
+        )
+        nextPageToken = result.nextPageToken
+        return result.messages.map { coordinator.mailboxViewModel.makeEmail(from: $0) }
     }
 }

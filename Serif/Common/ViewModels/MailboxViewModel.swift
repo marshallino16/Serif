@@ -82,17 +82,49 @@ final class MailboxViewModel: ObservableObject {
         await fetchService.awaitActiveFetch()
     }
 
-    /// Cancels any in-flight fetch and starts a new search.
+    /// Cancels any in-flight fetch and starts a new search using threads.list API
+    /// so each result represents a unique thread (matching Gmail web behavior).
     func search(query: String) async {
         let newQuery = query.isEmpty ? nil : query
         let isNewQuery = newQuery != currentQuery
         currentQuery = newQuery
-        cancelActiveFetch()
-        let gen = fetchService.nextGeneration()
-        fetchService.setActiveFetchTask(Task {
-            await self.performFetch(reset: true, clearFirst: isNewQuery, generation: gen)
-        })
-        await fetchService.awaitActiveFetch()
+
+        if let newQuery, !newQuery.isEmpty {
+            // Thread-based search: use threads.list to get one result per thread
+            cancelActiveFetch()
+            if isNewQuery {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+                    messages = []
+                }
+            }
+            isLoading = true
+            error = nil
+            defer { isLoading = false }
+            do {
+                let result = try await GmailMessageService.shared.searchByThreads(
+                    accountID: accountID,
+                    query: newQuery,
+                    maxResults: 50
+                )
+                nextPageToken = result.nextPageToken
+                for msg in result.messages {
+                    fetchService.messageCache[msg.id] = msg
+                }
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+                    messages = result.messages
+                }
+            } catch {
+                self.error = error.localizedDescription
+            }
+        } else {
+            // Empty query: reload current folder
+            cancelActiveFetch()
+            let gen = fetchService.nextGeneration()
+            fetchService.setActiveFetchTask(Task {
+                await self.performFetch(reset: true, clearFirst: isNewQuery, generation: gen)
+            })
+            await fetchService.awaitActiveFetch()
+        }
     }
 
     func loadMore() async {
@@ -334,6 +366,20 @@ final class MailboxViewModel: ObservableObject {
         return msg
     }
 
+    /// Removes all messages belonging to a thread immediately (optimistic UI).
+    /// Returns every removed message so they can all be restored on undo.
+    @discardableResult
+    func removeThreadOptimistically(_ threadID: String) -> [GmailMessage] {
+        let threadMessages = messages.filter { $0.threadId == threadID }
+        guard !threadMessages.isEmpty else { return [] }
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+            messages.removeAll { $0.threadId == threadID }
+        }
+        fetchService.allCachedMessages.removeAll { $0.threadId == threadID }
+        saveCacheToDisk()
+        return threadMessages
+    }
+
     /// Re-inserts a previously removed message at its original date position (undo path).
     func restoreOptimistically(_ message: GmailMessage) {
         // Restore into the in-memory cache so subsequent lookups work
@@ -538,10 +584,13 @@ final class MailboxViewModel: ObservableObject {
     private func performFetch(reset: Bool, clearFirst: Bool = false, generation: UInt64) async {
         guard !accountID.isEmpty else { return }
         let folderKey = currentFolderKey
+        // When a search query is active, don't filter by label so we search across all folders
+        let isSearch = currentQuery != nil
+        let fetchLabelIDs = isSearch ? [] : currentLabelIDs
 
         // ── Local-first: load from disk cache and paginate locally ──
         if reset {
-            let (firstPage, hasCached) = fetchService.loadDiskCache(accountID: accountID, folderKey: folderKey, filterLabelIDs: currentLabelIDs)
+            let (firstPage, hasCached) = fetchService.loadDiskCache(accountID: accountID, folderKey: folderKey, filterLabelIDs: fetchLabelIDs)
             if hasCached {
                 if clearFirst || messages.isEmpty {
                     messages = firstPage
@@ -563,7 +612,7 @@ final class MailboxViewModel: ObservableObject {
             // ── API sync: fetch latest page to discover new messages ──
             let list = try await fetchService.listMessages(
                 accountID: accountID,
-                currentLabelIDs: currentLabelIDs,
+                currentLabelIDs: fetchLabelIDs,
                 currentQuery: currentQuery,
                 pageToken: reset ? nil : (nextPageToken ?? fetchService.savedPageToken)
             )
@@ -603,7 +652,7 @@ final class MailboxViewModel: ObservableObject {
                     let suspectIDs = messages.filter { !serverIDs.contains($0.id) }.map(\.id)
                     if !suspectIDs.isEmpty {
                         var staleIDs: [String] = []
-                        let folderLabels = Set(currentLabelIDs)
+                        let folderLabels = Set(fetchLabelIDs)
                         for id in suspectIDs {
                             guard !fetchService.isStale(generation: generation) else { break }
                             do {

@@ -61,6 +61,15 @@ struct BulkActionBarView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.detailBackground)
+        .background {
+            // Hidden button to capture Delete key when this view has focus
+            if selectedFolder != .trash {
+                Button("") { onDelete() }
+                    .keyboardShortcut(.delete, modifiers: [])
+                    .frame(width: 0, height: 0)
+                    .opacity(0)
+            }
+        }
     }
 
     private func actionButton(icon: String, label: String, action: @escaping () -> Void, destructive: Bool = false) -> some View {

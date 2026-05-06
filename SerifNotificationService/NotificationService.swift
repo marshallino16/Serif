@@ -30,17 +30,20 @@ class NotificationService: UNNotificationServiceExtension {
         let senderEmail = userInfo["senderEmail"] as? String ?? ""
         let subject = userInfo["subject"] as? String ?? ""
         let snippet = userInfo["snippet"] as? String ?? ""
-        let avatarUrl = userInfo["avatarUrl"] as? String
-        let bimiUrl = userInfo["bimiUrl"] as? String
 
-        // Title = subject (bold), body = snippet preview, no subtitle (no email)
+        // Title = subject (bold), body = snippet preview
         if !subject.isEmpty { content.title = subject }
         content.body = snippet.isEmpty ? content.body : snippet
 
-        // Download avatar: try Gravatar first, then BIMI logo as fallback
-        let bimiURL = (bimiUrl?.isEmpty == false) ? URL(string: bimiUrl!) : nil
+        // Build ordered list of avatar URLs to try:
+        // 1. Google Contact photo  2. Gravatar  3. BIMI  4. Clearbit logo
+        var avatarURLs: [URL] = []
+        if let url = nonEmptyURL(userInfo["contactPhotoUrl"]) { avatarURLs.append(url) }
+        if let url = nonEmptyURL(userInfo["avatarUrl"]) { avatarURLs.append(url) }
+        if let url = nonEmptyURL(userInfo["bimiUrl"]) { avatarURLs.append(url) }
+        if let url = nonEmptyURL(userInfo["logoDevUrl"]) { avatarURLs.append(url) }
 
-        let finalize: (Data?) -> Void = { [weak self] avatarData in
+        tryDownloadAvatar(urls: avatarURLs, index: 0) { [weak self] avatarData in
             self?.createCommunicationNotification(
                 content: content,
                 senderName: senderName,
@@ -49,42 +52,29 @@ class NotificationService: UNNotificationServiceExtension {
                 contentHandler: contentHandler
             )
         }
-
-        if let url = (avatarUrl?.isEmpty == false) ? URL(string: avatarUrl!) : nil {
-            downloadImage(from: url) { [weak self] imageData in
-                guard let self else { finalize(nil); return }
-                if let imageData {
-                    finalize(imageData)
-                } else if let bimiURL {
-                    // Gravatar failed → try BIMI (skip SVG, only use raster)
-                    self.downloadImage(from: bimiURL) { bimiData in
-                        if let bimiData, !self.isSVG(bimiData) {
-                            finalize(bimiData)
-                        } else {
-                            finalize(nil)
-                        }
-                    }
-                } else {
-                    finalize(nil)
-                }
-            }
-        } else if let bimiURL {
-            downloadImage(from: bimiURL) { [weak self] bimiData in
-                guard let self else { finalize(nil); return }
-                if let bimiData, !self.isSVG(bimiData) {
-                    finalize(bimiData)
-                } else {
-                    finalize(nil)
-                }
-            }
-        } else {
-            finalize(nil)
-        }
     }
 
     override func serviceExtensionTimeWillExpire() {
         if let contentHandler, let bestAttemptContent {
             contentHandler(bestAttemptContent)
+        }
+    }
+
+    // MARK: - Avatar download with fallback chain
+
+    /// Tries each URL in order until one succeeds with a valid raster image.
+    private func tryDownloadAvatar(urls: [URL], index: Int, completion: @escaping (Data?) -> Void) {
+        guard index < urls.count else {
+            completion(nil)
+            return
+        }
+        downloadImage(from: urls[index]) { [weak self] imageData in
+            guard let self else { completion(nil); return }
+            if let imageData, !self.isSVG(imageData) {
+                completion(imageData)
+            } else {
+                self.tryDownloadAvatar(urls: urls, index: index + 1, completion: completion)
+            }
         }
     }
 
@@ -138,12 +128,16 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
 
-    // MARK: - Image Download
+    // MARK: - Helpers
+
+    private func nonEmptyURL(_ value: Any?) -> URL? {
+        guard let str = value as? String, !str.isEmpty else { return nil }
+        return URL(string: str)
+    }
 
     private func downloadImage(from url: URL, completion: @escaping (Data?) -> Void) {
         URLSession.shared.dataTask(with: url) { data, response, _ in
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            // Gravatar returns 404 if no avatar exists
             if status == 200, let data, !data.isEmpty {
                 completion(data)
             } else {

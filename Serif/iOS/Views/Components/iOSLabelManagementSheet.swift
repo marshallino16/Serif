@@ -55,7 +55,7 @@ struct iOSLabelManagementSheet: View {
                 // Available labels
                 Section("All Labels") {
                     ForEach(filteredLabels) { label in
-                        let isApplied = email.gmailLabelIDs.contains(label.id)
+                        let isApplied = currentLabelIDs.contains(label.id)
                         HStack(spacing: 10) {
                             Circle()
                                 .fill(Color(hex: label.resolvedBgColor))
@@ -119,16 +119,20 @@ struct iOSLabelManagementSheet: View {
 
     // MARK: - Computed
 
+    private var currentLabelIDs: [String] {
+        detailVM.latestMessage?.labelIds ?? email.gmailLabelIDs
+    }
+
     private var currentUserLabels: [GmailLabel] {
-        let ids = Set(email.gmailLabelIDs)
+        let ids = Set(currentLabelIDs)
         return allLabels.filter { ids.contains($0.id) }
     }
 
     // MARK: - Actions
 
     private func addLabel(_ label: GmailLabel) {
-        guard !email.gmailLabelIDs.contains(label.id) else { return }
-        var newIDs = email.gmailLabelIDs
+        guard !currentLabelIDs.contains(label.id) else { return }
+        var newIDs = currentLabelIDs
         newIDs.append(label.id)
         detailVM.updateLabelIDs(newIDs)
         if let msgID = email.gmailMessageID {
@@ -139,7 +143,7 @@ struct iOSLabelManagementSheet: View {
     }
 
     private func removeLabel(_ label: GmailLabel) {
-        let newIDs = email.gmailLabelIDs.filter { $0 != label.id }
+        let newIDs = currentLabelIDs.filter { $0 != label.id }
         detailVM.updateLabelIDs(newIDs)
         if let msgID = email.gmailMessageID {
             Task {
@@ -156,7 +160,7 @@ struct iOSLabelManagementSheet: View {
         Task {
             let labelID = await coordinator.mailboxViewModel.createAndAddLabel(name: name, to: msgID)
             if let labelID {
-                var newIDs = email.gmailLabelIDs
+                var newIDs = currentLabelIDs
                 newIDs.append(labelID)
                 detailVM.updateLabelIDs(newIDs)
             }

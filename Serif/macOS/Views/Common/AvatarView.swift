@@ -46,6 +46,15 @@ struct AvatarView: View {
                let bimiURL = await BIMIService.shared.logoURL(for: domain),
                let img = await AvatarCache.shared.image(for: bimiURL) {
                 image = img
+                return
+            }
+
+            // 3. Fallback: Logo.dev for company domains
+            if let domain = senderDomain, !domain.isEmpty {
+                let logoDevURL = "https://img.logo.dev/\(domain)?token=pk_FOE8O0atTB6nht6rIwyp1Q&size=200&format=png"
+                if let img = await AvatarCache.shared.image(for: logoDevURL) {
+                    image = img
+                }
             }
         }
     }

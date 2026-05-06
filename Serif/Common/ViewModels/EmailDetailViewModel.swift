@@ -242,10 +242,12 @@ final class EmailDetailViewModel: ObservableObject {
     // MARK: - Label mutation (optimistic local update)
 
     func updateLabelIDs(_ labelIDs: [String]) {
-        guard let current = thread, let msgs = current.messages, let lastID = msgs.last?.id else { return }
+        guard let current = thread, let msgs = current.messages, !msgs.isEmpty else { return }
         var updated = msgs
-        if let idx = updated.firstIndex(where: { $0.id == lastID }) {
-            updated[idx].labelIds = labelIDs
+        // Update all messages in the thread so the UI reflects the change
+        // regardless of which message currentLabelIDs reads from.
+        for i in updated.indices {
+            updated[i].labelIds = labelIDs
         }
         thread = GmailThread(id: current.id, historyId: current.historyId, messages: updated)
     }
