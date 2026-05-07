@@ -5,7 +5,30 @@ struct GmailThreadMessageView: View {
     let fromAddress: String
     var resolvedHTML: String?
     var onOpenLink: ((URL) -> Void)?
+    var onReply: (() -> Void)? = nil
+    var onReplyAll: (() -> Void)? = nil
+    var onForward: (() -> Void)? = nil
+    var onToggleStar: (() -> Void)? = nil
+    var onMarkUnread: (() -> Void)? = nil
+    var onArchive: (() -> Void)? = nil
+    var onTrash: (() -> Void)? = nil
+    var onSpam: (() -> Void)? = nil
     @Environment(\.theme) private var theme
+
+    @ViewBuilder
+    private var actionsMenu: some View {
+        ThreadMessageActionsMenu(
+            message: message,
+            onReply: { onReply?() },
+            onReplyAll: { onReplyAll?() },
+            onForward: { onForward?() },
+            onToggleStar: { onToggleStar?() },
+            onMarkUnread: { onMarkUnread?() },
+            onArchive: { onArchive?() },
+            onTrash: { onTrash?() },
+            onSpam: { onSpam?() }
+        )
+    }
     @State private var showQuoted = false
     @State private var contentHeight: CGFloat = 60
 
@@ -88,11 +111,26 @@ struct GmailThreadMessageView: View {
                         : theme.cardBackground
                 )
                 .clipShape(ChatBubbleShape(isSentByMe: isSentByMe))
+                .contextMenu { actionsMenu }
 
-                if let date = message.date {
-                    Text(date.formattedRelative)
-                        .font(.system(size: 10))
-                        .foregroundColor(theme.textTertiary)
+                HStack(spacing: 8) {
+                    if let date = message.date {
+                        Text(date.formattedRelative)
+                            .font(.system(size: 10))
+                            .foregroundColor(theme.textTertiary)
+                    }
+                    Menu {
+                        actionsMenu
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(theme.textTertiary)
+                            .frame(width: 22, height: 16)
+                            .contentShape(Rectangle())
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
                 }
             }
 

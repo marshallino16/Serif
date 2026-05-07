@@ -378,6 +378,53 @@ struct EmailDetailView: View {
         return .forward(subject: sub, quotedBody: forwardQuote)
     }
 
+    // Per-message compose modes (for thread bubble actions)
+    private func replyMode(for message: GmailMessage) -> ComposeMode {
+        let sender = GmailDataTransformer.parseContact(message.from)
+        let subj = message.subject.hasPrefix("Re:") ? message.subject : "Re: \(message.subject)"
+        let quote = QuoteFormatter.formatReplyQuote(
+            senderName: sender.name,
+            senderEmail: sender.email,
+            date: message.date ?? Date(),
+            originalHTML: message.htmlBody ?? message.plainBody ?? ""
+        )
+        return .reply(to: sender.email, subject: subj, quotedBody: quote,
+                      replyToMessageID: message.id, threadID: message.threadId)
+    }
+
+    private func replyAllMode(for message: GmailMessage) -> ComposeMode {
+        let sender = GmailDataTransformer.parseContact(message.from)
+        let subj = message.subject.hasPrefix("Re:") ? message.subject : "Re: \(message.subject)"
+        let toContacts = GmailDataTransformer.parseContacts(message.to)
+        let ccContacts = GmailDataTransformer.parseContacts(message.cc)
+        let extras = toContacts.map(\.email).filter { $0.lowercased() != fromAddress.lowercased() }
+        let toField = ([sender.email] + extras).joined(separator: ", ")
+        let quote = QuoteFormatter.formatReplyQuote(
+            senderName: sender.name,
+            senderEmail: sender.email,
+            date: message.date ?? Date(),
+            originalHTML: message.htmlBody ?? message.plainBody ?? ""
+        )
+        return .replyAll(to: toField, cc: ccContacts.map(\.email).joined(separator: ", "),
+                         subject: subj, quotedBody: quote,
+                         replyToMessageID: message.id, threadID: message.threadId)
+    }
+
+    private func forwardMode(for message: GmailMessage) -> ComposeMode {
+        let sender = GmailDataTransformer.parseContact(message.from)
+        let toContacts = GmailDataTransformer.parseContacts(message.to)
+        let subj = message.subject.hasPrefix("Fwd:") ? message.subject : "Fwd: \(message.subject)"
+        let quote = QuoteFormatter.formatForwardQuote(
+            senderName: sender.name,
+            senderEmail: sender.email,
+            date: message.date ?? Date(),
+            to: toContacts.map(\.email).joined(separator: ", "),
+            subject: message.subject,
+            originalHTML: message.htmlBody ?? message.plainBody ?? ""
+        )
+        return .forward(subject: subj, quotedBody: quote)
+    }
+
     // MARK: - Load
 
     private func loadThread() {
@@ -519,7 +566,40 @@ struct EmailDetailView: View {
                         message: message,
                         fromAddress: fromAddress,
                         resolvedHTML: detailVM.resolvedMessageHTML[message.id],
-                        onOpenLink: onOpenLink
+                        onOpenLink: onOpenLink,
+                        onReply: { onReply?(replyMode(for: message)) },
+                        onReplyAll: { onReplyAll?(replyAllMode(for: message)) },
+                        onForward: { onForward?(forwardMode(for: message)) },
+                        onToggleStar: {
+                            guard let coordinator else { return }
+                            let isStarred = message.labelIds?.contains("STARRED") ?? false
+                            Task { await coordinator.mailboxViewModel.toggleStar(message.id, isStarred: isStarred) }
+                        },
+                        onMarkUnread: {
+                            guard let coordinator else { return }
+                            Task { await coordinator.mailboxViewModel.markAsUnread(message.id) }
+                        },
+                        onArchive: {
+                            guard let coordinator else { return }
+                            Task {
+                                await coordinator.mailboxViewModel.archive(message.id)
+                                if let threadID = email.gmailThreadID { await detailVM.loadThread(id: threadID) }
+                            }
+                        },
+                        onTrash: {
+                            guard let coordinator else { return }
+                            Task {
+                                await coordinator.mailboxViewModel.trash(message.id, threadID: nil)
+                                if let threadID = email.gmailThreadID { await detailVM.loadThread(id: threadID) }
+                            }
+                        },
+                        onSpam: {
+                            guard let coordinator else { return }
+                            Task {
+                                await coordinator.mailboxViewModel.spam(message.id)
+                                if let threadID = email.gmailThreadID { await detailVM.loadThread(id: threadID) }
+                            }
+                        }
                     )
                 }
             }

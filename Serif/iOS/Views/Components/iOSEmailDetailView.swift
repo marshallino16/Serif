@@ -690,6 +690,53 @@ struct iOSEmailDetailView: View {
         }
     }
 
+    // Compose modes for a specific message in the thread
+    private func replyMode(for message: GmailMessage) -> ComposeMode {
+        let sender = GmailDataTransformer.parseContact(message.from)
+        let subj = message.subject.hasPrefix("Re:") ? message.subject : "Re: \(message.subject)"
+        let quote = QuoteFormatter.formatReplyQuote(
+            senderName: sender.name,
+            senderEmail: sender.email,
+            date: message.date ?? Date(),
+            originalHTML: message.htmlBody ?? message.plainBody ?? ""
+        )
+        return .reply(to: sender.email, subject: subj, quotedBody: quote,
+                      replyToMessageID: message.id, threadID: message.threadId)
+    }
+
+    private func replyAllMode(for message: GmailMessage) -> ComposeMode {
+        let sender = GmailDataTransformer.parseContact(message.from)
+        let subj = message.subject.hasPrefix("Re:") ? message.subject : "Re: \(message.subject)"
+        let toContacts = GmailDataTransformer.parseContacts(message.to)
+        let ccContacts = GmailDataTransformer.parseContacts(message.cc)
+        let extras = toContacts.map(\.email).filter { $0.lowercased() != coordinator.fromAddress.lowercased() }
+        let toField = ([sender.email] + extras).joined(separator: ", ")
+        let quote = QuoteFormatter.formatReplyQuote(
+            senderName: sender.name,
+            senderEmail: sender.email,
+            date: message.date ?? Date(),
+            originalHTML: message.htmlBody ?? message.plainBody ?? ""
+        )
+        return .replyAll(to: toField, cc: ccContacts.map(\.email).joined(separator: ", "),
+                         subject: subj, quotedBody: quote,
+                         replyToMessageID: message.id, threadID: message.threadId)
+    }
+
+    private func forwardMode(for message: GmailMessage) -> ComposeMode {
+        let sender = GmailDataTransformer.parseContact(message.from)
+        let toContacts = GmailDataTransformer.parseContacts(message.to)
+        let subj = message.subject.hasPrefix("Fwd:") ? message.subject : "Fwd: \(message.subject)"
+        let quote = QuoteFormatter.formatForwardQuote(
+            senderName: sender.name,
+            senderEmail: sender.email,
+            date: message.date ?? Date(),
+            to: toContacts.map(\.email).joined(separator: ", "),
+            subject: message.subject,
+            originalHTML: message.htmlBody ?? message.plainBody ?? ""
+        )
+        return .forward(subject: subj, quotedBody: quote)
+    }
+
     private func forwardMode() -> ComposeMode {
         let sub = email.subject.hasPrefix("Fwd:") ? email.subject : "Fwd: \(email.subject)"
         let original = detailVM.resolvedHTML ?? detailVM.latestMessage?.htmlBody ?? email.body
@@ -829,7 +876,35 @@ struct iOSEmailDetailView: View {
                         message: message,
                         fromAddress: coordinator.fromAddress,
                         resolvedHTML: detailVM.resolvedMessageHTML[message.id],
-                        theme: theme
+                        theme: theme,
+                        onReply: { composeModeToPresent = replyMode(for: message) },
+                        onReplyAll: { composeModeToPresent = replyAllMode(for: message) },
+                        onForward: { composeModeToPresent = forwardMode(for: message) },
+                        onToggleStar: {
+                            let isStarred = message.labelIds?.contains("STARRED") ?? false
+                            Task { await coordinator.mailboxViewModel.toggleStar(message.id, isStarred: isStarred) }
+                        },
+                        onMarkUnread: {
+                            Task { await coordinator.mailboxViewModel.markAsUnread(message.id) }
+                        },
+                        onArchive: {
+                            Task {
+                                await coordinator.mailboxViewModel.archive(message.id)
+                                if let threadID = email.gmailThreadID { await detailVM.loadThread(id: threadID) }
+                            }
+                        },
+                        onTrash: {
+                            Task {
+                                await coordinator.mailboxViewModel.trash(message.id, threadID: nil)
+                                if let threadID = email.gmailThreadID { await detailVM.loadThread(id: threadID) }
+                            }
+                        },
+                        onSpam: {
+                            Task {
+                                await coordinator.mailboxViewModel.spam(message.id)
+                                if let threadID = email.gmailThreadID { await detailVM.loadThread(id: threadID) }
+                            }
+                        }
                     )
                 }
             }
@@ -1288,6 +1363,14 @@ struct iOSThreadMessageView: View {
     let fromAddress: String
     var resolvedHTML: String?
     let theme: Theme
+    var onReply: (() -> Void)? = nil
+    var onReplyAll: (() -> Void)? = nil
+    var onForward: (() -> Void)? = nil
+    var onToggleStar: (() -> Void)? = nil
+    var onMarkUnread: (() -> Void)? = nil
+    var onArchive: (() -> Void)? = nil
+    var onTrash: (() -> Void)? = nil
+    var onSpam: (() -> Void)? = nil
 
     @State private var showQuoted = false
     @State private var contentHeight: CGFloat = 60
@@ -1318,6 +1401,21 @@ struct iOSThreadMessageView: View {
             return fullHTML
         }
         return htmlParts.original
+    }
+
+    @ViewBuilder
+    private var actionsMenu: some View {
+        ThreadMessageActionsMenu(
+            message: message,
+            onReply: { onReply?() },
+            onReplyAll: { onReplyAll?() },
+            onForward: { onForward?() },
+            onToggleStar: { onToggleStar?() },
+            onMarkUnread: { onMarkUnread?() },
+            onArchive: { onArchive?() },
+            onTrash: { onTrash?() },
+            onSpam: { onSpam?() }
+        )
     }
 
     var body: some View {
@@ -1373,11 +1471,24 @@ struct iOSThreadMessageView: View {
                         : theme.cardBackground
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .contextMenu { actionsMenu }
 
-                if let date = message.date {
-                    Text(date.formattedRelative)
-                        .font(.system(size: 11))
-                        .foregroundColor(theme.textTertiary)
+                HStack(spacing: 8) {
+                    if let date = message.date {
+                        Text(date.formattedRelative)
+                            .font(.system(size: 11))
+                            .foregroundColor(theme.textTertiary)
+                    }
+                    Menu {
+                        actionsMenu
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(theme.textTertiary)
+                            .frame(width: 24, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
