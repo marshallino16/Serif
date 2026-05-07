@@ -9,13 +9,16 @@ struct InboxTab: View {
     @State private var currentFolder: Folder = .inbox
     @State private var selectedLabel: GmailLabel?
     @State private var draftToEdit: Email?
+    @State private var showRenameLabelAlert = false
+    @State private var showDeleteLabelAlert = false
+    @State private var renameLabelText = ""
 
     private let quickFolders: [Folder] = [.inbox, .starred, .sent, .drafts, .archive, .spam, .trash]
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if currentFolder == .inbox {
+                if currentFolder == .inbox || currentFolder == .labels {
                     categoryPicker
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -104,13 +107,31 @@ struct InboxTab: View {
                         HStack(spacing: 4) {
                             Text(currentFolder.rawValue)
                                 .font(.system(size: 17, weight: .semibold))
+                                .lineLimit(1)
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(theme.textPrimary)
                     }
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    if currentFolder == .labels, selectedLabel != nil {
+                        Menu {
+                            Button {
+                                renameLabelText = selectedLabel?.name ?? ""
+                                showRenameLabelAlert = true
+                            } label: {
+                                Label("Rename label", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                showDeleteLabelAlert = true
+                            } label: {
+                                Label("Delete label", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                        }
+                    }
                     Button { showCompose = true } label: {
                         Image(systemName: "square.and.pencil")
                     }
@@ -178,13 +199,15 @@ struct InboxTab: View {
             Task { await loadCurrentFolder() }
         }
         .onChange(of: currentFolder) { oldFolder, newFolder in
-            selectedLabel = nil
+            if newFolder != .labels { selectedLabel = nil }
             // Don't clear mailboxViewModel when switching to/from drafts
             // (drafts use mailStore, not mailboxViewModel)
             if newFolder != .drafts && oldFolder != .drafts {
                 coordinator.mailboxViewModel.messages = []
             }
-            Task { await loadCurrentFolder() }
+            if newFolder != .labels {
+                Task { await loadCurrentFolder() }
+            }
         }
         .onChange(of: selectedLabel) { _, label in
             guard let label else { return }
@@ -193,6 +216,39 @@ struct InboxTab: View {
             Task {
                 await coordinator.mailboxViewModel.refreshCurrentFolder(labelIDs: [label.id])
             }
+        }
+        .alert("Rename Label", isPresented: $showRenameLabelAlert) {
+            TextField("Label name", text: $renameLabelText)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Button("Cancel", role: .cancel) {}
+            Button("Rename") {
+                let newName = renameLabelText.trimmingCharacters(in: .whitespaces)
+                guard let label = selectedLabel,
+                      !newName.isEmpty,
+                      newName != label.name else { return }
+                Task {
+                    await coordinator.mailboxViewModel.renameLabel(label, to: newName)
+                    if let updated = coordinator.mailboxViewModel.labels.first(where: { $0.id == label.id }) {
+                        selectedLabel = updated
+                    }
+                }
+            }
+        } message: {
+            Text("Enter a new name for this label.")
+        }
+        .alert("Delete Label", isPresented: $showDeleteLabelAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                guard let label = selectedLabel else { return }
+                Task {
+                    await coordinator.mailboxViewModel.deleteLabel(label)
+                    selectedLabel = nil
+                    currentFolder = .inbox
+                }
+            }
+        } message: {
+            Text("Are you sure? This will remove the label from all messages.")
         }
     }
 
@@ -270,36 +326,38 @@ struct InboxTab: View {
                     }
                 }
 
-                ForEach(InboxCategory.allCases) { category in
-                    let unreadCount = coordinator.mailboxViewModel.categoryUnreadCounts[category] ?? 0
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedCategory = category
-                        }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Text(category.displayName)
-                                .font(.system(size: 13, weight: .medium))
-                            if unreadCount > 0 && selectedCategory != category {
-                                Text("\(unreadCount)")
-                                    .font(.system(size: 11, weight: .semibold))
+                if currentFolder == .inbox {
+                    ForEach(InboxCategory.allCases) { category in
+                        let unreadCount = coordinator.mailboxViewModel.categoryUnreadCounts[category] ?? 0
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedCategory = category
                             }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Text(category.displayName)
+                                    .font(.system(size: 13, weight: .medium))
+                                if unreadCount > 0 && selectedCategory != category {
+                                    Text("\(unreadCount)")
+                                        .font(.system(size: 11, weight: .semibold))
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(
+                                selectedCategory == category
+                                    ? theme.accentPrimary
+                                    : theme.cardBackground
+                            )
+                            .foregroundColor(
+                                selectedCategory == category
+                                    ? theme.textInverse
+                                    : theme.textSecondary
+                            )
+                            .clipShape(Capsule())
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .background(
-                            selectedCategory == category
-                                ? theme.accentPrimary
-                                : theme.cardBackground
-                        )
-                        .foregroundColor(
-                            selectedCategory == category
-                                ? theme.textInverse
-                                : theme.textSecondary
-                        )
-                        .clipShape(Capsule())
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
