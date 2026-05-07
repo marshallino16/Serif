@@ -1257,6 +1257,15 @@ struct iOSHTMLEmailView: UIViewRepresentable {
             window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
         }
 
+        var remeasureTimer = null;
+        function debouncedRemeasure() {
+            if (remeasureTimer) clearTimeout(remeasureTimer);
+            remeasureTimer = setTimeout(function() {
+                fitToViewport();
+                window.webkit.messageHandlers.imageLog.postMessage('REMEASURE');
+            }, 80);
+        }
+
         window.addEventListener('load', function() {
             fixDarkModeColors();
 
@@ -1269,14 +1278,38 @@ struct iOSHTMLEmailView: UIViewRepresentable {
             if (pending === 0) {
                 showContent();
             } else {
+                // Remeasure on EACH image load (not just last) so the layout grows progressively
                 imgs.forEach(function(img) {
                     if (!img.complete) {
-                        img.addEventListener('load', function() { if (--pending <= 0) showContent(); });
-                        img.addEventListener('error', function() { this.style.display='none'; if (--pending <= 0) showContent(); });
+                        img.addEventListener('load', function() {
+                            if (--pending <= 0) showContent();
+                            else debouncedRemeasure();
+                        });
+                        img.addEventListener('error', function() {
+                            this.style.display='none';
+                            if (--pending <= 0) showContent();
+                            else debouncedRemeasure();
+                        });
                     }
                 });
                 // Safety: show after 5s max even if images are still loading
                 setTimeout(function() { if (document.body.style.visibility !== 'visible') showContent(); }, 5000);
+            }
+
+            // Track ALL layout shifts (fonts, late images, dynamic content) via ResizeObserver
+            if (typeof ResizeObserver !== 'undefined') {
+                var content = document.getElementById('emailContent');
+                if (content) {
+                    var lastHeight = 0;
+                    var ro = new ResizeObserver(function() {
+                        var h = content.scrollHeight;
+                        if (Math.abs(h - lastHeight) > 2) {
+                            lastHeight = h;
+                            debouncedRemeasure();
+                        }
+                    });
+                    ro.observe(content);
+                }
             }
         });
         </script>

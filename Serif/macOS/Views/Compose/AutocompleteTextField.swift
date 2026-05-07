@@ -256,22 +256,50 @@ struct AutocompleteTextField: View {
     // MARK: - Chip View
 
     private func chipView(email: String, index: Int) -> some View {
-        HStack(spacing: 4) {
-            Text(displayName(for: email))
-                .font(.system(size: 12, weight: .medium))
-                .lineLimit(1)
+        let contact = contacts.first(where: { $0.email.lowercased() == email.lowercased() })
+        let displayInitials: String = {
+            if let contact { return contactInitials(contact) }
+            return String(email.prefix(1)).uppercased()
+        }()
+        let displayColor: String = {
+            if let contact { return contactColor(contact) }
+            let colors = ["#4285F4", "#EA4335", "#FBBC04", "#34A853", "#FF6D01", "#46BDC6", "#7B1FA2", "#C2185B"]
+            return colors[abs(email.hashValue) % colors.count]
+        }()
+        let nameToShow: String = {
+            if let contact, !contact.name.isEmpty { return contact.name }
+            return email
+        }()
 
+        return HStack(spacing: 6) {
+            AvatarView(
+                initials: displayInitials,
+                color: displayColor,
+                size: 20,
+                avatarURL: contact?.photoURL,
+                senderDomain: email.split(separator: "@").last.map(String.init)
+            )
+            Text(nameToShow)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(theme.textPrimary)
+                .lineLimit(1)
             Button { removeChip(at: index) } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(theme.textSecondary)
+                    .frame(width: 14, height: 14)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(theme.accentPrimary)
-        .foregroundColor(theme.textInverse)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(.leading, 3)
+        .padding(.trailing, 6)
+        .padding(.vertical, 3)
+        .background(
+            Capsule()
+                .fill(theme.cardBackground)
+                .overlay(Capsule().strokeBorder(theme.border, lineWidth: 1))
+        )
     }
 
     // MARK: - Autocomplete Dropdown
@@ -300,7 +328,9 @@ struct AutocompleteTextField: View {
                 AvatarView(
                     initials: contactInitials(contact),
                     color: contactColor(contact),
-                    size: 28
+                    size: 28,
+                    avatarURL: contact.photoURL,
+                    senderDomain: contact.email.split(separator: "@").last.map(String.init)
                 )
 
                 VStack(alignment: .leading, spacing: 1) {
