@@ -255,7 +255,13 @@ private struct EmailRowContextMenu: View {
         }
         if let onTrash {
             Button(role: .destructive) { onTrash(email) } label: {
-                Label("Move to Trash", systemImage: "trash")
+                Label {
+                    Text("Move to Trash")
+                } icon: {
+                    Image(systemName: "trash")
+                        .renderingMode(.template)
+                        .foregroundStyle(.red)
+                }
             }
         }
 
@@ -286,7 +292,13 @@ private struct EmailRowContextMenu: View {
 
         if let onSpam {
             Button(role: .destructive) { onSpam(email) } label: {
-                Label("Report as Spam", systemImage: "exclamationmark.shield")
+                Label {
+                    Text("Report as Spam")
+                } icon: {
+                    Image(systemName: "exclamationmark.shield")
+                        .renderingMode(.template)
+                        .foregroundStyle(.red)
+                }
             }
         }
     }

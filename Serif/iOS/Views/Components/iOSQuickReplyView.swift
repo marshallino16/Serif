@@ -8,6 +8,7 @@ struct iOSQuickReplyView: View {
     let mailStore: MailStore
     @ObservedObject var coordinator: AppCoordinator
     @Binding var expandTrigger: Bool
+    @Binding var isFullscreen: Bool
 
     @State private var replyText = ""
     @State private var replyHTML = ""
@@ -31,13 +32,14 @@ struct iOSQuickReplyView: View {
     @StateObject private var editorState = WebRichTextEditorState()
     @Environment(\.theme) private var theme
 
-    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, coordinator: AppCoordinator, expandTrigger: Binding<Bool>) {
+    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, coordinator: AppCoordinator, expandTrigger: Binding<Bool>, isFullscreen: Binding<Bool>) {
         self.email = email
         self.accountID = accountID
         self.fromAddress = fromAddress
         self.mailStore = mailStore
         self._coordinator = ObservedObject(wrappedValue: coordinator)
         self._expandTrigger = expandTrigger
+        self._isFullscreen = isFullscreen
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
             fromAddress: fromAddress,
@@ -53,8 +55,10 @@ struct iOSQuickReplyView: View {
                 collapsedContent
             }
         }
+        .frame(maxHeight: isFullscreen ? .infinity : nil)
         .background(theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: isFullscreen ? 0 : 16))
+        .animation(.easeInOut(duration: 0.35), value: isFullscreen)
         .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: -2)
         .shadow(color: .black.opacity(0.03), radius: 2, x: 0, y: -1)
         .overlay(
@@ -273,7 +277,7 @@ struct iOSQuickReplyView: View {
                 htmlContent: $replyHTML,
                 placeholder: "Write a reply..."
             )
-            .frame(minHeight: 100, maxHeight: 180)
+            .frame(minHeight: 100, maxHeight: isFullscreen ? .infinity : 180)
 
             // Attachments
             if !attachments.isEmpty {
@@ -316,6 +320,18 @@ struct iOSQuickReplyView: View {
                         .foregroundColor(theme.textSecondary)
                         .frame(width: 32, height: 32)
                 }
+
+                // Fullscreen toggle
+                Button {
+                    withAnimation(.easeInOut(duration: 0.35)) { isFullscreen.toggle() }
+                } label: {
+                    Image(systemName: isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(theme.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
 
                 // Attach
                 Button { showAttachmentPicker = true } label: {
@@ -598,6 +614,7 @@ struct iOSQuickReplyView: View {
     private func minimize() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             isExpanded = false
+            isFullscreen = false
         }
     }
 

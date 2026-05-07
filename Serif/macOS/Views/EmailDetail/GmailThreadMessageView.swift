@@ -58,7 +58,7 @@ struct GmailThreadMessageView: View {
 
                 // Bubble
                 VStack(alignment: .leading, spacing: 0) {
-                    HTMLEmailView(html: renderedHTML, contentHeight: $contentHeight, onOpenLink: onOpenLink)
+                    HTMLEmailView(html: renderedHTML, contentHeight: $contentHeight, onOpenLink: onOpenLink, backgroundColor: theme.cardBackground.hexString)
                         .frame(height: contentHeight)
 
                     if htmlParts.quoted != nil {

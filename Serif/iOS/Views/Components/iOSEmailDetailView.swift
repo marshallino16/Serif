@@ -113,6 +113,7 @@ struct iOSEmailDetailView: View {
     @State private var forwardAttachmentURLs: [URL] = []
     @State private var showLabelSheet = false
     @State private var expandQuickReply = false
+    @State private var quickReplyFullscreen = false
     @State private var labelSuggestions: [LabelSuggestion] = []
     @State private var previewAttachmentData: Data?
     @State private var previewAttachmentName: String = ""
@@ -360,10 +361,12 @@ struct iOSEmailDetailView: View {
                     fromAddress: coordinator.fromAddress,
                     mailStore: coordinator.mailStore,
                     coordinator: coordinator,
-                    expandTrigger: $expandQuickReply
+                    expandTrigger: $expandQuickReply,
+                    isFullscreen: $quickReplyFullscreen
                 )
-                .padding(.horizontal, 12)
-                .padding(.bottom, 4)
+                .padding(.horizontal, quickReplyFullscreen ? 0 : 12)
+                .padding(.bottom, quickReplyFullscreen ? 0 : 4)
+                .animation(.easeInOut(duration: 0.35), value: quickReplyFullscreen)
             }
         }
         .background(theme.detailBackground)
@@ -429,7 +432,13 @@ struct iOSEmailDetailView: View {
                         }
                         dismiss()
                     } label: {
-                        Label("Move to Trash", systemImage: "trash")
+                        Label {
+                            Text("Move to Trash")
+                        } icon: {
+                            Image(systemName: "trash")
+                                .renderingMode(.template)
+                                .foregroundStyle(.red)
+                        }
                     }
 
                     Divider()
@@ -479,7 +488,13 @@ struct iOSEmailDetailView: View {
                         }
                         dismiss()
                     } label: {
-                        Label("Report as Spam", systemImage: "exclamationmark.shield")
+                        Label {
+                            Text("Report as Spam")
+                        } icon: {
+                            Image(systemName: "exclamationmark.shield")
+                                .renderingMode(.template)
+                                .foregroundStyle(.red)
+                        }
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -1330,7 +1345,7 @@ struct iOSThreadMessageView: View {
 
                 // Bubble
                 VStack(alignment: .leading, spacing: 0) {
-                    iOSHTMLEmailView(html: renderedHTML, contentHeight: $contentHeight, theme: theme)
+                    iOSHTMLEmailView(html: renderedHTML, contentHeight: $contentHeight, theme: theme, backgroundColor: theme.cardBackground.hexString)
                         .frame(height: contentHeight)
 
                     if htmlParts.quoted != nil {
