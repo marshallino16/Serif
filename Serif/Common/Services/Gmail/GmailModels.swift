@@ -407,7 +407,9 @@ extension GmailMessage {
     private func collectInlineParts(from part: GmailMessagePart?) -> [GmailMessagePart] {
         guard let part = part else { return [] }
         var result: [GmailMessagePart] = []
-        if part.contentID != nil, part.body?.attachmentId != nil,
+        let isExplicitAttachment = part.contentDisposition == "attachment"
+        if !isExplicitAttachment,
+           part.contentID != nil, part.body?.attachmentId != nil,
            part.mimeType?.hasPrefix("image/") == true {
             result.append(part)
         }
@@ -418,7 +420,10 @@ extension GmailMessage {
     private func collectAttachments(from part: GmailMessagePart?) -> [GmailMessagePart] {
         guard let part = part else { return [] }
         var result: [GmailMessagePart] = []
-        let isInlineImage = part.contentID != nil && (part.mimeType ?? "").hasPrefix("image/")
+        let isExplicitAttachment = part.contentDisposition == "attachment"
+        let isInlineImage = !isExplicitAttachment
+            && part.contentID != nil
+            && (part.mimeType ?? "").hasPrefix("image/")
         if let filename = part.filename, !filename.isEmpty, part.body?.attachmentId != nil,
            !isInlineImage {
             result.append(part)
@@ -435,5 +440,15 @@ extension GmailMessagePart {
     var contentID: String? {
         headers?.first(where: { $0.name.lowercased() == "content-id" })?.value
             .trimmingCharacters(in: CharacterSet(charactersIn: "<>"))
+    }
+
+    /// Disposition type from Content-Disposition header — "inline", "attachment", or nil.
+    /// When explicitly "attachment", the part should be shown as a file even if Content-ID is set.
+    var contentDisposition: String? {
+        guard let raw = headers?.first(where: { $0.name.lowercased() == "content-disposition" })?.value else {
+            return nil
+        }
+        let token = raw.split(separator: ";").first.map(String.init) ?? raw
+        return token.trimmingCharacters(in: .whitespaces).lowercased()
     }
 }
