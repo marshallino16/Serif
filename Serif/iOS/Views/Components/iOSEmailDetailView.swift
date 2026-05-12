@@ -775,10 +775,6 @@ struct iOSEmailDetailView: View {
             HStack(spacing: 12) {
                 // Avatar
                 ZStack {
-                    Circle()
-                        .fill(Color(hex: email.sender.avatarColor))
-                        .frame(width: 44, height: 44)
-
                     if let img = avatarImage {
                         platformImage(img)
                             .resizable()
@@ -786,6 +782,9 @@ struct iOSEmailDetailView: View {
                             .frame(width: 44, height: 44)
                             .clipShape(Circle())
                     } else {
+                        Circle()
+                            .fill(Color(hex: email.sender.avatarColor))
+                            .frame(width: 44, height: 44)
                         Text(email.sender.initials)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
