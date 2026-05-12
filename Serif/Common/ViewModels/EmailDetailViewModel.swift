@@ -128,30 +128,25 @@ final class EmailDetailViewModel: ObservableObject {
         }
         guard let rsvpURL = url else { return }
 
-        rsvpInProgress = true
-        let success = await CalendarInviteParser.sendRSVP(url: rsvpURL)
-        rsvpInProgress = false
+        // Google's RSVP URLs require the user's logged-in browser session — a silent
+        // URLSession GET returns 200 but Google never records the response. Open in
+        // the system browser so Safari's existing Google session applies the RSVP.
+        PlatformURL.open(rsvpURL)
 
-        if success {
-            invite.rsvpStatus = status
-            calendarInvite = invite
-
-            // Persist
-            if let msgID = latestMessage?.id {
-                UserDefaults.standard.set(status.rawValue, forKey: rsvpKey(for: msgID))
-            }
-
-            let message: String
-            switch status {
-            case .accepted: message = "Invitation accepted"
-            case .declined: message = "Invitation declined"
-            case .maybe:    message = "Responded maybe"
-            case .pending:  return
-            }
-            ToastManager.shared.show(message: message, type: .success)
-        } else {
-            ToastManager.shared.show(message: "Failed to send RSVP", type: .error)
+        invite.rsvpStatus = status
+        calendarInvite = invite
+        if let msgID = latestMessage?.id {
+            UserDefaults.standard.set(status.rawValue, forKey: rsvpKey(for: msgID))
         }
+
+        let message: String
+        switch status {
+        case .accepted: message = "Accepted — confirm in browser"
+        case .declined: message = "Declined — confirm in browser"
+        case .maybe:    message = "Maybe — confirm in browser"
+        case .pending:  return
+        }
+        ToastManager.shared.show(message: message, type: .info)
     }
 
     private func rsvpKey(for messageID: String) -> String {

@@ -1782,7 +1782,7 @@ private struct iOSCalendarInviteCardView: View {
                     : theme.accentPrimary.opacity(0.12)
             )
             .foregroundColor(
-                isSelected ? .white : theme.accentPrimary
+                isSelected ? theme.textInverse : theme.accentPrimary
             )
             .cornerRadius(8)
         }

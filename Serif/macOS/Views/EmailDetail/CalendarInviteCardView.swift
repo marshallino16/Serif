@@ -130,7 +130,7 @@ struct CalendarInviteCardView: View {
             )
             .foregroundColor(
                 isSelected
-                    ? .white
+                    ? theme.textInverse
                     : theme.accentPrimary
             )
             .cornerRadius(6)
