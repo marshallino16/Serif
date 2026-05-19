@@ -105,16 +105,33 @@ class NotificationService: UNNotificationServiceExtension {
             suggestionType: .none
         )
 
+        // Receiver is "me" — required for the system to treat this as an incoming
+        // communication. Apple's sample code (CommunicationNotifications) follows
+        // this exact pattern.
+        let mePerson = INPerson(
+            personHandle: INPersonHandle(value: "me", type: .unknown),
+            nameComponents: nil,
+            displayName: nil,
+            image: nil,
+            contactIdentifier: nil,
+            customIdentifier: nil,
+            isMe: true,
+            suggestionType: .none
+        )
+
         let intent = INSendMessageIntent(
-            recipients: nil,
+            recipients: [mePerson],
             outgoingMessageType: .outgoingMessageText,
             content: content.body,
-            speakableGroupName: nil,
+            speakableGroupName: INSpeakableString(spokenPhrase: senderName),
             conversationIdentifier: senderEmail,
             serviceName: nil,
             sender: sender,
             attachments: nil
         )
+        if let avatar = avatar {
+            intent.setImage(avatar, forParameterNamed: \.sender)
+        }
 
         let interaction = INInteraction(intent: intent, response: nil)
         interaction.direction = .incoming
