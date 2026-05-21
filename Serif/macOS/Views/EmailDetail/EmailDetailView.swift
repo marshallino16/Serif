@@ -39,6 +39,8 @@ struct EmailDetailView: View {
     @State private var showQuotedMain = false
     @State private var labelSuggestions: [LabelSuggestion] = []
     @State private var showForwardAttachmentAlert = false
+    @State private var expandedMessageIDs: Set<String> = []
+    @State private var didInitialScroll = false
     @AppStorage("aiLabelSuggestions") private var aiLabelSuggestionsEnabled = true
     @Environment(\.theme) private var theme
 
@@ -135,6 +137,44 @@ struct EmailDetailView: View {
         return Array(all.dropFirst())
     }
 
+    /// Only threads with replies need a jump-to-bottom on open.
+    private var needsInitialScroll: Bool { !olderThreadMessages.isEmpty }
+
+    /// Hides the content briefly while we anchor the latest reply's TOP to the top
+    /// of the viewport, then fades back in. Top anchoring is stable even while the
+    /// WebView keeps growing after first measurement.
+    private func performInitialScrollIfNeeded(proxy: ScrollViewProxy, messageCount: Int) {
+        guard !didInitialScroll, messageCount > 0, needsInitialScroll else {
+            if !didInitialScroll, messageCount > 0 {
+                didInitialScroll = true
+            }
+            return
+        }
+        guard let targetID = olderThreadMessages.last?.id else {
+            didInitialScroll = true
+            return
+        }
+        proxy.scrollTo(targetID, anchor: .top)
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 220_000_000)
+            proxy.scrollTo(targetID, anchor: .top)
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            proxy.scrollTo(targetID, anchor: .top)
+            withAnimation(.easeOut(duration: 0.18)) { didInitialScroll = true }
+        }
+    }
+
+    private func toggleExpand(messageID: String) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if expandedMessageIDs.contains(messageID) {
+                expandedMessageIDs.remove(messageID)
+            } else {
+                expandedMessageIDs.insert(messageID)
+                Task { await detailVM.ensureInlineImagesResolved(forMessageID: messageID) }
+            }
+        }
+    }
+
     private var currentLabelIDs: [String] {
         detailVM.latestMessage?.labelIds ?? email.gmailLabelIDs
     }
@@ -181,6 +221,7 @@ struct EmailDetailView: View {
                 if detailVM.isLoading && detailVM.thread == nil {
                     EmailDetailSkeletonView()
                 } else {
+                    ScrollViewReader { proxy in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
                             senderHeader
@@ -304,6 +345,13 @@ struct EmailDetailView: View {
                         }
                         .padding(.bottom, 72)
                     }
+                    .opacity(needsInitialScroll && !didInitialScroll ? 0 : 1)
+                    .onChange(of: detailVM.messages.count) { _, newCount in
+                        performInitialScrollIfNeeded(proxy: proxy, messageCount: newCount)
+                    }
+                    .onAppear {
+                        performInitialScrollIfNeeded(proxy: proxy, messageCount: detailVM.messages.count)
+                    }
                     .task(id: email.id) {
                         labelSuggestions = []
                         guard aiLabelSuggestionsEnabled else { return }
@@ -312,6 +360,7 @@ struct EmailDetailView: View {
                             existingLabels: allLabels
                         )
                         withAnimation { labelSuggestions = suggestions }
+                    }
                     }
                 }
 
@@ -335,6 +384,33 @@ struct EmailDetailView: View {
             Text("This email has attachments. Would you like to include them in the forward?")
         }
         .onAppear { loadThread() }
+        .onChange(of: detailVM.messages.count) { _, _ in
+            applyAutoExpand()
+        }
+    }
+
+    /// Auto-expand strategy: ≤ 6 messages → expand them all; otherwise expand only
+    /// the most recent reply (the bottom-most bubble) so the user lands on it
+    /// without having to tap.
+    private func applyAutoExpand() {
+        let older = olderThreadMessages
+        guard !older.isEmpty else { return }
+        let total = older.count + 1
+        let ids: Set<String>
+        if total <= 6 {
+            ids = Set(older.map(\.id))
+        } else if let lastID = older.last?.id {
+            ids = [lastID]
+        } else {
+            return
+        }
+        guard expandedMessageIDs != ids else { return }
+        expandedMessageIDs = ids
+        Task {
+            for id in ids {
+                await detailVM.ensureInlineImagesResolved(forMessageID: id)
+            }
+        }
     }
 
     // MARK: - Compose helpers
@@ -566,6 +642,8 @@ struct EmailDetailView: View {
                         message: message,
                         fromAddress: fromAddress,
                         resolvedHTML: detailVM.resolvedMessageHTML[message.id],
+                        isExpanded: expandedMessageIDs.contains(message.id),
+                        onToggleExpand: { toggleExpand(messageID: message.id) },
                         onOpenLink: onOpenLink,
                         onReply: { onReply?(replyMode(for: message)) },
                         onReplyAll: { onReplyAll?(replyAllMode(for: message)) },
@@ -601,6 +679,7 @@ struct EmailDetailView: View {
                             }
                         }
                     )
+                    .id(message.id)
                 }
             }
         }

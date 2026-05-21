@@ -19,6 +19,7 @@ protocol MessageFetching {
     @discardableResult
     func modifyLabels(id: String, add: [String], remove: [String], accountID: String) async throws -> GmailMessage
     func getThread(id: String, accountID: String) async throws -> GmailThread
+    func getThreadMessageCounts(ids: [String], accountID: String) async -> [String: Int]
     func getAttachment(messageID: String, attachmentID: String, accountID: String) async throws -> Data
     func emptyTrash(accountID: String) async throws
     func emptySpam(accountID: String) async throws

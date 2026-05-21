@@ -4,6 +4,8 @@ struct GmailThreadMessageView: View {
     let message: GmailMessage
     let fromAddress: String
     var resolvedHTML: String?
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
     var onOpenLink: ((URL) -> Void)?
     var onReply: (() -> Void)? = nil
     var onReplyAll: (() -> Void)? = nil
@@ -64,6 +66,45 @@ struct GmailThreadMessageView: View {
     }
 
     var body: some View {
+        if isExpanded { expandedBody } else { collapsedRow }
+    }
+
+    private var collapsedRow: some View {
+        Button(action: onToggleExpand) {
+            HStack(alignment: .center, spacing: 10) {
+                AvatarView(initials: sender.initials, color: sender.avatarColor, size: 28,
+                           avatarURL: sender.avatarURL, senderDomain: sender.domain)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(isSentByMe ? "me" : sender.name)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(theme.textPrimary)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        if let date = message.date {
+                            Text(date.formattedRelative)
+                                .font(.system(size: 10))
+                                .foregroundColor(theme.textTertiary)
+                        }
+                    }
+                    Text(message.snippet ?? "")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu { actionsMenu }
+    }
+
+    private var expandedBody: some View {
         HStack(alignment: .top, spacing: 8) {
             if isSentByMe { Spacer(minLength: 60) }
 
@@ -74,9 +115,12 @@ struct GmailThreadMessageView: View {
 
             VStack(alignment: isSentByMe ? .trailing : .leading, spacing: 4) {
                 if !isSentByMe {
-                    Text(sender.name)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(theme.textPrimary)
+                    Button(action: onToggleExpand) {
+                        Text(sender.name)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(theme.textPrimary)
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // Bubble
@@ -119,6 +163,14 @@ struct GmailThreadMessageView: View {
                             .font(.system(size: 10))
                             .foregroundColor(theme.textTertiary)
                     }
+                    Button(action: onToggleExpand) {
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(theme.textTertiary)
+                            .frame(width: 22, height: 16)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                     Menu {
                         actionsMenu
                     } label: {

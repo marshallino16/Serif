@@ -5,7 +5,8 @@ struct Email: Identifiable, Equatable, Hashable {
         lhs.id == rhs.id &&
         lhs.isRead == rhs.isRead &&
         lhs.isStarred == rhs.isStarred &&
-        lhs.gmailLabelIDs == rhs.gmailLabelIDs
+        lhs.gmailLabelIDs == rhs.gmailLabelIDs &&
+        lhs.threadMessageCount == rhs.threadMessageCount
     }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     let id: UUID

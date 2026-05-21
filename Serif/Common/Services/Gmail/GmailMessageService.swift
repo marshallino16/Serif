@@ -69,6 +69,36 @@ final class GmailMessageService {
         try await client.request(path: "/users/me/threads/\(id)?format=full", accountID: accountID)
     }
 
+    /// Batch-fetches thread message counts via threads.get?format=minimal.
+    /// Cheap (no bodies) — returns message-id count per thread. Failures skipped silently.
+    func getThreadMessageCounts(ids: [String], accountID: String) async -> [String: Int] {
+        let batchSize = 5
+        var counts: [String: Int] = [:]
+        var offset = 0
+        while offset < ids.count {
+            let batch = Array(ids[offset..<min(offset + batchSize, ids.count)])
+            let batchResults: [(String, Int)] = await withTaskGroup(of: (String, Int)?.self) { group in
+                for id in batch {
+                    group.addTask {
+                        guard let thread = try? await self.client.request(
+                            path: "/users/me/threads/\(id)?format=minimal",
+                            accountID: accountID
+                        ) as GmailThread else { return nil }
+                        return (id, thread.messages?.count ?? 0)
+                    }
+                }
+                var pairs: [(String, Int)] = []
+                for await pair in group {
+                    if let pair { pairs.append(pair) }
+                }
+                return pairs
+            }
+            for (id, count) in batchResults { counts[id] = count }
+            offset += batchSize
+        }
+        return counts
+    }
+
     /// Lists thread refs for a given search query. Returns one ref per thread.
     func listThreads(
         accountID: String,

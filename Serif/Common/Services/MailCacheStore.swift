@@ -84,6 +84,22 @@ final class MailCacheStore {
         try? data.write(to: url, options: .atomic)
     }
 
+    // MARK: - Thread message counts (per-account map persisted as JSON)
+
+    func loadThreadCounts(accountID: String) -> [String: Int] {
+        let url = fileURL(accountID: accountID, folderKey: "_threadCounts")
+        guard let data = try? Data(contentsOf: url),
+              let counts = try? JSONDecoder().decode([String: Int].self, from: data)
+        else { return [:] }
+        return counts
+    }
+
+    func saveThreadCounts(_ counts: [String: Int], accountID: String) {
+        let url = fileURL(accountID: accountID, folderKey: "_threadCounts")
+        guard let data = try? JSONEncoder().encode(counts) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+
     // MARK: - Threads (full format, for offline HTML)
 
     private func threadURL(accountID: String, threadID: String) -> URL {

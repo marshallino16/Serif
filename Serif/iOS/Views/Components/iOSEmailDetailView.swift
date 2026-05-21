@@ -119,6 +119,8 @@ struct iOSEmailDetailView: View {
     @State private var previewAttachmentName: String = ""
     @State private var previewAttachmentType: Attachment.FileType = .document
     @State private var showAttachmentPreview = false
+    @State private var expandedMessageIDs: Set<String> = []
+    @State private var didInitialScroll = false
     @AppStorage("aiLabelSuggestions") private var aiLabelSuggestionsEnabled = true
 
     init(email: Email, coordinator: AppCoordinator) {
@@ -193,6 +195,7 @@ struct iOSEmailDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         // Sender header
@@ -350,6 +353,14 @@ struct iOSEmailDetailView: View {
                         }
                     }
                     .padding(.bottom, 80) // space for quick reply bar
+                }
+                .opacity(needsInitialScroll && !didInitialScroll ? 0 : 1)
+                .onChange(of: detailVM.messages.count) { _, newCount in
+                    performInitialScrollIfNeeded(proxy: proxy, messageCount: newCount)
+                }
+                .onAppear {
+                    performInitialScrollIfNeeded(proxy: proxy, messageCount: detailVM.messages.count)
+                }
                 }
             }
 
@@ -598,6 +609,33 @@ struct iOSEmailDetailView: View {
         }
         .task(id: email.sender.email) {
             await loadAvatar()
+        }
+        .onChange(of: detailVM.messages.count) { _, _ in
+            applyAutoExpand()
+        }
+    }
+
+    /// Auto-expand strategy: ≤ 6 messages → expand them all; otherwise expand only
+    /// the most recent reply (the bottom-most bubble) so the user lands on it
+    /// without having to tap. Other older messages stay collapsed for performance.
+    private func applyAutoExpand() {
+        let older = olderThreadMessages
+        guard !older.isEmpty else { return }
+        let total = older.count + 1
+        let ids: Set<String>
+        if total <= 6 {
+            ids = Set(older.map(\.id))
+        } else if let lastID = older.last?.id {
+            ids = [lastID]
+        } else {
+            return
+        }
+        guard expandedMessageIDs != ids else { return }
+        expandedMessageIDs = ids
+        Task {
+            for id in ids {
+                await detailVM.ensureInlineImagesResolved(forMessageID: id)
+            }
         }
     }
 
@@ -876,6 +914,8 @@ struct iOSEmailDetailView: View {
                         fromAddress: coordinator.fromAddress,
                         resolvedHTML: detailVM.resolvedMessageHTML[message.id],
                         theme: theme,
+                        isExpanded: expandedMessageIDs.contains(message.id),
+                        onToggleExpand: { toggleExpand(messageID: message.id) },
                         onReply: { composeModeToPresent = replyMode(for: message) },
                         onReplyAll: { composeModeToPresent = replyAllMode(for: message) },
                         onForward: { composeModeToPresent = forwardMode(for: message) },
@@ -905,7 +945,54 @@ struct iOSEmailDetailView: View {
                             }
                         }
                     )
+                    .id(message.id)
                 }
+            }
+        }
+    }
+
+    // MARK: - Initial scroll
+
+    /// Only threads with replies need to be jumped to the bottom; single-message
+    /// emails already render correctly at the top.
+    private var needsInitialScroll: Bool { !olderThreadMessages.isEmpty }
+
+    /// Hides the content briefly while we scroll the most-recent reply to the top
+    /// of the viewport, then fades back in. Anchoring on the bubble's top (rather
+    /// than the very bottom of all content) means the scroll position stays correct
+    /// even when the latest message's WebView grows after first measurement.
+    private func performInitialScrollIfNeeded(proxy: ScrollViewProxy, messageCount: Int) {
+        guard !didInitialScroll, messageCount > 0, needsInitialScroll else {
+            if !didInitialScroll, messageCount > 0 {
+                didInitialScroll = true
+            }
+            return
+        }
+        guard let targetID = olderThreadMessages.last?.id else {
+            didInitialScroll = true
+            return
+        }
+        proxy.scrollTo(targetID, anchor: .top)
+        Task { @MainActor in
+            // Re-scroll after the expand animation finishes (≈200 ms) and again
+            // after the WebView has had time to load its HTML.
+            try? await Task.sleep(nanoseconds: 220_000_000)
+            proxy.scrollTo(targetID, anchor: .top)
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            proxy.scrollTo(targetID, anchor: .top)
+            withAnimation(.easeOut(duration: 0.18)) { didInitialScroll = true }
+        }
+    }
+
+    // MARK: - Thread message expansion
+
+    private func toggleExpand(messageID: String) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if expandedMessageIDs.contains(messageID) {
+                expandedMessageIDs.remove(messageID)
+            } else {
+                expandedMessageIDs.insert(messageID)
+                Task { await detailVM.ensureInlineImagesResolved(forMessageID: messageID) }
             }
         }
     }
@@ -1395,6 +1482,8 @@ struct iOSThreadMessageView: View {
     let fromAddress: String
     var resolvedHTML: String?
     let theme: Theme
+    let isExpanded: Bool
+    let onToggleExpand: () -> Void
     var onReply: (() -> Void)? = nil
     var onReplyAll: (() -> Void)? = nil
     var onForward: (() -> Void)? = nil
@@ -1451,6 +1540,51 @@ struct iOSThreadMessageView: View {
     }
 
     var body: some View {
+        if isExpanded { expandedBody } else { collapsedRow }
+    }
+
+    private var collapsedRow: some View {
+        Button(action: onToggleExpand) {
+            HStack(alignment: .center, spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: sender.avatarColor))
+                        .frame(width: 28, height: 28)
+                    Text(sender.initials)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(isSentByMe ? "me" : sender.name)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(theme.textPrimary)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        if let date = message.date {
+                            Text(date.formattedRelative)
+                                .font(.system(size: 11))
+                                .foregroundColor(theme.textTertiary)
+                        }
+                    }
+                    Text(message.snippet ?? "")
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu { actionsMenu }
+    }
+
+    private var expandedBody: some View {
         HStack(alignment: .top, spacing: 8) {
             if isSentByMe { Spacer(minLength: 40) }
 
@@ -1468,9 +1602,12 @@ struct iOSThreadMessageView: View {
 
             VStack(alignment: isSentByMe ? .trailing : .leading, spacing: 4) {
                 if !isSentByMe {
-                    Text(sender.name)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(theme.textPrimary)
+                    Button(action: onToggleExpand) {
+                        Text(sender.name)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(theme.textPrimary)
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // Bubble
@@ -1511,6 +1648,14 @@ struct iOSThreadMessageView: View {
                             .font(.system(size: 11))
                             .foregroundColor(theme.textTertiary)
                     }
+                    Button(action: onToggleExpand) {
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(theme.textTertiary)
+                            .frame(width: 24, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                     Menu {
                         actionsMenu
                     } label: {

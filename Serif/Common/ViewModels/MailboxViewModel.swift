@@ -17,6 +17,10 @@ final class MailboxViewModel: ObservableObject {
     @Published var categoryUnreadCounts:  [InboxCategory: Int] = [:]
     /// Set by `restoreOptimistically` so the UI can re-select the restored email.
     @Published var lastRestoredMessageID: String?
+    /// Real thread message count keyed by threadId, populated lazily via threads.get
+    /// after each folder fetch. Used by `emails` to display an accurate badge even
+    /// when some messages of the thread live in other folders.
+    @Published var threadMessageCounts: [String: Int] = [:]
 
     var accountID: String
     var attachmentIndexer: AttachmentIndexer? {
@@ -42,6 +46,8 @@ final class MailboxViewModel: ObservableObject {
         self.fetchService   = MessageFetchService(api: api, cache: cache)
         self.labelService   = LabelSyncService(cache: cache)
         self.historyService = HistorySyncService(api: api)
+        // Restore persisted thread counts so the badge is correct on first paint.
+        self.threadMessageCounts = MailCacheStore.shared.loadThreadCounts(accountID: accountID)
         // Wire up the makeEmail closure for background analysis.
         // Uses unowned since the service cannot outlive the VM that owns it.
         fetchService.makeEmail = { [unowned self] msg in
@@ -60,9 +66,11 @@ final class MailboxViewModel: ObservableObject {
         }
         return representatives
             .sorted { ($0.0.date ?? .distantPast) > ($1.0.date ?? .distantPast) }
-            .map { (msg, count) in
+            .map { (msg, localCount) in
                 var email = makeEmail(from: msg)
-                email.threadMessageCount = count
+                // Prefer the authoritative count from threads.get when available;
+                // fall back to the per-folder group count otherwise.
+                email.threadMessageCount = threadMessageCounts[msg.threadId] ?? localCount
                 return email
             }
     }
@@ -622,7 +630,13 @@ final class MailboxViewModel: ObservableObject {
             let refs = list.messages ?? []
             nextPageToken = list.nextPageToken
 
+            // Refresh thread counts in parallel with message body fetches so the
+            // badge update lands at roughly the same time as the row content.
+            let threadIDs = Set(refs.map(\.threadId))
+            async let countsTask: Void = refreshThreadCounts(forThreadIDs: threadIDs)
+
             let fetched = try await fetchService.fetchMissingMessages(refs: refs, accountID: accountID)
+            await countsTask
 
             guard !fetchService.isStale(generation: generation) else { return }
 
@@ -705,6 +719,23 @@ final class MailboxViewModel: ObservableObject {
         }
     }
 
+    /// Batched threads.get?format=minimal for thread IDs we don't yet have a count for.
+    /// Idempotent — already-counted threads are skipped, so calling this on every
+    /// performFetch is cheap. Persists to disk so the next launch shows accurate
+    /// counts on first paint.
+    private func refreshThreadCounts(forThreadIDs threadIDs: Set<String>) async {
+        let missing = threadIDs.subtracting(threadMessageCounts.keys)
+        guard !missing.isEmpty else { return }
+        let counts = await api.getThreadMessageCounts(ids: Array(missing), accountID: accountID)
+        guard !counts.isEmpty else { return }
+        threadMessageCounts.merge(counts) { _, new in new }
+        MailCacheStore.shared.saveThreadCounts(threadMessageCounts, accountID: accountID)
+    }
+
+    private func refreshThreadCounts() async {
+        await refreshThreadCounts(forThreadIDs: Set(messages.map(\.threadId)))
+    }
+
     /// Applies the result of a history sync to the VM's published state.
     private func applyHistorySync(labelId: String?) async -> Bool {
         let existingIDs = Set(messages.map(\.id))
@@ -733,6 +764,9 @@ final class MailboxViewModel: ObservableObject {
             fetchService.allCachedMessages.insert(contentsOf: result.newMessages, at: 0)
             fetchService.localOffset += result.newMessages.count
             fetchService.analyzeInBackground(result.newMessages)
+            // Affected threads grew — invalidate cached counts so the badge refreshes.
+            for msg in result.newMessages { threadMessageCounts[msg.threadId] = nil }
+            Task { [weak self] in await self?.refreshThreadCounts() }
         }
 
         // Apply label changes to existing messages
