@@ -1118,8 +1118,10 @@ struct iOSHTMLEmailView: UIViewRepresentable {
         /* Force all elements to fit mobile width */
         * { box-sizing: border-box; max-width: 100% !important; }
         img { max-width: 100% !important; height: auto !important; content-visibility: auto; }
-        /* Tables: fit within viewport without breaking layout */
-        table { border-collapse: collapse; max-width: 100% !important; }
+        /* Tables: fit within viewport. Do NOT force border-collapse:collapse —
+           that nukes `border-spacing`, which countless designed emails rely on
+           for vertical spacing between rows/buttons. */
+        table { max-width: 100% !important; }
         td, th { word-wrap: break-word; overflow-wrap: break-word; }
         /* Links: larger touch target */
         a { color: #1a73e8; padding: 2px 0; -webkit-tap-highlight-color: rgba(0,0,0,0.1); }
