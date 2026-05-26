@@ -1117,7 +1117,10 @@ struct iOSHTMLEmailView: UIViewRepresentable {
         }
         /* Force all elements to fit mobile width */
         * { box-sizing: border-box; max-width: 100% !important; }
-        img { max-width: 100% !important; height: auto !important; content-visibility: auto; }
+        /* Cap oversized images to the viewport but let the email author's inline
+           `style="height:36px"` keep its precedence — height: auto without
+           !important is just a fallback for images that don't specify one. */
+        img { max-width: 100% !important; height: auto; content-visibility: auto; }
         /* Tables: fit within viewport. Do NOT force border-collapse:collapse —
            that nukes `border-spacing`, which countless designed emails rely on
            for vertical spacing between rows/buttons. */

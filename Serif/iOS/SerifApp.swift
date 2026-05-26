@@ -6,10 +6,19 @@ import UserNotifications
 @main
 struct SerifiOSApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             iOSContentView()
+        }
+        // Backgrounding/terminating the app must commit any pending undo actions
+        // so the user never loses a queued archive/trash/etc by closing the app
+        // during the undo window.
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                UndoActionManager.shared.confirmAll()
+            }
         }
     }
 }

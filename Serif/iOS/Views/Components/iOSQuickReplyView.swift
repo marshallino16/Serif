@@ -21,6 +21,7 @@ struct iOSQuickReplyView: View {
     @State private var isLoadingDraft = false
     @State private var showDiscardAlert = false
     @State private var showAttachmentPicker = false
+    @State private var showPhotoPicker = false
     @State private var showTemplatePicker = false
     @State private var quickReplies: [String] = []
     @State private var isLoadingReplies = false
@@ -115,6 +116,12 @@ struct iOSQuickReplyView: View {
         }
         .sheet(isPresented: $showAttachmentPicker) {
             iOSDocumentPicker { urls in
+                let compatible = urls.filter { $0.isEmailCompatible }
+                attachments += compatible
+            }
+        }
+        .sheet(isPresented: $showPhotoPicker) {
+            iOSPhotoPicker { urls in
                 let compatible = urls.filter { $0.isEmailCompatible }
                 attachments += compatible
             }
@@ -333,8 +340,19 @@ struct iOSQuickReplyView: View {
                 }
                 .buttonStyle(.plain)
 
-                // Attach
-                Button { showAttachmentPicker = true } label: {
+                // Attach (file or photo)
+                Menu {
+                    Button {
+                        showPhotoPicker = true
+                    } label: {
+                        Label("Photo Library", systemImage: "photo.on.rectangle")
+                    }
+                    Button {
+                        showAttachmentPicker = true
+                    } label: {
+                        Label("Choose File", systemImage: "doc")
+                    }
+                } label: {
                     Image(systemName: "paperclip")
                         .font(.system(size: 13))
                         .foregroundColor(theme.textSecondary)

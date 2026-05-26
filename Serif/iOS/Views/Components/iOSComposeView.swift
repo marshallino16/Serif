@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import PhotosUI
 
 // MARK: - Document Picker (UIDocumentPickerViewController wrapper)
 
@@ -23,6 +24,77 @@ struct iOSDocumentPicker: UIViewControllerRepresentable {
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             onPick(urls)
+        }
+    }
+}
+
+// MARK: - Photo Picker (PHPickerViewController wrapper)
+
+/// Photo/video picker that copies the selected media to a temporary file and
+/// returns the resulting file URLs — matching `iOSDocumentPicker`'s contract so
+/// callers can treat both pickers uniformly.
+struct iOSPhotoPicker: UIViewControllerRepresentable {
+    let onPick: ([URL]) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 0 // unlimited
+        config.filter = .any(of: [.images, .videos])
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let onPick: ([URL]) -> Void
+        init(onPick: @escaping ([URL]) -> Void) { self.onPick = onPick }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            picker.dismiss(animated: true)
+            guard !results.isEmpty else { onPick([]); return }
+
+            let group = DispatchGroup()
+            var urls: [URL] = []
+            let urlsLock = NSLock()
+
+            for result in results {
+                let provider = result.itemProvider
+                // Pick the best representation: prefer image, fall back to movie.
+                let typeID: String
+                if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                    typeID = UTType.image.identifier
+                } else if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+                    typeID = UTType.movie.identifier
+                } else {
+                    continue
+                }
+
+                group.enter()
+                provider.loadFileRepresentation(forTypeIdentifier: typeID) { tempURL, _ in
+                    defer { group.leave() }
+                    guard let tempURL else { return }
+                    // PHPicker hands us a sandboxed URL that's deleted right after
+                    // this callback returns — copy to our own temp dir first.
+                    let dest = FileManager.default.temporaryDirectory
+                        .appendingPathComponent(UUID().uuidString + "_" + tempURL.lastPathComponent)
+                    do {
+                        try FileManager.default.copyItem(at: tempURL, to: dest)
+                        urlsLock.lock()
+                        urls.append(dest)
+                        urlsLock.unlock()
+                    } catch {
+                        // Ignore individual copy failures
+                    }
+                }
+            }
+
+            group.notify(queue: .main) {
+                self.onPick(urls)
+            }
         }
     }
 }
@@ -53,6 +125,7 @@ struct iOSComposeView: View {
     @State private var sendError: String?
     @State private var attachments: [URL] = []
     @State private var showAttachmentPicker = false
+    @State private var showPhotoPicker = false
     @State private var showTemplatePicker = false
     @State private var showSaveTemplateAlert = false
     @State private var templateName = ""
@@ -218,8 +291,19 @@ struct iOSComposeView: View {
                     }
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
-                    // Attach
-                    Button { showAttachmentPicker = true } label: {
+                    // Attach (file or photo)
+                    Menu {
+                        Button {
+                            showPhotoPicker = true
+                        } label: {
+                            Label("Photo Library", systemImage: "photo.on.rectangle")
+                        }
+                        Button {
+                            showAttachmentPicker = true
+                        } label: {
+                            Label("Choose File", systemImage: "doc")
+                        }
+                    } label: {
                         Image(systemName: "paperclip")
                             .font(.system(size: 16))
                     }
@@ -304,6 +388,16 @@ struct iOSComposeView: View {
                 let rejected = urls.count - compatible.count
                 if rejected > 0 {
                     ToastManager.shared.show(message: "\(rejected) unsupported file(s) skipped", type: .error)
+                }
+            }
+        }
+        .sheet(isPresented: $showPhotoPicker) {
+            iOSPhotoPicker { urls in
+                let compatible = urls.filter { $0.isEmailCompatible }
+                attachments += compatible
+                let rejected = urls.count - compatible.count
+                if rejected > 0 {
+                    ToastManager.shared.show(message: "\(rejected) unsupported photo(s) skipped", type: .error)
                 }
             }
         }

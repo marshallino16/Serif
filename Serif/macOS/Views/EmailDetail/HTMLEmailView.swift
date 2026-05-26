@@ -67,7 +67,9 @@ struct HTMLEmailView: NSViewRepresentable {
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
-        img { max-width: 100% !important; height: auto !important; }
+        /* Cap oversized images but preserve author-set inline heights — small
+           icons (height:36px) must stay small. */
+        img { max-width: 100% !important; height: auto; }
         a { color: #1a73e8; }
         blockquote { border-left: 3px solid #dadce0; margin: 8px 0; padding: 4px 12px; color: #5f6368; }
         pre, code { font-family: 'SF Mono', 'Menlo', monospace; font-size: 12px; background: rgba(0,0,0,0.06); padding: 2px 4px; border-radius: 3px; }
