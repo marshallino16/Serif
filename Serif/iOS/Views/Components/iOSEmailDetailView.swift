@@ -365,20 +365,7 @@ struct iOSEmailDetailView: View {
             }
 
             // Quick reply bar (pinned at bottom)
-            VStack(spacing: 0) {
-                iOSQuickReplyView(
-                    email: email,
-                    accountID: coordinator.accountID,
-                    fromAddress: coordinator.fromAddress,
-                    mailStore: coordinator.mailStore,
-                    coordinator: coordinator,
-                    expandTrigger: $expandQuickReply,
-                    isFullscreen: $quickReplyFullscreen
-                )
-                .padding(.horizontal, quickReplyFullscreen ? 0 : 12)
-                .padding(.bottom, quickReplyFullscreen ? 0 : 4)
-                .animation(.easeInOut(duration: 0.35), value: quickReplyFullscreen)
-            }
+            quickReplyBar
         }
         .background(theme.detailBackground)
         .navigationBarTitleDisplayMode(.inline)
@@ -591,10 +578,10 @@ struct iOSEmailDetailView: View {
         }
         .onAppear { loadThread() }
         .task(id: email.id) {
-            // Auto-mark as read
-            if !email.isRead, let msgID = email.gmailMessageID,
-               let msg = coordinator.mailboxViewModel.messages.first(where: { $0.id == msgID }) {
-                await coordinator.mailboxViewModel.markAsRead(msg)
+            // Auto-mark as read. Use the by-ID overload so we still hit the API
+            // when the message isn't in the local list (e.g. opened from a push).
+            if !email.isRead, let msgID = email.gmailMessageID {
+                await coordinator.mailboxViewModel.markAsRead(messageID: msgID, accountID: coordinator.accountID)
             }
 
             // AI label suggestions
@@ -612,6 +599,12 @@ struct iOSEmailDetailView: View {
         }
         .onChange(of: detailVM.messages.count) { _, _ in
             applyAutoExpand()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .threadShouldRefresh)) { notif in
+            guard let info = notif.userInfo as? [String: String],
+                  let tid = info["threadID"],
+                  tid == email.gmailThreadID else { return }
+            Task { await detailVM.loadThread(id: tid) }
         }
     }
 
@@ -685,13 +678,48 @@ struct iOSEmailDetailView: View {
     // MARK: - Compose Helpers
 
     private var quotedHTML: String {
-        let original = detailVM.resolvedHTML ?? detailVM.latestMessage?.htmlBody ?? email.body
         return QuoteFormatter.formatReplyQuote(
             senderName: email.sender.name,
             senderEmail: email.sender.email,
             date: email.date,
-            originalHTML: original
+            originalHTML: replyQuoteSourceHTML()
         )
+    }
+
+    @ViewBuilder
+    private var quickReplyBar: some View {
+        VStack(spacing: 0) {
+            iOSQuickReplyView(
+                email: email,
+                accountID: coordinator.accountID,
+                fromAddress: coordinator.fromAddress,
+                mailStore: coordinator.mailStore,
+                coordinator: coordinator,
+                expandTrigger: $expandQuickReply,
+                isFullscreen: $quickReplyFullscreen,
+                originalFullHTML: replyQuoteSourceHTML()
+            )
+            .padding(.horizontal, quickReplyFullscreen ? 0 : 12)
+            .padding(.bottom, quickReplyFullscreen ? 0 : 4)
+            .animation(.easeInOut(duration: 0.35), value: quickReplyFullscreen)
+        }
+    }
+
+    /// Best HTML to use as the quoted body for a reply: prefers the resolved
+    /// HTML (cid: → data: URIs already substituted), falls back to the raw
+    /// htmlBody of the latest thread message, finally to `email.body`.
+    private func replyQuoteSourceHTML() -> String {
+        if let latest = detailVM.latestMessage?.id,
+           let resolved = detailVM.resolvedMessageHTML[latest] {
+            return resolved
+        }
+        if let topResolved = detailVM.resolvedHTML, !topResolved.isEmpty {
+            return topResolved
+        }
+        if let raw = detailVM.latestMessage?.htmlBody, !raw.isEmpty {
+            return raw
+        }
+        return email.body
     }
 
     private func replyMode() -> ComposeMode {

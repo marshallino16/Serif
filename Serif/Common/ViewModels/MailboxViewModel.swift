@@ -255,12 +255,20 @@ final class MailboxViewModel: ObservableObject {
 
     func markAsRead(_ message: GmailMessage) async {
         guard message.isUnread && !readIDs.contains(message.id) else { return }
-        readIDs.insert(message.id)
-        if let idx = messages.firstIndex(where: { $0.id == message.id }) {
+        await markAsRead(messageID: message.id, accountID: accountID)
+    }
+
+    /// Mark by ID — used when the message isn't in the local list (e.g. opened
+    /// from a push notification before the inbox finished loading).
+    func markAsRead(messageID: String, accountID overrideAccountID: String? = nil) async {
+        guard !readIDs.contains(messageID) else { return }
+        readIDs.insert(messageID)
+        if let idx = messages.firstIndex(where: { $0.id == messageID }) {
             messages[idx].labelIds?.removeAll { $0 == "UNREAD" }
-            fetchService.messageCache[message.id] = messages[idx]
+            fetchService.messageCache[messageID] = messages[idx]
         }
-        try? await api.markAsRead(id: message.id, accountID: accountID)
+        let targetAccountID = overrideAccountID ?? accountID
+        try? await api.markAsRead(id: messageID, accountID: targetAccountID)
         #if os(iOS)
         // Update app badge to reflect real unread count
         Task {

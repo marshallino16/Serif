@@ -9,6 +9,10 @@ struct iOSQuickReplyView: View {
     @ObservedObject var coordinator: AppCoordinator
     @Binding var expandTrigger: Bool
     @Binding var isFullscreen: Bool
+    /// Full HTML body of the message being replied to, with inline cid: images
+    /// already resolved to data: URIs. Falls back to `email.body` (which can
+    /// be just the snippet when the message was loaded with format=metadata).
+    var originalFullHTML: String? = nil
 
     @State private var replyText = ""
     @State private var replyHTML = ""
@@ -33,7 +37,7 @@ struct iOSQuickReplyView: View {
     @StateObject private var editorState = WebRichTextEditorState()
     @Environment(\.theme) private var theme
 
-    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, coordinator: AppCoordinator, expandTrigger: Binding<Bool>, isFullscreen: Binding<Bool>) {
+    init(email: Email, accountID: String, fromAddress: String, mailStore: MailStore, coordinator: AppCoordinator, expandTrigger: Binding<Bool>, isFullscreen: Binding<Bool>, originalFullHTML: String? = nil) {
         self.email = email
         self.accountID = accountID
         self.fromAddress = fromAddress
@@ -41,6 +45,7 @@ struct iOSQuickReplyView: View {
         self._coordinator = ObservedObject(wrappedValue: coordinator)
         self._expandTrigger = expandTrigger
         self._isFullscreen = isFullscreen
+        self.originalFullHTML = originalFullHTML
         self._composeVM = StateObject(wrappedValue: ComposeViewModel(
             accountID: accountID,
             fromAddress: fromAddress,
@@ -88,6 +93,11 @@ struct iOSQuickReplyView: View {
             if !expanded { startGradientAnimation() }
         }
         .onChange(of: replyHTML) { _, _ in
+            scheduleAutoSave()
+        }
+        .onChange(of: isReplyAll) { _, _ in
+            // Toggling between Reply and Reply All changes the recipient set —
+            // sync immediately so the persisted Gmail draft reflects current Cc.
             scheduleAutoSave()
         }
         .onAppear {
@@ -273,8 +283,14 @@ struct iOSQuickReplyView: View {
                 quickReplyChips
             }
 
-            // Formatting toolbar
-            iOSFormattingToolbar(state: editorState)
+            // Formatting toolbar (carries attach + template since the action
+            // bar below is too dense for them on small screens)
+            iOSFormattingToolbar(
+                state: editorState,
+                onAttachPhoto: { showPhotoPicker = true },
+                onAttachFile: { showAttachmentPicker = true },
+                onPickTemplate: { showTemplatePicker = true }
+            )
 
             Divider().background(theme.divider)
 
@@ -340,33 +356,6 @@ struct iOSQuickReplyView: View {
                 }
                 .buttonStyle(.plain)
 
-                // Attach (file or photo)
-                Menu {
-                    Button {
-                        showPhotoPicker = true
-                    } label: {
-                        Label("Photo Library", systemImage: "photo.on.rectangle")
-                    }
-                    Button {
-                        showAttachmentPicker = true
-                    } label: {
-                        Label("Choose File", systemImage: "doc")
-                    }
-                } label: {
-                    Image(systemName: "paperclip")
-                        .font(.system(size: 13))
-                        .foregroundColor(theme.textSecondary)
-                        .frame(width: 32, height: 32)
-                }
-
-                // Template
-                Button { showTemplatePicker = true } label: {
-                    Image(systemName: "doc.on.doc")
-                        .font(.system(size: 13))
-                        .foregroundColor(theme.textSecondary)
-                        .frame(width: 32, height: 32)
-                }
-
                 if let err = sendError {
                     Text(err)
                         .font(.system(size: 11))
@@ -382,11 +371,14 @@ struct iOSQuickReplyView: View {
                         Text("Discard")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(theme.textSecondary)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(theme.hoverBackground)
                             .cornerRadius(6)
                     }
+                    .layoutPriority(1)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
 
                     // Send
@@ -405,6 +397,8 @@ struct iOSQuickReplyView: View {
                             .frame(width: 12, height: 12)
                             Text("Send")
                                 .font(.system(size: 12, weight: .semibold))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                         }
                         .foregroundColor(theme.textInverse)
                         .padding(.horizontal, 14)
@@ -413,6 +407,7 @@ struct iOSQuickReplyView: View {
                         .cornerRadius(6)
                     }
                     .disabled(isSending)
+                    .layoutPriority(1)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
             }
@@ -499,6 +494,18 @@ struct iOSQuickReplyView: View {
         }
     }
 
+    /// Picks the best HTML available to quote. Prefers the resolved body
+    /// passed in from the detail view (cid: → data: URIs already substituted),
+    /// then falls back to `email.body`. `email.body` is just the snippet when
+    /// the message was loaded with format=metadata, which is why quoted replies
+    /// used to lose formatting + images.
+    private func quoteSourceHTML() -> String {
+        if let full = originalFullHTML?.trimmingCharacters(in: .whitespacesAndNewlines), !full.isEmpty {
+            return full
+        }
+        return email.body
+    }
+
     private func sendReply() async {
         saveTask?.cancel()
 
@@ -516,11 +523,12 @@ struct iOSQuickReplyView: View {
             preferredEmail: coordinator.signatureForReply,
             aliases: aliases
         )
+        let quoteBody = quoteSourceHTML()
         let quotedOriginal = QuoteFormatter.formatReplyQuote(
             senderName: email.sender.name,
             senderEmail: email.sender.email,
             date: email.date,
-            originalHTML: email.body
+            originalHTML: quoteBody
         )
         let fullBody = sig.isEmpty
             ? replyBody + quotedOriginal
@@ -550,9 +558,23 @@ struct iOSQuickReplyView: View {
 
         collapse()
 
+        let postedThreadID = email.gmailThreadID
         UndoActionManager.shared.schedule(
             label: "Reply sent",
-            onConfirm: { Task { await pending.performSend() } },
+            onConfirm: {
+                Task {
+                    await pending.performSend()
+                    // Tell the detail view to re-fetch the thread so the new
+                    // reply bubble appears without back-out + pull-to-refresh.
+                    if let tid = postedThreadID {
+                        NotificationCenter.default.post(
+                            name: .threadShouldRefresh,
+                            object: nil,
+                            userInfo: ["threadID": tid]
+                        )
+                    }
+                }
+            },
             onUndo: { [weak coordinator] in coordinator?.reopenSendUndo(pending) }
         )
     }

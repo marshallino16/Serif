@@ -2,6 +2,11 @@ import SwiftUI
 
 struct iOSFormattingToolbar: View {
     @ObservedObject var state: WebRichTextEditorState
+    /// Optional callbacks — when provided, the toolbar shows the attach/template
+    /// buttons inline (e.g. quick reply where the action bar lacks space).
+    var onAttachPhoto: (() -> Void)? = nil
+    var onAttachFile: (() -> Void)? = nil
+    var onPickTemplate: (() -> Void)? = nil
     @Environment(\.theme) private var theme
     @State private var showLinkSheet = false
     @State private var linkURL = ""
@@ -132,6 +137,47 @@ struct iOSFormattingToolbar: View {
                 // Remove formatting
                 toolbarButton(icon: "textformat") {
                     state.removeFormat()
+                }
+
+                // Optional attach/template entries (used by quick reply where
+                // the action bar doesn't have room).
+                if onAttachPhoto != nil || onAttachFile != nil || onPickTemplate != nil {
+                    separator
+
+                    if onAttachPhoto != nil || onAttachFile != nil {
+                        Menu {
+                            if let onAttachPhoto {
+                                Button {
+                                    onAttachPhoto()
+                                } label: {
+                                    Label("Photo Library", systemImage: "photo.on.rectangle")
+                                }
+                            }
+                            if let onAttachFile {
+                                Button {
+                                    onAttachFile()
+                                } label: {
+                                    Label("Choose File", systemImage: "doc")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "paperclip")
+                                .font(.system(size: 15))
+                                .foregroundColor(theme.textSecondary)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
+                        }
+                    }
+
+                    if let onPickTemplate {
+                        Button(action: onPickTemplate) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 15))
+                                .foregroundColor(theme.textSecondary)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 12)

@@ -108,27 +108,50 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         switch response.actionIdentifier {
         case "com.serif.action.trash":
-            // Trash thread directly from notification
-            if let threadId, let emailAddress {
-                Task {
-                    try? await GmailMessageService.shared.trashThread(id: threadId, accountID: emailAddress)
-                    let total = await Self.totalUnreadCount()
-                    try? await UNUserNotificationCenter.current().setBadgeCount(total)
-                }
+            // Trash from notification. iOS may suspend the app once
+            // completionHandler() returns, so defer it until the API call
+            // finishes — otherwise the trash request gets killed mid-flight
+            // and the email stays in the inbox.
+            guard let emailAddress, (threadId != nil || messageId != nil) else {
+                completionHandler()
+                return
             }
+            let bgTaskID = UIApplication.shared.beginBackgroundTask(withName: "notification.trash")
+            Task {
+                do {
+                    if let threadId {
+                        try await GmailMessageService.shared.trashThread(id: threadId, accountID: emailAddress)
+                    } else if let messageId {
+                        try await GmailMessageService.shared.trashMessage(id: messageId, accountID: emailAddress)
+                    }
+                } catch {
+                    print("[Push] Trash failed: \(error.localizedDescription)")
+                }
+                let total = await Self.totalUnreadCount()
+                try? await UNUserNotificationCenter.current().setBadgeCount(total)
+                if bgTaskID != .invalid { UIApplication.shared.endBackgroundTask(bgTaskID) }
+                completionHandler()
+            }
+            return
 
         case "com.serif.action.reply":
-            if let textResponse = response as? UNTextInputNotificationResponse,
-               let messageId, let emailAddress {
-                let replyText = textResponse.userText
-                Task {
-                    await Self.sendQuickReply(
-                        text: replyText,
-                        messageId: messageId,
-                        accountID: emailAddress
-                    )
-                }
+            guard let textResponse = response as? UNTextInputNotificationResponse,
+                  let messageId, let emailAddress else {
+                completionHandler()
+                return
             }
+            let replyText = textResponse.userText
+            let bgTaskID = UIApplication.shared.beginBackgroundTask(withName: "notification.reply")
+            Task {
+                await Self.sendQuickReply(
+                    text: replyText,
+                    messageId: messageId,
+                    accountID: emailAddress
+                )
+                if bgTaskID != .invalid { UIApplication.shared.endBackgroundTask(bgTaskID) }
+                completionHandler()
+            }
+            return
 
         default:
             // Default tap → open the email in the app
@@ -143,9 +166,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                     userInfo: info
                 )
             }
+            completionHandler()
         }
-
-        completionHandler()
     }
 
     // MARK: - Quick Reply from Notification
@@ -202,4 +224,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
 extension Notification.Name {
     static let pushNotificationTapped = Notification.Name("pushNotificationTapped")
+    /// Posted with userInfo ["threadID": String] after a queued reply / send
+    /// finishes hitting the Gmail API, so any open thread detail view can
+    /// re-fetch and show the new bubble.
+    static let threadShouldRefresh = Notification.Name("threadShouldRefresh")
 }

@@ -95,6 +95,11 @@ struct ReplyBarView: View {
         .onChange(of: replyHTML) { _,_ in
             scheduleAutoSave()
         }
+        .onChange(of: isReplyAll) { _, _ in
+            // Toggling between Reply and Reply All changes the recipient set —
+            // sync immediately so the persisted Gmail draft reflects current Cc.
+            scheduleAutoSave()
+        }
         .animation(.easeInOut(duration: 0.2), value: replyBodyIsEmpty)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

@@ -281,7 +281,15 @@ final class EmailDetailViewModel: ObservableObject {
 
     // MARK: - Convenience
 
-    var messages: [GmailMessage] { thread?.messages ?? [] }
+    /// Thread messages excluding ones the user has trashed or marked spam.
+    /// Gmail's threads.get keeps them in the conversation; we hide them to
+    /// match the web UI (and so a per-message trash visibly removes the bubble).
+    var messages: [GmailMessage] {
+        (thread?.messages ?? []).filter { msg in
+            let labels = msg.labelIds ?? []
+            return !labels.contains("TRASH") && !labels.contains("SPAM")
+        }
+    }
     /// The original message that started the thread (first received).
     var originalMessage: GmailMessage? { messages.first }
     /// Alias kept for compatibility.
