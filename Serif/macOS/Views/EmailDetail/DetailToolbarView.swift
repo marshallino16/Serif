@@ -27,6 +27,7 @@ struct DetailToolbarView: View {
 
     @State private var isUnsubscribing = false
     @Binding var didUnsubscribe: Bool
+    @ObservedObject private var speech = SpeechService.shared
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -88,6 +89,13 @@ struct DetailToolbarView: View {
                 toolbarButton(icon: "tray.and.arrow.down", label: "Move to Inbox") { onMoveToInbox() }
             }
 
+            toolbarButton(
+                icon: isCurrentlyListening ? "stop.circle" : "speaker.wave.2",
+                label: isCurrentlyListening ? "Stop reading" : "Read aloud"
+            ) {
+                toggleListen()
+            }
+
             Divider().frame(height: 16)
 
             Menu {
@@ -144,6 +152,28 @@ struct DetailToolbarView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
+    }
+
+    // MARK: - Read Aloud
+
+    private var isCurrentlyListening: Bool {
+        speech.activeEmailID == email.id.uuidString
+    }
+
+    private func toggleListen() {
+        if isCurrentlyListening {
+            speech.stop()
+        } else {
+            speech.play(text: spokenText(), emailID: email.id.uuidString)
+        }
+    }
+
+    private func spokenText() -> String {
+        let senderLabel = email.sender.name.isEmpty ? email.sender.email : email.sender.name
+        let bodyHTML = detailVM.resolvedHTML ?? detailVM.latestMessage?.htmlBody ?? email.body
+        let subject = email.subject.isEmpty ? "" : "\(email.subject).\n\n"
+        let from = "From \(senderLabel).\n"
+        return subject + from + bodyHTML.strippingHTML
     }
 
     private func toolbarButton(icon: String, label: String, action: @escaping () -> Void) -> some View {

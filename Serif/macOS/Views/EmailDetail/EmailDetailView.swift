@@ -387,6 +387,16 @@ struct EmailDetailView: View {
         .onChange(of: detailVM.messages.count) { _, _ in
             applyAutoExpand()
         }
+        .onChange(of: email.id) { _, _ in
+            // Stop reading when the user switches to another email so playback
+            // doesn't bleed across selections.
+            let speech = SpeechService.shared
+            if speech.activeEmailID != nil { speech.stop() }
+        }
+        .onDisappear {
+            let speech = SpeechService.shared
+            if speech.activeEmailID == email.id.uuidString { speech.stop() }
+        }
     }
 
     /// Auto-expand strategy: ≤ 6 messages → expand them all; otherwise expand only

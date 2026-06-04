@@ -101,6 +101,7 @@ struct iOSEmailDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @StateObject private var detailVM: EmailDetailViewModel
+    @ObservedObject private var speech = SpeechService.shared
     @State private var emailBodyHeight: CGFloat = 1
     @State private var showSenderInfoSheet = false
     @State private var showOriginalInviteEmail = false
@@ -461,6 +462,15 @@ struct iOSEmailDetailView: View {
                     Divider()
 
                     Button {
+                        toggleListen()
+                    } label: {
+                        Label(
+                            isCurrentlyListening ? "Stop Listening" : "Listen",
+                            systemImage: isCurrentlyListening ? "stop.circle" : "speaker.wave.2"
+                        )
+                    }
+
+                    Button {
                         showLabelSheet = true
                     } label: {
                         Label("Labels", systemImage: "tag")
@@ -577,6 +587,11 @@ struct iOSEmailDetailView: View {
             Text("This email has attachments. Would you like to include them in the forward?")
         }
         .onAppear { loadThread() }
+        .onDisappear {
+            // Stop reading when the user leaves the email so playback doesn't
+            // bleed into the next screen.
+            if isCurrentlyListening { speech.stop() }
+        }
         .task(id: email.id) {
             // Auto-mark as read. Use the by-ID overload so we still hit the API
             // when the message isn't in the local list (e.g. opened from a push).
@@ -703,6 +718,34 @@ struct iOSEmailDetailView: View {
             .padding(.bottom, quickReplyFullscreen ? 0 : 4)
             .animation(.easeInOut(duration: 0.35), value: quickReplyFullscreen)
         }
+    }
+
+    // MARK: - Read Aloud
+
+    /// True when the speech service is currently reading this specific email.
+    private var isCurrentlyListening: Bool {
+        speech.activeEmailID == email.id.uuidString
+    }
+
+    /// Toggles listen state for the current email. A second tap stops; tapping
+    /// while another email is playing interrupts it and starts this one.
+    private func toggleListen() {
+        if isCurrentlyListening {
+            speech.stop()
+        } else {
+            speech.play(text: spokenText(), emailID: email.id.uuidString)
+        }
+    }
+
+    /// Builds the text passed to the synthesizer: subject, sender, then body
+    /// (preferring the cid:-resolved HTML stripped to plain text).
+    private func spokenText() -> String {
+        let senderLabel = email.sender.name.isEmpty ? email.sender.email : email.sender.name
+        let bodyHTML = replyQuoteSourceHTML()
+        let bodyPlain = bodyHTML.strippingHTML
+        let subject = email.subject.isEmpty ? "" : "\(email.subject).\n\n"
+        let from = "From \(senderLabel).\n"
+        return subject + from + bodyPlain
     }
 
     /// Best HTML to use as the quoted body for a reply: prefers the resolved
