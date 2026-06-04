@@ -12,6 +12,7 @@ struct InboxTab: View {
     @State private var showRenameLabelAlert = false
     @State private var showDeleteLabelAlert = false
     @State private var renameLabelText = ""
+    @State private var showAccountSwitcher = false
 
     private let quickFolders: [Folder] = [.inbox, .starred, .sent, .drafts, .archive, .spam, .trash]
 
@@ -86,6 +87,9 @@ struct InboxTab: View {
             .background(theme.listBackground)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    accountSwitcher
+                }
                 ToolbarItem(placement: .principal) {
                     Menu {
                         ForEach(quickFolders) { folder in
@@ -173,6 +177,9 @@ struct InboxTab: View {
                 }
             )
         }
+        .sheet(isPresented: $showAccountSwitcher) {
+            accountSwitcherSheet
+        }
         .onChange(of: coordinator.showSendRestoreCompose) { _, show in
             if show {
                 showCompose = true
@@ -249,6 +256,118 @@ struct InboxTab: View {
             }
         } message: {
             Text("Are you sure? This will remove the label from all messages.")
+        }
+    }
+
+    // MARK: - Account Switcher
+
+    private var activeAccount: GmailAccount? {
+        let accounts = coordinator.authViewModel.accounts
+        return accounts.first { $0.id == coordinator.accountID } ?? accounts.first
+    }
+
+    @ViewBuilder
+    private var accountSwitcher: some View {
+        let accounts = coordinator.authViewModel.accounts
+        if accounts.count <= 1 {
+            accountAvatarCircle(for: activeAccount)
+        } else {
+            Button { showAccountSwitcher = true } label: {
+                accountAvatarCircle(for: activeAccount)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Switch account")
+        }
+    }
+
+    private var accountSwitcherSheet: some View {
+        let accounts = coordinator.authViewModel.accounts
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("Accounts")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(theme.textPrimary)
+                .padding(.horizontal, 20)
+                .padding(.top, 22)
+                .padding(.bottom, 20)
+
+            ScrollView {
+                VStack(spacing: 4) {
+                    ForEach(accounts) { account in
+                        accountRow(account: account)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 24)
+            }
+        }
+        .background(theme.cardBackground)
+        .presentationDetents([.height(CGFloat(140 + 64 * min(accounts.count, 6)))])
+        .presentationDragIndicator(.visible)
+    }
+
+    @ViewBuilder
+    private func accountRow(account: GmailAccount) -> some View {
+        let isCurrent = account.id == coordinator.accountID
+        Button {
+            if !isCurrent { coordinator.selectedAccountID = account.id }
+            showAccountSwitcher = false
+        } label: {
+            HStack(spacing: 12) {
+                AvatarView(
+                    initials: String(account.displayName.prefix(1)).uppercased(),
+                    color: account.accentColor ?? "#888888",
+                    size: 40,
+                    avatarURL: account.profilePictureURL?.absoluteString,
+                    senderDomain: account.email.split(separator: "@").last.map(String.init)
+                )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(account.displayName)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(theme.textPrimary)
+                        .lineLimit(1)
+                    Text(account.email)
+                        .font(.system(size: 13))
+                        .foregroundColor(theme.textSecondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                if isCurrent {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(theme.accentPrimary)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isCurrent ? theme.accentPrimary.opacity(0.08) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func accountAvatarCircle(for account: GmailAccount?) -> some View {
+        let size: CGFloat = 30
+        if let account {
+            let initial = String(account.displayName.prefix(1)).uppercased()
+            AvatarView(
+                initials: initial,
+                color: account.accentColor ?? "#888888",
+                size: size,
+                avatarURL: account.profilePictureURL?.absoluteString,
+                senderDomain: account.email.split(separator: "@").last.map(String.init)
+            )
+        } else {
+            Circle()
+                .fill(theme.hoverBackground)
+                .frame(width: size, height: size)
+                .overlay(
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.textSecondary)
+                )
         }
     }
 

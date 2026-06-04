@@ -511,7 +511,7 @@
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SerifNotificationService/Info.plist;
@@ -543,7 +543,7 @@
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SerifNotificationService/Info.plist;
@@ -701,7 +701,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = QC35MT888M;
@@ -738,7 +738,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = QC35MT888M;
@@ -810,7 +810,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Serif/Resources/iOS/Serif iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Serif-iOS-Info.plist";
@@ -845,7 +845,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Serif/Resources/iOS/Serif iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_TEAM = QC35MT888M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Serif-iOS-Info.plist";
